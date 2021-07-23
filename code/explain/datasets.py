@@ -9,7 +9,7 @@ import utils as ut
 
 
 def load_datasets(dataset_name, dataset_dir, do_pca, pca_dims, add_bias, remove_mean, density_sigma, interp_sigma):
-    print dataset_name
+    print(dataset_name)
 
     im_files = None
     explain_files = None
@@ -90,10 +90,10 @@ def load_datasets(dataset_name, dataset_dir, do_pca, pca_dims, add_bias, remove_
     # density of points
     dataset_train['X_density'] = ut.compute_density(dataset_train['X'], dataset_train['Y'], density_sigma, True)
 
-    print 'train split'
-    print dataset_train['X'].shape[0], 'instances'
-    print dataset_train['X'].shape[1], 'features'
-    print np.unique(dataset_train['Y']).shape[0], 'classes'
+    print('train split')
+    print(dataset_train['X'].shape[0], 'instances')
+    print(dataset_train['X'].shape[1], 'features')
+    print(np.unique(dataset_train['Y']).shape[0], 'classes')
 
     return dataset_train, dataset_test
 
@@ -116,7 +116,7 @@ def load_data(dataset_dir, dataset_name, interp_sigma):
         explain_interp = 1.0 / (1.0 + np.exp(-interp_sigma*(explain_interp+0.0000001)))
     else:
         # not computed, generate it from explanation images
-        print 'computing interpretability'
+        print('computing interpretability')
         explain_interp = ut.compute_interpretability(data['interp'], data['Y'], data['Y_pred'], interp_sigma)
 
     return X, Y, im_files, explain_files, class_names, explain_interp
@@ -185,7 +185,8 @@ def remove_exs(dataset, hyps, err_hyp, alpha, split_name, one_v_all):
         optimal_index = np.argmin(err_hyp)
         _, pred_class = teach.user_model(hyps[optimal_index], dataset['X'], dataset['Y'], alpha)
         inds = np.where(dataset['Y'] == pred_class)[0]
-    print dataset['X'].shape[0] - inds.shape[0], split_name, 'examples removed'
+    print(dataset['X'].shape[0] - inds.shape[0], split_name, 'examples removed')
+    print(", ".join([str(i) for i in inds]))
 
     # remove the examples
     dataset['X'] = dataset['X'][inds, :]
@@ -197,9 +198,9 @@ def remove_exs(dataset, hyps, err_hyp, alpha, split_name, one_v_all):
     if 'X_density' in dataset.keys():
         dataset['X_density'] = dataset['X_density'][inds]
 
-    print '\n', split_name
+    print('\n', split_name)
     for cc in range(len(cls_cnt)):
-        print cls_un[cc], dataset['class_names'][cls_un[cc]].ljust(30), '\t', cls_cnt[cc]
+        print(cls_un[cc], dataset['class_names'][cls_un[cc]].ljust(30), '\t', cls_cnt[cc])
 
     return dataset
 

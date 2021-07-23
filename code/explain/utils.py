@@ -12,10 +12,11 @@ def compute_interpretability(explains, Y, Y_pred, interp_sigma):
     # want to be high if its a good explanation
     ent = np.zeros(Y.shape[0])
     for ii in range(Y.shape[0]):
-        explain_pred = explains[ii, :, :, Y[ii]].copy()
+        # explain_pred = explains[ii, :, :, Y[ii]].copy()
+        explain_pred = explains[ii, :, :].copy()
         explain_pred -= explain_pred.min()
         #ent[ii] = entropy(explain_pred.ravel())
-        explain_pred /= explain_pred.max()
+        explain_pred /= explain_pred.max() if explain_pred.max() > 0 else 1
         aa = explain_pred.ravel() + 0.0000001
         ent[ii] = -(np.log(aa)*aa).mean()
 
@@ -146,7 +147,7 @@ def plot_2D_data_hyper(X, Y, alpha, hyps, random_exs, post, title_txt, fig_id, o
     xx = np.linspace(X[:,0].min()-delta, X[:,0].max()+delta)
     for hh in range(len(hyps)):
         if one_v_all:
-            print 'WARNING this is only implemented for binary'
+            print('WARNING this is only implemented for binary')
             ww = hyps[hh]
         else:
             ww = hyps[hh][1,:]  # for binary this is positive class

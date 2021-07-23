@@ -94,7 +94,7 @@ class StrictTeacher:
             pred[hh], _ = user_model(hyps[hh], X[selected_ind,:][np.newaxis, ...], Y[selected_ind], self.alpha)
 
         # bookkeeping and compute stats
-        print len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind, '\t', round(err[self.unseen_exs].max(),4)
+        print(len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind, '\t', round(err[self.unseen_exs].max(),4))
         ee, ee_test, ent, diff = teaching_stats(self.cur_post, pred, err_hyp, err_hyp_test)
         self.exp_err.append(ee)
         self.exp_err_test.append(ee_test)
@@ -125,7 +125,7 @@ class StrictTeacher:
                 self.cur_post[hh] *= pred[hh]
 
         # bookkeeping and compute stats
-        print len(self.teaching_exs), '\t', selected_ind, '\t', round(eer.max(),4)
+        print(len(self.teaching_exs), '\t', selected_ind, '\t', round(eer.max(),4))
         ee, ee_test, ent, diff = teaching_stats(self.cur_post, pred, err_hyp, err_hyp_test)
         self.exp_err.append(ee)
         self.exp_err_test.append(ee_test)
@@ -186,7 +186,7 @@ class StrictTeacherOneVsAll:
                 pred[cc, hh], _ = user_model_binary(hyps[hh], X[selected_ind,:][np.newaxis, ...], Y_bin, self.alpha)
 
         # bookkeeping and compute stats
-        print len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind, '\t', round(err[self.unseen_exs].max(),4)
+        print(len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind, '\t', round(err[self.unseen_exs].max(),4))
         ee, ee_test, ent, diff = teaching_stats_one_vs_all(self.cur_post, pred, err_hyp, err_hyp_test)
         self.exp_err.append(ee)
         self.exp_err_test.append(ee_test)
@@ -241,7 +241,7 @@ class ExplainTeacher:
             pred[hh], _ = user_model(hyps[hh], X[selected_ind,:][np.newaxis, ...], Y[selected_ind], self.alpha)
 
         # bookkeeping and compute stats
-        print len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind, '\t', round(err[self.unseen_exs].max(),4)
+        print(len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind, '\t', round(err[self.unseen_exs].max(),4))
         ee, ee_test, ent, diff = teaching_stats(self.cur_post, pred, err_hyp, err_hyp_test)
         self.exp_err.append(ee)
         self.exp_err_test.append(ee_test)
@@ -305,7 +305,7 @@ class ExplainTeacherOneVsAll:
                 pred[cc, hh], _ = user_model_binary(hyps[hh], X[selected_ind,:][np.newaxis, ...], Y_bin, self.alpha)
 
         # bookkeeping and compute stats
-        print len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind, '\t', round(err[self.unseen_exs].max(),4)
+        print(len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind, '\t', round(err[self.unseen_exs].max(),4))
         ee, ee_test, ent, diff = teaching_stats_one_vs_all(self.cur_post, pred, err_hyp, err_hyp_test)
         self.exp_err.append(ee)
         self.exp_err_test.append(ee_test)
@@ -396,7 +396,7 @@ class RandomImageTeacherOneVsAll:
                 pred[cc, hh], _ = user_model_binary(hyps[hh], X[selected_ind,:][np.newaxis, ...], Y_bin, self.alpha)
 
         # bookkeeping and compute stats
-        print len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind
+        print(len(self.teaching_exs), '\t', Y[selected_ind], '\t', selected_ind)
         ee, ee_test, ent, diff = teaching_stats_one_vs_all(self.cur_post, pred, err_hyp, err_hyp_test)
         self.exp_err.append(ee)
         self.exp_err_test.append(ee_test)

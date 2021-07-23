@@ -2,6 +2,9 @@ import json
 import random
 import numpy as np
 
+def np_encoder(object):
+    if isinstance(object, (np.generic, np.ndarray)):
+        return object.item()
 
 def save_teaching_sequence(teacher, alg_name, op_file_name):
     # saves the teaching sequences so they can be used by the webapp
@@ -18,7 +21,7 @@ def save_teaching_sequence(teacher, alg_name, op_file_name):
             results['display_explain_image'] = [1 for ii in range(num_train)]
 
         with open(op_file_name, 'w') as js:
-            json.dump(results, js)
+            json.dump(results, js, default=np_encoder)
 
 
 def save_teaching_images(dataset_train, dataset_test, op_file_name, url_root):
@@ -39,7 +42,7 @@ def save_teaching_images(dataset_train, dataset_test, op_file_name, url_root):
         teaching_ims.append(im_data)
 
         with open(op_file_name, 'w') as js:
-            json.dump(teaching_ims, js)
+            json.dump(teaching_ims, js, default=np_encoder)
 
 
 def save_settings(dataset_train, dataset_test, experiment_id, num_random_test_ims, scale, op_file_name):
@@ -52,4 +55,4 @@ def save_settings(dataset_train, dataset_test, experiment_id, num_random_test_im
     settings['scale'] = scale
 
     with open(op_file_name, 'w') as js:
-        json.dump(settings, js)
+        json.dump(settings, js, default=np_encoder)
