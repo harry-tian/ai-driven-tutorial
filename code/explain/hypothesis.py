@@ -37,6 +37,56 @@ def compute_hyps_error(hyps, X, Y, alpha, one_v_all=False):
     return err_hyp
 
 
+def k_cluster_hyps(X, Y, k, num_hyps, alpha, clf):
+
+    km = KMeans(n_clusters=k, random_state=42)
+    cluster_inds = km.fit_predict(X)
+    num_classes = np.unique(Y).shape[0]
+    # num_hyps = num_classes ** k - 2
+
+    class_combs = []
+    for ii in range(k-1):
+        class_combs.extend(itertools.combinations(range(k), ii + 1))
+
+    classifiers = []
+    for cc in class_combs:
+        inds = []
+        for ii in cc:
+            inds.append(np.where(cluster_inds==ii)[0])
+        inds = np.hstack(inds)
+
+        # fit SVM
+        tmp_labels = np.zeros(Y.shape[0]).astype(np.int)
+        tmp_labels[inds] = 1
+        clf.fit(X, tmp_labels)
+        classifiers.append(clf.coef_[0,:].copy())
+    classifiers = np.vstack(classifiers)
+
+
+    # # copy hypothesis
+    # hyps = []
+    # subset = np.random.choice(range(num_hyps), np.minimum(num_hyps, len(classifiers)), replace=False)
+    # for ss in subset:
+    #     hyps.append(np.vstack([classifiers[ss, :].copy(), -classifiers[ss, :].copy()]))
+
+    # cant use all possible combinations, just use a subset
+    all_combs = list(itertools.permutations(range(len(classifiers)), num_classes))
+    subset_combs = random.sample(range(len(all_combs)), np.minimum(num_hyps,len(all_combs)))
+    print(len(all_combs), 'possible combinations of PW classifers')
+
+    # copy hypothesis
+    hyps = []
+    for ss in subset_combs:
+        inds = all_combs[ss]
+        hyps.append(classifiers[inds, :].copy())
+
+    # add teacher i.e. best hypothesis - trained on all data
+    clf.fit(X, Y)
+    hyps.append(np.vstack((-clf.coef_.copy(), clf.coef_.copy())))
+    
+    return hyps
+
+
 def cluster_hyps(X, Y, num_hyps, alpha, clf):
     # this is for the multi class hypothesis case - number of combinations explodes
 
@@ -65,7 +115,7 @@ def cluster_hyps(X, Y, num_hyps, alpha, clf):
     # cant use all possible combinations, just use a subset
     all_combs = list(itertools.permutations(range(len(classifiers)), num_classes))
     subset_combs = random.sample(range(len(all_combs)), np.minimum(num_hyps,len(all_combs)))
-    print len(all_combs), 'possible combinations of PW classifers'
+    print(len(all_combs), 'possible combinations of PW classifers')
 
     # copy hypothesis
     hyps = []
@@ -182,7 +232,7 @@ def random_hyps(X, Y, num_hyps, alpha, one_v_all, clf, fit_gt=False):
     return hyps
 
 
-def generate_hyps(dataset, alpha, num_hyps, hyp_type, one_v_all):
+def generate_hyps(dataset, alpha, num_hyps, hyp_type, one_v_all, k=5):
     # generates the hypothesis space
     # if one_v_all is True we create D dim hypothesis otherwise we do CxD
     X = dataset['X']
@@ -193,8 +243,13 @@ def generate_hyps(dataset, alpha, num_hyps, hyp_type, one_v_all):
     # if only 2D we will add negative versions of hyps later for visualization
     # <= 3 as we might have bias term
     if X.shape[1] <= 3 and num_classes == 2:
-        print '2D dataset -> generating less hypotheses'
+        print('2D dataset -> generating less hypotheses')
         num_hyps /= 2
+
+    if hyp_type == 'k_cluster':
+        hyps = k_cluster_hyps(X, Y, k, num_hyps, alpha, clf)
+        if num_hyps - len(hyps) > 0:
+            hyps.extend(random_hyps(X, Y, num_hyps - len(hyps), alpha, one_v_all, clf, False))
 
     if hyp_type == 'cluster':
         if one_v_all:
