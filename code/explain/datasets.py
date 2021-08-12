@@ -186,7 +186,7 @@ def remove_exs(dataset, hyps, err_hyp, alpha, split_name, one_v_all):
         _, pred_class = teach.user_model(hyps[optimal_index], dataset['X'], dataset['Y'], alpha)
         inds = np.where(dataset['Y'] == pred_class)[0]
     print(dataset['X'].shape[0] - inds.shape[0], split_name, 'examples removed')
-    print(", ".join([str(i) for i in inds]))
+    # print(", ".join([str(i) for i in inds]))
 
     # remove the examples
     dataset['X'] = dataset['X'][inds, :]
@@ -198,9 +198,9 @@ def remove_exs(dataset, hyps, err_hyp, alpha, split_name, one_v_all):
     if 'X_density' in dataset.keys():
         dataset['X_density'] = dataset['X_density'][inds]
 
-    print('\n', split_name)
-    for cc in range(len(cls_cnt)):
-        print(cls_un[cc], dataset['class_names'][cls_un[cc]].ljust(30), '\t', cls_cnt[cc])
+    # print('\n', split_name)
+    # for cc in range(len(cls_cnt)):
+    #     print(cls_un[cc], dataset['class_names'][cls_un[cc]].ljust(30), '\t', cls_cnt[cc])
 
     return dataset
 
