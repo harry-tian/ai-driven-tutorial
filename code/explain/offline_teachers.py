@@ -53,19 +53,6 @@ def teaching_stats_one_vs_all(cur_post, pred, err_hyp, err_hyp_test):
     return exp_err.mean(), exp_err_test.mean(), entropy.mean(), difficulty.mean()
 
 
-def teaching_stats(cur_post, pred, err_hyp, err_hyp_test):
-
-    cur_post_norm = cur_post/cur_post.sum()
-    exp_err = (cur_post_norm*err_hyp).sum()
-    exp_err_test = (cur_post_norm*err_hyp_test).sum()
-    ent = entropy(cur_post_norm)
-
-    z = (cur_post_norm*pred).sum() + 0.0000000001  # add small noise
-    difficulty = -(z*np.log2(z) + (1-z)*np.log2(1-z))
-
-    return exp_err, exp_err_test, ent, difficulty
-
-
 def more_teaching_stats(cur_post, pred, err_hyp, err_hyp_test, selected_ind):
 
     cur_post_norm = cur_post/cur_post.sum()
