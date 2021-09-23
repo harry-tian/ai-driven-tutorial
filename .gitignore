@@ -2,3 +2,6 @@
 *.png
 *.npz
 *.zip
+
+model/results
+model/wandb
