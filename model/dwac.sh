@@ -25,12 +25,12 @@ echo $CUDA_VISIBLE_DEVICES
   --mri_sequences=RGB \
   --data_sequences=RGB \
   --embed_dim=10 \
-  --merge_dim=10 \
+  --merge_dim=2 \
   --merge_seq \
   --pooling \
   --wandb_mode=online \
-  --wandb_group=dwac-emb10-mrg10 \
-  --output_dir=results/dwac-emb10-mrg10 \
+  --wandb_group=dwac-emb10-mrg2 \
+  --output_dir=results/dwac-emb10-mrg2 \
   --train_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/train \
   --valid_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/valid \
   --dataloader_num_workers=4 \

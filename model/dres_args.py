@@ -26,7 +26,7 @@ class DRES(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        self.feature_extractor = models.resnet18(pretrained=True)
+        self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
         num_features = 1000
 
         self.embed_dim = self.hparams.embed_dim
@@ -248,6 +248,7 @@ class DRES(pl.LightningModule):
 
     @staticmethod
     def add_model_specific_args(parser, root_dir):
+        parser.add_argument("--pretrained", action="store_true")
         parser.add_argument("--embed_dim", default=10, type=int, help="Embedding size")
         parser.add_argument('--kernel', type=str, default='gaussian', help='hparam for kernel [guassian|laplace|invquad]')
         parser.add_argument('--gamma', type=float, default=1.0, help='hparam for kernel')

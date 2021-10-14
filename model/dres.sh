@@ -22,10 +22,10 @@ echo $CUDA_VISIBLE_DEVICES
 # nvidia-smi -l 1 &
 
 /home/hanliu/anaconda3/bin/python dres_args.py \
-  --embed_dim=10 \
+  --embed_dim=2 \
   --wandb_mode=online \
-  --wandb_group=dres-emb10 \
-  --output_dir=results/dres-emb10 \
+  --wandb_group=dres-emb2 \
+  --output_dir=results/dres-emb2 \
   --train_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/train \
   --valid_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/valid \
   --dataloader_num_workers=4 \
