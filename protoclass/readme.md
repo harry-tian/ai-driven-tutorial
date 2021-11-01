@@ -1,3 +1,6 @@
+python version of Bien and Tibshirani's (2012) Protoclass algorithm
+
+### parameters:
 
 `X` is the dataset to select prototypes from
 
@@ -5,14 +8,12 @@
 
 `Z` is the list of prototype candidates, usually X=Z
 
-`eps` is the size of covering balls in the protoclass algorithm: larger `eps` leads to less number of prototypes
+`eps` is the size of covering balls: larger `eps` leads to less number of prototypes
 
-## example code
+### example code
 
 `from protoclass import ProtoclassExplainer`
 
 `explainer = ProtoclassExplainer()`
 
-`Z=X`
-
-`prot = explainer.explain(X, Z, labels, eps=250000)`
+`prot = explainer.explain(X, X, labels, eps=250000)`
