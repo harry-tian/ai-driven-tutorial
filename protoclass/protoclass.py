@@ -26,8 +26,8 @@ class ProtoclassExplainer():
         self.plot_protoclass = plot_protoclass.plot_protoclass
         self.print_protoclass = print_protoclass.print_protoclass
     
-    def explain(self, X, Z, labels, e):
+    def explain(self, X, Z, labels, eps):
         dxz = self.dist2(X, Z)
-        prot = self.protoclass(X, labels, Z, dxz, e)
+        prot = self.protoclass(X, labels, Z, dxz, eps)
         prot_dict = {key:item for key,item in prot.items()}
         return prot_dict
