@@ -4,11 +4,16 @@ python version of Bien and Tibshirani's (2012) Protoclass algorithm
 
 `X` is the dataset to select prototypes from
 
-`labels` is the list of labels of X (assert len(X)==len(Y))
-
 `Z` is the list of prototype candidates, usually X=Z
 
+`labels` is the labels of X 
+
 `eps` is the size of covering balls: larger `eps` leads to less number of prototypes
+
+### returns:
+
+`idx`: index (in X) of selected prototypes
+`prot`: an instance of the "protoclass" class as defined in `protoclass.r`, contains additional information about the prototypes
 
 ### example code
 
@@ -16,4 +21,4 @@ python version of Bien and Tibshirani's (2012) Protoclass algorithm
 
 `explainer = ProtoclassExplainer()`
 
-`prot = explainer.explain(X, X, labels, eps=250000)`
+`idx, prot = explainer.explain(X, X, labels, eps=250000)`
