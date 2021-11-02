@@ -6,6 +6,11 @@ from rpy2.robjects.packages import STAP
 #Must be activated
 
 class ProtoclassExplainer():
+    """
+    ProtoclassExplainer uses rpy2 to convert Bien and Tibshirani's (2012) Protoclass algorithm in R to python
+
+    This is implemented by mimicking the DIExplainer class in aix360
+    """
     def __init__(self):
         pandas2ri.activate()
         with open('protoclass.r', 'r') as f:
@@ -27,7 +32,30 @@ class ProtoclassExplainer():
         self.print_protoclass = print_protoclass.print_protoclass
     
     def explain(self, X, Z, labels, eps):
+        '''
+        Return index of selected prototypes and an instance of the "protoclass" class 
+
+        Args: 
+            X (double 2d array): Dataset you want to explain.
+            Z (double 2d array): Dataset to select prototypes from.
+            labels (double 2d array): Labels of X 
+            eps (float): size of covering ball
+
+        Returns:
+            idx: index (in X) of selected prototypes
+            prot: an instance of the "protoclass" class as defined in protoclass.r
+        '''
         dxz = self.dist2(X, Z)
         prot = self.protoclass(X, labels, Z, dxz, eps)
         prot_dict = {key:item for key,item in prot.items()}
-        return prot_dict
+        idx = self.proto_idx(prot_dict)
+        return idx, prot_dict
+
+    def proto_idx(self, prot):
+        alpha = [sum(x) for x in prot["alpha"]]
+        idx = []
+        for i, a in enumerate(alpha):
+            if a > 0:
+                idx.append(i)
+            
+        return idx
