@@ -13,6 +13,7 @@ python version of Bien and Tibshirani's (2012) Protoclass algorithm
 ### returns:
 
 `idx`: index (in X) of selected prototypes
+
 `prot`: an instance of the "protoclass" class as defined in `protoclass.r`, contains additional information about the prototypes
 
 ### example code
