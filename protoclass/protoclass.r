@@ -55,7 +55,7 @@
 #' pred1 <- predict(prot, xte, z=xtr)
 #' # get predictions on test data using pairwise distances:
 #' pred2 <- predictwithd.protoclass(prot, dist2(xte, z))
-protoclass <- function(x, y, z, dxz, eps, lambda=1/n)
+protoclass <- function(x, y, z, dxz, eps, lambda)
   {
     if(missing(y)) stop("Missing y")
     if(missing(eps)) stop("Missing epsilon")
@@ -186,7 +186,7 @@ predictwithd.protoclass <- function(object,d.test.z)
     as.factor(object$classes)[apply(alphaClosest,1,maxrand)]
   }
 
-greedy <- function(dxz, y, eps, lambda=0)
+greedy <- function(dxz, y, eps, lambda)
   {
     classes = unique(y)
     nproto = ncol(dxz)
