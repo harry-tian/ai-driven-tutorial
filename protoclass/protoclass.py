@@ -31,7 +31,7 @@ class ProtoclassExplainer():
         self.plot_protoclass = plot_protoclass.plot_protoclass
         self.print_protoclass = print_protoclass.print_protoclass
     
-    def explain(self, X, Z, labels, eps):
+    def explain(self, X, Z, labels, eps, lamda=None):
         '''
         Return index of selected prototypes and an instance of the "protoclass" class 
 
@@ -46,7 +46,9 @@ class ProtoclassExplainer():
             prot: an instance of the "protoclass" class as defined in protoclass.r
         '''
         dxz = self.dist2(X, Z)
-        prot = self.protoclass(X, labels, Z, dxz, eps)
+        if not lamda:
+            lamda = 1/len(Y)
+        prot = self.protoclass(X, labels, Z, dxz, eps, lamda)
         prot_dict = {key:item for key,item in prot.items()}
         idx = self.proto_idx(prot_dict)
         return idx, prot_dict
