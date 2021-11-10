@@ -1,5 +1,8 @@
 python version of Bien and Tibshirani's (2012) Protoclass algorithm
 
+### prerequistes:
+install `R` and `rpy2` (a python package)
+
 ### parameters:
 
 `X` is the dataset to select prototypes from
