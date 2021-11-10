@@ -47,7 +47,7 @@ class ProtoclassExplainer():
         '''
         dxz = self.dist2(X, Z)
         if not lamda:
-            lamda = 1/len(Y)
+            lamda = 1/len(labels)
         prot = self.protoclass(X, labels, Z, dxz, eps, lamda)
         prot_dict = {key:item for key,item in prot.items()}
         idx = self.proto_idx(prot_dict)
