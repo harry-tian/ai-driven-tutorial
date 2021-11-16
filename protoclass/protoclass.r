@@ -211,11 +211,15 @@ greedy <- function(dxz, y, eps, lambda)
     while(TRUE)
       {
         i=i+1
-        iimax = which.max(scores)
-        # convert via:  element (i,j) of a matrix coded as i+(j-1)*nrows
-        kmax = ceiling(iimax/nproto)
-        pmax = iimax - nproto*(kmax-1) # adding prototype pmax to class kmax's list is best
+#         iimax = which.max(scores)
+#         # convert via:  element (i,j) of a matrix coded as i+(j-1)*nrows
+#         kmax = ceiling(iimax/nproto)
+#         pmax = iimax - nproto*(kmax-1) # adding prototype pmax to class kmax's list is best
         
+        iimax = pickMax(scores, W)
+        pmax = iimax[[1]]
+        kmax = iimax[[2]]
+      
         if(scores[pmax,kmax] > lambda)
           {
             # adding this prototype increases objective by the most, so accept it:
@@ -253,6 +257,29 @@ greedy <- function(dxz, y, eps, lambda)
       aa[[names(an)[i]]] = an[[i]]
     
     aa
+  }
+
+pickMax <- function(scores, W)
+  {
+    K = ncol(W)
+    n = nrow(W)
+    max_score = -10000
+    max_score_idx = list()
+    cur_score = 0
+    for(i in seq(n))
+      {
+      for (j in seq(K))
+        {
+        if (W[i,j] > 0)
+          cur_score = scores[i,j]
+          if (cur_score > max_score)
+            {
+            max_score = cur_score
+            max_score_idx = list(i,j)
+            }
+      }
+    }
+    max_score_idx
   }
 
 analyzeSolution <- function(aa,dxz,y)
