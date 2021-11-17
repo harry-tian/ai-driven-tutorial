@@ -87,23 +87,28 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
     b_dim = X[:,1]
     a_range = max(a_dim) - min(a_dim)
     b_range = max(b_dim) - min(b_dim)
-
+    min_range = min(a_range, b_range)
+    max_range = max(a_range, b_range)
     m_dict = {m:[] for m in m_range}
 
     if not eps_step:
         #### tune this part
-        if max(a_range, b_range) < 5:
-            ## for 1 <= range <= 5, set eps_step = 0.1
+        if min_range < 5 and min_range > 2:
+            ## for 2 <= range <= 5, set eps_step = 0.1
             eps_step = 0.1
+        elif min_range < 2:
+            eps_step = 0.05
         else:
             eps_step = 0.2
     # print(eps_step)
     while True:
-        eps_range = np.arange(0, min(a_range,b_range), eps_step)[1:]
+        eps_range = np.arange(0, max_range, eps_step)[1:]
         if find_min_eps:
             eps_range = np.flip(eps_range) 
-
+        # print(eps_range)
+        # print(m_dict)
         for eps in eps_range:
+            # print(eps)
             protoclass = ProtoclassExplainer()
             train_pclass_idx, train_prot = protoclass.explain(X, Z, labels, eps, lamda=lamda)
             m = len(train_pclass_idx)
@@ -118,4 +123,3 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
 
     prototype_idss = [m_dict[m] for m in m_range]
     return prototype_idss, m_dict
-
