@@ -3,6 +3,7 @@ import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import STAP
+import numpy as np
 #Must be activated
 
 class ProtoclassExplainer():
