@@ -8,7 +8,7 @@ parameters:
 - `X` is the dataset to select prototypes from
 - `Z` is prototype candidates, usually X=Z
 - `Y` is the labels of X
-- 
+
 To specify number of prototypes `m`:
 
 `proto_idx = protoclass_m(X, Z, Y, m)`
