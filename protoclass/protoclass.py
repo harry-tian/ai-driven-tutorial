@@ -62,7 +62,7 @@ class ProtoclassExplainer():
             
         return idx
 
-def protoclass_mrange(X, Z, Y, m_range, lamda=None, eps_step=None, find_min_eps=False, debug=False):
+def protoclass_mrange(X, Z, Y, m_range,  path_r_file="protoclass.r", lamda=None, eps_step=None, find_min_eps=False, debug=False):
     '''
     Takes a m_range list where each m is the number of prototypes to be returned
     Returns index of selected prototypes in list and dictionary format
@@ -110,7 +110,7 @@ def protoclass_mrange(X, Z, Y, m_range, lamda=None, eps_step=None, find_min_eps=
             
 
         for eps in eps_range:
-            protoclass = ProtoclassExplainer()
+            protoclass = ProtoclassExplainer(path_r_file=path_r_file)
             train_pclass_idx, train_prot = protoclass.explain(X, Z, Y, eps, lamda=lamda)
             m = len(train_pclass_idx)
             
@@ -129,7 +129,7 @@ def protoclass_mrange(X, Z, Y, m_range, lamda=None, eps_step=None, find_min_eps=
 #     prototype_idss = m_dict.values()
     return m_dict
 
-def protoclass_m(X, Z, Y, m, lamda=None, eps_step=None, find_min_eps=False, debug=False):
+def protoclass_m(X, Z, Y, m,  path_r_file="protoclass.r", lamda=None, eps_step=None, find_min_eps=False, debug=False):
     m_range = [m]
-    proto_dict = protoclass_mrange(X, Z, Y, m_range, lamda=None, eps_step=None, find_min_eps=False, debug=False)
+    proto_dict = protoclass_mrange(X, Z, Y, m_range,  path_r_file=path_r_file, lamda=lamda, eps_step=eps_step, find_min_eps=find_min_eps, debug=debug)
     return proto_dict[m]
