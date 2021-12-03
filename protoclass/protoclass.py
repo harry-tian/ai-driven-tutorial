@@ -1,10 +1,8 @@
-#Import necessary packages
 import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import STAP
 import numpy as np
-#Must be activated
 
 class ProtoclassExplainer():
     """
@@ -16,21 +14,22 @@ class ProtoclassExplainer():
         pandas2ri.activate()
         with open(path_r_file, 'r') as f:
             file = f.read()
+
         protoclass = STAP(file,"protoclass")
-        print_protoclass = STAP(file,"print.protoclass")
         dist2 = STAP(file,"dist2")
         predict_protoclass = STAP(file,"predict.protoclass")
         greedy = STAP(file,"greedy")
         analyzeSolution = STAP(file,"analyzeSolution")
-        plot_protoclass = STAP(file,"plot.protoclass")
+        # plot_protoclass = STAP(file,"plot.protoclass")
+        # print_protoclass = STAP(file,"print.protoclass")
 
         self.protoclass = protoclass.protoclass
         self.dist2 = dist2.dist2
         self.predict_protoclass = predict_protoclass.predict_protoclass
         self.greedy = greedy.greedy
         self.analyzeSolution = analyzeSolution.analyzeSolution
-        self.plot_protoclass = plot_protoclass.plot_protoclass
-        self.print_protoclass = print_protoclass.print_protoclass
+        # self.plot_protoclass = plot_protoclass.plot_protoclass
+        # self.print_protoclass = print_protoclass.print_protoclass
     
     def explain(self, X, Z, Y, eps, lamda=None):
         '''
@@ -63,7 +62,7 @@ class ProtoclassExplainer():
             
         return idx
 
-def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=False, debug=False):
+def protoclass_mrange(X, Z, Y, m_range, lamda=None, eps_step=None, find_min_eps=False, debug=False):
     '''
     Takes a m_range list where each m is the number of prototypes to be returned
     Returns index of selected prototypes in list and dictionary format
@@ -71,9 +70,9 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
     Args: 
         X (double 2d array): Dataset you want to explain.
         Z (double 2d array): Dataset to select prototypes from.
-        labels (double 2d array): Labels of X 
+        Y (double 2d array): Labels of X 
         m_range (list): list of int m
-        lamda: cost of adding a prototype, default is 1/len(labels), can tune this to be around 1-5
+        lamda: cost of adding a prototype, default is 1/len(Y), can tune this to be around 1-5
         eps_step: 
         find_min_eps: 
         debug
@@ -82,7 +81,7 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
         m_dict: dictionary: key is m and value is prototypes
     '''
     if not lamda:
-        lamda = 1/(len(labels))
+        lamda = 1/(len(Y))
 
     a_dim = X[:,0]
     b_dim = X[:,1]
@@ -111,9 +110,8 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
             
 
         for eps in eps_range:
-            # print(eps)
             protoclass = ProtoclassExplainer()
-            train_pclass_idx, train_prot = protoclass.explain(X, Z, labels, eps, lamda=lamda)
+            train_pclass_idx, train_prot = protoclass.explain(X, Z, Y, eps, lamda=lamda)
             m = len(train_pclass_idx)
             
             if m in m_range:
@@ -130,3 +128,8 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
 
 #     prototype_idss = m_dict.values()
     return m_dict
+
+def protoclass_m(X, Z, Y, m, lamda=None, eps_step=None, find_min_eps=False, debug=False):
+    m_range = [m]
+    proto_dict = protoclass_mrange(X, Z, Y, m_range, lamda=None, eps_step=None, find_min_eps=False, debug=False)
+    return proto_dict[m]
