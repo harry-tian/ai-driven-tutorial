@@ -79,7 +79,6 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
         debug
 
     Returns:
-        prototype_idss: list of prototypes in index format
         m_dict: dictionary: key is m and value is prototypes
     '''
     if not lamda:
