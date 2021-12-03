@@ -32,14 +32,14 @@ class ProtoclassExplainer():
         self.plot_protoclass = plot_protoclass.plot_protoclass
         self.print_protoclass = print_protoclass.print_protoclass
     
-    def explain(self, X, Z, labels, eps, lamda=None):
+    def explain(self, X, Z, Y, eps, lamda=None):
         '''
         Return index of selected prototypes and an instance of the "protoclass" class 
 
         Args: 
             X (double 2d array): Dataset you want to explain.
             Z (double 2d array): Dataset to select prototypes from.
-            labels (double 2d array): Labels of X 
+            Y (double 2d array): Labels of X 
             eps (float): size of covering ball
 
         Returns:
@@ -48,8 +48,8 @@ class ProtoclassExplainer():
         '''
         dxz = self.dist2(X, Z)
         if not lamda:
-            lamda = 1/len(labels)
-        prot = self.protoclass(X, labels, Z, dxz, eps, lamda)
+            lamda = 1/len(Y)
+        prot = self.protoclass(X, Y, Z, dxz, eps, lamda)
         prot_dict = {key:item for key,item in prot.items()}
         idx = self.proto_idx(prot_dict)
         return idx, prot_dict
