@@ -12,9 +12,9 @@ class ProtoclassExplainer():
 
     This is implemented by mimicking the DIExplainer class in aix360
     """
-    def __init__(self):
+    def __init__(self, path_r_file="protoclass.r"):
         pandas2ri.activate()
-        with open('protoclass.r', 'r') as f:
+        with open(path_r_file, 'r') as f:
             file = f.read()
         protoclass = STAP(file,"protoclass")
         print_protoclass = STAP(file,"print.protoclass")
