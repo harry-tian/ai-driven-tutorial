@@ -3,26 +3,16 @@ python version of Bien and Tibshirani's (2012) Protoclass algorithm
 ### prerequisites:
 install `R` and `rpy2` (a python package)
 
-### parameters:
+### usage
 
-`X` is the dataset to select prototypes from
+To specify number of prototypes:
 
-`Z` is the list of prototype candidates, usually X=Z
+`proto_dict = protoclass(X, Z, Y, m_range)`
 
-`labels` is the labels of X 
+where `X` is the dataset to select prototypes from, `Z` is prototype candidates, usually X=Z, `Y` is the labels of X, and `m_range` is the list of number of prototypes.
 
-`eps` is the size of covering balls: larger `eps` leads to less number of prototypes
-
-### returns:
-
-`idx`: index (in X) of selected prototypes
-
-`prot`: an instance of the "protoclass" class as defined in `protoclass.r`, contains additional information about the prototypes
-
-### example code
-
-`from protoclass import ProtoclassExplainer`
+To specify eps:
 
 `explainer = ProtoclassExplainer()`
 
-`idx, prot = explainer.explain(X, X, labels, eps=250000)`
+`idx, prot = explainer.explain(X, Z, Y, eps)`
