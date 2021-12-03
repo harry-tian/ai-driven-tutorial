@@ -63,7 +63,7 @@ class ProtoclassExplainer():
             
         return idx
 
-def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=False):
+def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=False, debug=False):
     '''
     Takes a m_range list where each m is the number of prototypes to be returned
     Returns index of selected prototypes in list and dictionary format
@@ -74,8 +74,9 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
         labels (double 2d array): Labels of X 
         m_range (list): list of int m
         lamda: cost of adding a prototype, default is 1/len(labels), can tune this to be around 1-5
-        eps_step: search-related parameter
+        eps_step: 
         find_min_eps: 
+        debug
 
     Returns:
         prototype_idss: list of prototypes in index format
@@ -91,6 +92,8 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
     min_range = min(a_range, b_range)
     max_range = max(a_range, b_range)
     m_dict = {m:[] for m in m_range}
+    if 0 in m_dict.keys():
+        m_dict[0] = ["?"]
 
     if not eps_step:
         #### tune this part
@@ -101,13 +104,13 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
             eps_step = 0.05
         else:
             eps_step = 0.2
-    # print(eps_step)
+            
     while True:
         eps_range = np.arange(0, max_range, eps_step)[1:]
         if find_min_eps:
             eps_range = np.flip(eps_range) 
-        # print(eps_range)
-        # print(m_dict)
+            
+
         for eps in eps_range:
             # print(eps)
             protoclass = ProtoclassExplainer()
@@ -117,10 +120,14 @@ def protoclass(X, Z, labels, m_range, lamda=None, eps_step=None, find_min_eps=Fa
             if m in m_range:
                 m_dict[m] = train_pclass_idx
 
-        if np.array(list(m_dict.values()),dtype=object).all():
+        if debug:
+            print(m_dict)
+
+        # if np.array(list(m_dict.values()),dtype=object).all(): ????????????
+        if not ([] in m_dict.values()):
             break
         else:
             eps_step /= 2
 
-    prototype_idss = [m_dict[m] for m in m_range]
-    return prototype_idss, m_dict
+#     prototype_idss = m_dict.values()
+    return m_dict
