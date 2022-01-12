@@ -5,3 +5,8 @@
 
 model/results
 model/wandb
+
+dwac_knn.ipynb
+knn.ipynb
+
+data/
