@@ -22,7 +22,9 @@ def get_tste(distance_matrix, triplets_fname, tste_fname, no_dims=2, max_iter=10
                     pos = point2+2
                     neg = point1+1
                 triplets.append([anchor, pos, neg])
-    pickle.dump(np.array(triplets), open(triplets_fname,"wb"))   
+
+    triplets = np.array(triplets)
+    pickle.dump(triplets, open(triplets_fname,"wb"))   
     print(f"triplets saved to {triplets_fname}")
 
     embedding = tste.tste(triplets, no_dims=no_dims, verbose=True, max_iter=max_iter)
@@ -39,6 +41,10 @@ def bm_transform():
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
+METRIC = "auc"
+WEIGHTS = "uniform"
+LINEAR = True
+
 def get_knn_score(k, data, index, metric="auc", weights="uniform"):
     x_train, y_train, x_valid, y_valid = data
     knc = KNeighborsClassifier(n_neighbors=k, weights=weights)
@@ -49,6 +55,19 @@ def get_knn_score(k, data, index, metric="auc", weights="uniform"):
         score = roc_auc_score(y_valid, probs)
     else:
         score = knc.score(x_valid, y_valid)
+    return score
+
+
+def get_svm_score(k, data, index, metric=METRIC, linear=LINEAR):
+    X_train, y_train, X_valid, y_valid = data
+    svc = LinearSVC(random_state=42) if linear else SVC(probability=True, random_state=42)
+    svc.fit(X_train[index], y_train[index])
+    if metric == 'auc':
+        probs = svc.decision_function(X_valid) # if linear else svc.predict_proba(X_valid)
+        probs = probs[:, 1] if len(probs.shape) > 1 and probs.shape[1] > 1 else probs
+        score = roc_auc_score(y_valid, probs)
+    else:
+        score = svc.score(X_valid, y_valid)
     return score
 
 def get_ci(samples, confidence=0.95):
@@ -69,6 +88,7 @@ def get_full_score(x_train, y_train, x_valid, y_valid, k_range):
     f_scores = np.array(f_scores)
     return f_scores
 
+
 def get_random_score(x_train, y_train, x_valid, y_valid, k_range, m_range, n_trials=100):
     data = x_train, y_train, x_valid, y_valid
     r_scores = []
@@ -81,11 +101,16 @@ def get_random_score(x_train, y_train, x_valid, y_valid, k_range, m_range, n_tri
                 scores.append(get_knn_score(k, data, index))
             r_scores.append((scores))
     r_scores = np.array(r_scores).reshape(len(k_range), len(m_range), n_trials)
-    # pickle.dump(r_scores, open("rscores.{}.emb10.pkl".format(WEIGHTS), "wb"))
-    # r_scores = pickle.load(open("rscores.{}.emb10.pkl".format(WEIGHTS), "rb"))
     r_means = r_scores.mean(axis=-1)
     r_confs = np.array([get_ci(r_scores[k][m]) for m in range(len(m_range)) for k in range(len(k_range))])
     return r_means, r_confs
+
+def get_nn(index, samples, m=1):
+    dist = euclidean_distances(samples)
+    neighbors = []
+    for i in index:
+        neighbors.append(np.argsort(dist[i])[1:m+1])
+    return np.array(neighbors)
 
 def prototype_knn(data, proto_idx, k_range, m_range):
     scores = []
