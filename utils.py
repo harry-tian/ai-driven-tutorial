@@ -5,6 +5,8 @@ from scipy import stats
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.svm import SVC, LinearSVC
+from aix360.algorithms.protodash import ProtodashExplainer
 from torchvision import transforms
 import tste
 import pickle
@@ -73,37 +75,68 @@ def get_svm_score(k, data, index, metric=METRIC, linear=LINEAR):
 def get_ci(samples, confidence=0.95):
     return 2 * stats.sem(samples) * stats.t.ppf((1 + confidence) / 2., len(samples)-1)
 
-def get_full_score(x_train, y_train, x_valid, y_valid, k_range):
-    data = x_train, y_train, x_valid, y_valid
-    lr = LogisticRegression(random_state=42)
-    lr.fit(x_train, y_train)
-    print(lr.score(x_valid, y_valid))
-    coef = np.vstack([lr.coef_, -lr.coef_])
-    # W = extract_W_multiclass(coef, x_train, y_train, coo=False)
-
-    f_scores = []
+def get_full_score(data, k_range):
+    f_scores_knn = []
     for k in k_range:
         score = get_knn_score(k, data, list(range(len(data[0]))))
-        f_scores.append(score)
-    f_scores = np.array(f_scores)
-    return f_scores
+        f_scores_knn.append(score)
+    f_scores_knn = np.array(f_scores_knn)
+    f_score_svm = get_svm_score(k, data, list(range(len(data[0]))))
+    return f_scores_knn, f_score_svm
 
 
-def get_random_score(x_train, y_train, x_valid, y_valid, k_range, m_range, n_trials=100):
-    data = x_train, y_train, x_valid, y_valid
-    r_scores = []
+def get_random_score(data, k_range, m_range, n_trials=100):
+    X_train, y_train, X_valid, y_valid = data
+    
+    r_scores_knn, r_scores_svm = [], []
     np.random.seed(42)
     for k in k_range:
         for m in m_range:
-            scores = []
-            for i in range(n_trials):
-                index = np.random.choice(range(len(x_train)), m, replace=False)
-                scores.append(get_knn_score(k, data, index))
-            r_scores.append((scores))
-    r_scores = np.array(r_scores).reshape(len(k_range), len(m_range), n_trials)
-    r_means = r_scores.mean(axis=-1)
-    r_confs = np.array([get_ci(r_scores[k][m]) for m in range(len(m_range)) for k in range(len(k_range))])
-    return r_means, r_confs
+            scores_knn, scores_svm = [], []
+            i = 0
+            while i < n_trials:
+                index = np.random.choice(range(len(X_train)), m, replace=False)
+                if len(np.unique(y_train[index])) < 2: continue
+                scores_knn.append(get_knn_score(k, data, index))
+                scores_svm.append(get_svm_score(k, data, index))
+                i += 1
+            r_scores_knn.append((scores_knn))
+            r_scores_svm.append((scores_svm))
+    r_scores_knn = np.array(r_scores_knn).reshape(len(k_range), len(m_range), n_trials)
+    r_scores_svm = np.array(r_scores_svm).reshape(len(k_range), len(m_range), n_trials)
+    r_means_knn = r_scores_knn.mean(axis=-1)
+    r_confs_knn = np.array([get_ci(r_scores_knn[k][m]) for m in range(len(m_range)) for k in range(len(k_range))]).reshape(len(k_range), len(m_range))
+    r_means_svm = r_scores_svm.mean(axis=-1)
+    r_confs_svm = np.array([get_ci(r_scores_svm[k][m]) for m in range(len(m_range)) for k in range(len(k_range))]).reshape(len(k_range), len(m_range))
+
+    return r_means_knn, r_confs_knn, r_means_svm, r_confs_svm
+
+def get_protodash_score(data, k_range, m_range):
+    p_idss = {}
+    X_train, y_train, X_valid, y_valid = data
+    for m in m_range:
+        if m not in p_idss:
+            try:
+                protodash = ProtodashExplainer()
+                _, index, _ = protodash.explain(X_train, X_train, m=m, kernelType="Gaussian")
+            except AttributeError:
+                index = [0] * m
+                print("error for m={}".format(m))
+            p_idss[m] = index
+    # pickle.dump(p_idss, open("p_index.dwac.emb10.merged.pkl", "wb"))
+    # p_idss = pickle.load(open("p_index.dwac.emb10.merged.pkl", "rb"))
+    p_scores_knn, p_scores_svm = [], []
+    for k in k_range:
+        for m in m_range:
+            p_scores_knn.append(get_knn_score(k, data, p_idss[m]))
+            try:
+                s = get_svm_score(k, data, p_idss[m])
+            except:
+                s = 0
+            p_scores_svm.append(s)
+    p_scores_knn = np.array(p_scores_knn).reshape(len(k_range), len(m_range))
+    p_scores_svm = np.array(p_scores_svm).reshape(len(k_range), len(m_range))
+    return p_scores_knn, p_scores_svm
 
 def get_nn(index, samples, m=1):
     dist = euclidean_distances(samples)
