@@ -158,14 +158,19 @@ def normalize_xylim(ax):
     max_x1 = np.NINF
     min_y0 = np.inf
     max_y1 = np.NINF
-    for i in range(2):
-        xlim = ax[i].get_xlim()
-        ylim = ax[i].get_ylim()
-        min_x0 = xlim[0] if xlim[0] < min_x0 else min_x0
-        max_x1 = xlim[1] if xlim[1] > max_x1 else max_x1
-        min_y0 = ylim[0] if ylim[0] < min_y0 else min_y0
-        max_y1 = ylim[1] if ylim[1] > max_y1 else max_y1
-    ax[0].set_xlim(min_x0, max_x1)
-    ax[0].set_ylim(min_y0, max_y1)
-    ax[1].set_xlim(min_x0, max_x1)
-    ax[1].set_ylim(min_y0, max_y1)
+    xlims = []
+    ylims = []
+    for i in range(len(ax)):
+        xlims.append(ax[i].get_xlim()[0])
+        xlims.append(ax[i].get_xlim()[1])
+        ylims.append(ax[i].get_ylim()[0])
+        ylims.append(ax[i].get_ylim()[1])
+
+    min_x0 = min(xlims)
+    max_x1 = max(xlims)
+    min_y0 = min(ylims)
+    max_y1 = max(ylims)
+    
+    for i in range(len(ax)):
+        ax[i].set_xlim(min_x0, max_x1)
+        ax[i].set_ylim(min_y0, max_y1)

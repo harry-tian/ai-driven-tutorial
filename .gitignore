@@ -9,4 +9,4 @@ model/wandb
 dwac_knn.ipynb
 knn.ipynb
 
-data/
+local_data/
