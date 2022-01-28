@@ -10,3 +10,5 @@ dwac_knn.ipynb
 knn.ipynb
 
 local_data/
+
+embeds/triplets.*
