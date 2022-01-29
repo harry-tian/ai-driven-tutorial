@@ -27,6 +27,7 @@ class RESN(pl.LightningModule):
         self.save_hyperparameters()
         self.train_pairwise_distance = torch.Tensor(pickle.load(open(self.hparams.train_pairwise_distance, "rb")), device=self.device)
         self.valid_pairwise_distance = torch.Tensor(pickle.load(open(self.hparams.valid_pairwise_distance, "rb")), device=self.device)
+        self.loss_lambda = self.hparams.loss_lambda
 
         self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
         num_features = 1000
@@ -93,14 +94,14 @@ class RESN(pl.LightningModule):
         prob = torch.sigmoid(logits)
         loss = self.criterion(logits, y.type_as(logits).unsqueeze(1))
         triplet_loss = self.triplet_loss(*triplets)
-        total_loss = loss + triplet_loss / (triplet_loss + 1)
+        total_loss = loss + self.loss_lambda * triplet_loss
         with torch.no_grad():
             m = self.metrics(prob, y.unsqueeze(1))
         self.log('train_loss', loss, sync_dist=True)
         self.log('train_triplet_loss', triplet_loss, sync_dist=True)
         self.log('train_total_loss', total_loss, sync_dist=True)
         self.log('train_acc', m['acc'], prog_bar=True, sync_dist=True)
-        return loss
+        return total_loss
 
     def validation_step(self, batch, batch_idx):
         x, y, i = batch
@@ -179,6 +180,7 @@ class RESN(pl.LightningModule):
     def add_model_specific_args(parser, root_dir):
         parser.add_argument("--train_pairwise_distance", default=None, type=str, required=True)
         parser.add_argument("--valid_pairwise_distance", default=None, type=str, required=True)
+        parser.add_argument('--loss_lambda', type=float, default=0.5)
         parser.add_argument("--pretrained", action="store_true")
         parser.add_argument("--embed_dim", default=10, type=int, help="Embedding size")
         parser.add_argument('--kernel', type=str, default='gaussian', help='hparam for kernel [guassian|laplace|invquad]')

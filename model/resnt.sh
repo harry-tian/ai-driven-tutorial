@@ -24,12 +24,13 @@ echo $CUDA_VISIBLE_DEVICES
 /home/hanliu/anaconda3/bin/python resnt_args.py \
   --embed_dim=10 \
   --wandb_mode=online \
-  --wandb_group=resnt-emb10-200 \
+  --wandb_group=resnt-e10-l10 \
   --output_dir=results/resnt-emb10 \
   --train_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/train \
   --valid_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/valid \
-  --train_pairwise_distance=/net/scratch/hanliu/radiology/explain_teach/lpips.bm.train.pkl \
-  --valid_pairwise_distance=/net/scratch/hanliu/radiology/explain_teach/lpips.bm.valid.pkl \
+  --train_pairwise_distance=/net/scratch/hanliu/radiology/explain_teach/embeds/lpips.bm.train.pkl \
+  --valid_pairwise_distance=/net/scratch/hanliu/radiology/explain_teach/embeds/lpips.bm.valid.pkl \
+  --loss_lambda=1.0 \
   --dataloader_num_workers=4 \
   --gpus=1 \
   --seed=42 \
