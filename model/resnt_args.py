@@ -73,18 +73,19 @@ class RESN(pl.LightningModule):
     def forward(self, x, i):
         z = self.embed(x)
         logits = self.classifier(z)
-        pairwise = self.train_pairwise_distance[i][:, i]
+        if self.training:
+            pairwise = self.train_pairwise_distance[i][:, i]
+        else:
+            pairwise = self.valid_pairwise_distance[i][:, i]
         comb = torch.combinations(torch.range(0, len(z)-1).long(), r=3)
         triplet_idx = []
         for c in comb:
             anchor, pos, neg = c
-            # print(pairwise.shape, anchor, pos)
             if pairwise[anchor, pos] > pairwise[anchor, neg]:
                 triplet_idx.append((anchor, neg, pos))
             else:
                 triplet_idx.append((anchor, pos, neg))
         triplet_idx = torch.Tensor(triplet_idx).long()
-        # print(triplet_idx[:,0], triplet_idx[:,1], triplet_idx[:,2], triplet_idx[:,0].dtype)
         triplets = (z[triplet_idx[:,0]], z[triplet_idx[:,1]], z[triplet_idx[:,2]])
         return logits, triplets
 
@@ -97,19 +98,31 @@ class RESN(pl.LightningModule):
         total_loss = loss + self.loss_lambda * triplet_loss
         with torch.no_grad():
             m = self.metrics(prob, y.unsqueeze(1))
+            d_ap = torch.nn.functional.pairwise_distance(triplets[0], triplets[1])
+            d_an = torch.nn.functional.pairwise_distance(triplets[0], triplets[2])
+            triplet_acc = (d_ap < d_an).float().mean()
         self.log('train_loss', loss, sync_dist=True)
         self.log('train_triplet_loss', triplet_loss, sync_dist=True)
         self.log('train_total_loss', total_loss, sync_dist=True)
+        self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('train_acc', m['acc'], prog_bar=True, sync_dist=True)
         return total_loss
 
     def validation_step(self, batch, batch_idx):
         x, y, i = batch
-        logits = self.classifier(self.embed(x))
+        logits, triplets = self(x, i)
         prob = torch.sigmoid(logits)
         loss = self.criterion(logits, y.type_as(logits).unsqueeze(1))
+        triplet_loss = self.triplet_loss(*triplets)
+        total_loss = loss + self.loss_lambda * triplet_loss
+        d_ap = torch.nn.functional.pairwise_distance(triplets[0], triplets[1])
+        d_an = torch.nn.functional.pairwise_distance(triplets[0], triplets[2])
+        triplet_acc = (d_ap <= d_an).float().mean()
         m = self.metrics(prob, y.unsqueeze(1))
         self.log('valid_loss', loss, sync_dist=True)
+        self.log('valid_triplet_loss', loss, sync_dist=True)
+        self.log('valid_total_loss', total_loss, sync_dist=True)
+        self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('valid_acc', m['acc'], prog_bar=True, sync_dist=True)
         self.log('valid_auc', m['auc'], prog_bar=True, sync_dist=True)
         self.log('valid_sensitivity', m['tpr'], sync_dist=True)
@@ -118,7 +131,7 @@ class RESN(pl.LightningModule):
         self.log('valid_f1', m['f1'], sync_dist=True)
         self.log('valid_ap', m['ap'], sync_dist=True)
         self.log('valid_auprc', m['auprc'], sync_dist=True)
-        return {'valid_loss': loss, 'valid_auc': m['auc']}
+        return {'valid_total_loss': total_loss, 'valid_auc': m['auc']}
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -237,7 +250,7 @@ def train(
     )
     if checkpoint_callback is None:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor="valid_loss", mode="min", save_last=True, save_top_k=3, verbose=True
+            dirpath=ckpt_path, filename="{epoch}-{valid_total_loss:.2f}", monitor="valid_total_loss", mode="min", save_last=True, save_top_k=3, verbose=True
         )
 
     train_params = {}
