@@ -12,3 +12,5 @@ knn.ipynb
 local_data/
 
 embeds/triplets.*
+*.npy
+*.sh
