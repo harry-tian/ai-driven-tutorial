@@ -3,7 +3,7 @@
 #SBATCH --output=/home/hanliu/slurm_out/%j.%N.stdout
 #SBATCH --error=/home/hanliu/slurm_out/%j.%N.stderr
 #SBATCH --job-name=train
-#SBATCH --partition=dev
+#SBATCH --partition=general
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
@@ -24,8 +24,8 @@ echo $CUDA_VISIBLE_DEVICES
 /home/hanliu/anaconda3/bin/python resnt_args.py \
   --embed_dim=10 \
   --wandb_mode=online \
-  --wandb_group=resnt-e10-l10 \
-  --output_dir=results/resnt-emb10 \
+  --wandb_group=resnt-e10-l10-ep4 \
+  --output_dir=results/resnt-e10-l10 \
   --train_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/train \
   --valid_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/valid \
   --train_pairwise_distance=/net/scratch/hanliu/radiology/explain_teach/embeds/lpips.bm.train.pkl \
@@ -34,7 +34,7 @@ echo $CUDA_VISIBLE_DEVICES
   --dataloader_num_workers=4 \
   --gpus=1 \
   --seed=42 \
-  --max_epochs=200 \
+  --max_epochs=400 \
   --learning_rate=1e-4 \
   --vertical_flip=0.5 \
   --rotate=30 \
