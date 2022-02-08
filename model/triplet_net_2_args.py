@@ -157,7 +157,7 @@ class TripletNet(pl.LightningModule):
             dataset, 
             batch_size=self.hparams.train_batch_size, 
             num_workers=self.hparams.dataloader_num_workers, 
-            drop_last=True, shuffle=False)
+            drop_last=True, shuffle=True)
         return dataloader
 
     def val_dataloader(self):
