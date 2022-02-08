@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from dataclasses import replace
 import os, pickle
 import time
 import argparse
@@ -7,7 +6,6 @@ import shutil
 from pathlib import Path
 
 import numpy as np
-from numpy import tri
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -21,15 +19,12 @@ import wandb
 import warnings
 warnings.filterwarnings("ignore")
 
-class TripletNet(pl.LightningModule):
+
+class RESN(pl.LightningModule):
 
     def __init__(self, verbose=False, **config_kwargs):
         super().__init__()
         self.save_hyperparameters()
-
-        self.train_dataset = self.get_train_dataset()
-        self.valid_dataset = self.get_valid_dataset()
-
         self.train_pairwise_distance = torch.Tensor(pickle.load(open(self.hparams.train_pairwise_distance, "rb")), device=self.device)
         self.valid_pairwise_distance = torch.Tensor(pickle.load(open(self.hparams.valid_pairwise_distance, "rb")), device=self.device)
 
@@ -37,6 +32,7 @@ class TripletNet(pl.LightningModule):
         num_features = 1000
 
         self.embed_dim = self.hparams.embed_dim
+        self.criterion = nn.BCEWithLogitsLoss()
         self.triplet_loss = nn.TripletMarginLoss()
         self.pdist = nn.PairwiseDistance()
 
@@ -45,87 +41,96 @@ class TripletNet(pl.LightningModule):
             nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, self.hidden_size), 
             nn.BatchNorm1d(self.hidden_size), nn.ReLU(), nn.Dropout(), nn.Linear(self.hidden_size, self.embed_dim)
         )])
-        
+        self.classifier = nn.Sequential(
+            nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, 1)
+        )
 
         if verbose: 
             self.summarize()
+
+
+    def metrics(self, prob, target, threshold=0.5):
+        pred = (prob >= threshold).long()
+        tp, fp, tn, fn, sup = stat_scores(pred, target, ignore_index=0)
+        if 0 < sup < len(target):
+            precision, recall, _ = precision_recall_curve(pred, target)
+            auprc = auc(recall, precision)
+        m = {}
+        m['pred'] = pred
+        m['auc'] = auroc(prob, target) if 0 < sup < len(target) else None
+        m['acc'] = (tp + tn) / (tp + tn + fp + fn)
+        m['tpr'] = tp / (tp + fn)
+        m['tnr'] = tn / (tn + fp)
+        m['ppv'] = tp / (tp + fp)
+        m['f1'] = 2 * tp / (2 * tp + fp + fn)
+        m['ap'] = average_precision(prob, target)
+        m['auprc'] = auprc if 0 < sup < len(target) else None
+        return m
 
     def embed(self, x):
         embeds = self.feature_extractor(x)
         for layer in self.fc:
             embeds = layer(embeds)
         return embeds
-        
-    def forward(self, batch):
-        if self.training:
-            dataset = self.train_dataset
-            pairwise = self.train_pairwise_distance
-        else:
-            dataset = self.valid_dataset
-            pairwise = self.valid_pairwise_distance
 
-        # x1, x2, x3 = dataset[idx_1], dataset[idx_2], dataset[idx_3]
-        # anchor = self.embed(x1)
-        # if pairwise[idx_1, idx_2] > pairwise[idx_1, idx_3]:
-        #     pos = self.embed(x2)
-        #     neg = self.embed(x3)
-        # else:
-        #     pos = self.embed(x3)
-        #     neg = self.embed(x2)
-        # return anchor, pos, neg
-        # print(batch)
-        # print(batch.shape)
+    def forward(self, x, i):
+        z = self.embed(x)
+        logits = self.classifier(z)
+        pairwise = self.train_pairwise_distance[i][:, i]
+        comb = torch.combinations(torch.range(0, len(z)-1).long(), r=3)
         triplet_idx = []
-        for triplet in batch:
-            # print(triplet.shape)
-            # print(triplet)
-            # pairwise = pairwise[idx_1][:, idx_1]
-            anchor, pos, neg = triplet[0], triplet[1], triplet[2]
-            # print(anchor, pos, neg)
+        for c in comb:
+            anchor, pos, neg = c
             if pairwise[anchor, pos] > pairwise[anchor, neg]:
                 triplet_idx.append((anchor, neg, pos))
             else:
                 triplet_idx.append((anchor, pos, neg))
         triplet_idx = torch.Tensor(triplet_idx).long()
-        # print(triplet_idx[:,0])
-        
-        # print(triplet_idx[:,0].shape)
-        x1, x2, x3 = dataset[triplet_idx[:,0]][0].cuda(), dataset[triplet_idx[:,1]][0].cuda(), dataset[triplet_idx[:,2]][0].cuda()
-        # print(x1)
-        # print(x1.shape)
-        triplets = (self.embed(x1), self.embed(x2), self.embed(x3))
-        # print(triplets[0])
-        # print(triplets[0].shape)
-        # return
-        return triplets
+        triplets = (z[triplet_idx[:,0]], z[triplet_idx[:,1]], z[triplet_idx[:,2]])
+        return logits, triplets
 
     def training_step(self, batch, batch_idx):
-        triplets = self(batch[0])
-
+        x, y, i = batch
+        logits, triplets = self(x, i)
+        prob = torch.sigmoid(logits)
+        
         triplet_loss = self.triplet_loss(*triplets)
         with torch.no_grad():
+            m = self.metrics(prob, y.unsqueeze(1))
             d_ap = self.pdist(triplets[0], triplets[1])
             d_an = self.pdist(triplets[0], triplets[2])
             triplet_acc = (d_ap < d_an).float().mean()
+        self.log('train_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
         self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('train_triplet_loss', triplet_loss, sync_dist=True)
         return triplet_loss
 
     def validation_step(self, batch, batch_idx):
-        triplets = self(batch[0])
+        x, y, i = batch
+        logits, triplets = self(x, i)
+        prob = torch.sigmoid(logits)
+        m = self.metrics(prob, y.unsqueeze(1))
 
         triplet_loss = self.triplet_loss(*triplets)
         d_ap = torch.nn.functional.pairwise_distance(triplets[0], triplets[1])
         d_an = torch.nn.functional.pairwise_distance(triplets[0], triplets[2])
         triplet_acc = (d_ap <= d_an).float().mean()
+        self.log('valid_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
+        self.log('valid_auc', m['auc'], prog_bar=True, sync_dist=True)
         self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('valid_triplet_loss', triplet_loss, sync_dist=True)
+        # self.log('valid_sensitivity', m['tpr'], sync_dist=True)
+        # self.log('valid_specificity', m['tnr'], sync_dist=True)
+        # self.log('valid_precision', m['ppv'], sync_dist=True)
+        # self.log('valid_f1', m['f1'], sync_dist=True)
+        # self.log('valid_ap', m['ap'], sync_dist=True)
+        # self.log('valid_auprc', m['auprc'], sync_dist=True)
         return {'valid_triplet_loss': triplet_loss, 'valid_triplet_acc': triplet_acc}
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         return optimizer
-
+    
     def parse_augmentation(self):
         affine = {}
         affine["degrees"] = self.hparams.rotate
@@ -148,34 +153,11 @@ class TripletNet(pl.LightningModule):
         ])
         return transform
 
-    def get_train_dataset(self):
-        dataset = torchvision.datasets.ImageFolder(
+    def train_dataloader(self):
+        ImageWithIndices = dataset_with_indices(torchvision.datasets.ImageFolder)
+        dataset = ImageWithIndices(
             self.hparams.train_dir, transform=self.parse_augmentation()
             )
-        a = [dataset[i][0].numpy() for i in range(len(dataset))]
-        b = torch.utils.data.TensorDataset(torch.from_numpy(np.array(a)))
-        return b
-
-    def get_valid_dataset(self):
-        val_transform = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-        dataset = torchvision.datasets.ImageFolder(
-            self.hparams.valid_dir, transform=val_transform
-            )
-            
-        a = [dataset[i][0].numpy() for i in range(len(dataset))]
-        b = torch.utils.data.TensorDataset(torch.from_numpy(np.array(a)))
-        return b
-
-    def train_dataloader(self):
-        total_combs = torch.combinations(torch.range(0, len(self.train_dataset)-1).int(), r=3)
-        subset = np.random.choice(len(total_combs), 39920, replace=False)
-        dataset = torch.utils.data.TensorDataset(total_combs[subset])
-        
         dataloader = torch.utils.data.DataLoader(
             dataset, 
             batch_size=self.hparams.train_batch_size, 
@@ -184,13 +166,19 @@ class TripletNet(pl.LightningModule):
         return dataloader
 
     def val_dataloader(self):
-        dataset = torch.utils.data.TensorDataset(
-        torch.combinations(torch.range(0, len(self.valid_dataset)-1).int(), r=3))
-        
-
+        val_transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+        ImageWithIndices = dataset_with_indices(torchvision.datasets.ImageFolder)
+        dataset = ImageWithIndices(
+            self.hparams.valid_dir, transform=val_transform
+            )
         dataloader = torch.utils.data.DataLoader(
             dataset, 
-            batch_size=self.hparams.val_batch_size, 
+            batch_size=len(dataset), 
             num_workers=self.hparams.dataloader_num_workers, 
             drop_last=False, shuffle=False)
         return dataloader
@@ -223,42 +211,23 @@ def dataset_with_indices(cls):
         '__getitem__': __getitem__,
     })
 
-def train(
-    model:TripletNet,
-    args: argparse.Namespace,
-    early_stopping_callback=False,
-    extra_callbacks=[],
-    checkpoint_callback=None,
-    logging_callback=None,
-    **extra_train_kwargs
-    ):
-
-    # init model
+def train(model:RESN, args: argparse.Namespace, early_stopping_callback=False,  extra_callbacks=[],  checkpoint_callback=None,  logging_callback=None, **extra_train_kwargs):
     odir = Path(model.hparams.output_dir)
     odir.mkdir(parents=True, exist_ok=True)
     log_dir = Path(os.path.join(model.hparams.output_dir, 'logs'))
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    # build logger
-    ## WandB logger
     experiment = wandb.init(
         mode=args.wandb_mode, 
         group=args.wandb_group,
-        name=f"{time.strftime('%m/%d_%H:%M')}"
-    )
-    logger = WandbLogger(
-        project="imagenet_bm",
-        experiment=experiment
-    )
+        name=f"{time.strftime('%m/%d_%H:%M')}")
 
-    # add custom checkpoints
-    ckpt_path = os.path.join(
-        args.output_dir, logger.version, "checkpoints",
-    )
+    logger = WandbLogger(project="imagenet_bm", experiment=experiment)
+
+    ckpt_path = os.path.join(args.output_dir, logger.version, "checkpoints")
     if checkpoint_callback is None:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor="valid_triplet_loss", mode="min", save_last=True, save_top_k=3, verbose=True
-        )
+            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor="valid_triplet_loss", mode="min", save_last=True, save_top_k=3, verbose=True)
 
     train_params = {}
     train_params["max_epochs"] = args.max_epochs
@@ -271,12 +240,10 @@ def train(
         weights_summary=None,
         callbacks=extra_callbacks + [checkpoint_callback],
         logger=logger,
-        **train_params,
-    )
+        **train_params)
 
     if args.do_train:
         trainer.fit(model)
-        # save best model to `best_model.ckpt`
         target_path = os.path.join(ckpt_path, 'best_model.ckpt')
         print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
         shutil.copy(checkpoint_callback.best_model_path, target_path)
@@ -285,23 +252,21 @@ def train(
 
 
 def main():
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--gpus", default=1, type=int)
     parser.add_argument("--seed", default=42, type=int)
-    parser.add_argument("--max_epochs", default=10, type=int)
+    parser.add_argument("--max_epochs", default=200, type=int)
     parser.add_argument("--learning_rate", default=1e-4, type=float)
     parser.add_argument("--train_batch_size", default=16, type=int)
-    parser.add_argument("--val_batch_size", default=64, type=int)
+    parser.add_argument("--eval_batch_size", default=64, type=int)
     parser.add_argument("--dataloader_num_workers", default=4, type=int)
     parser.add_argument("--train_dir", default=None, type=str, required=True)
     parser.add_argument("--valid_dir", default=None, type=str, required=True)
     parser.add_argument("--output_dir", default=None, type=str, required=True)
-    parser.add_argument("--wandb_name", default=None, type=str)
     parser.add_argument("--wandb_group", default=None, type=str)
     parser.add_argument("--wandb_mode", default="online", type=str)
     parser.add_argument("--do_train", action="store_true")
-    TripletNet.add_model_specific_args(parser, os.getcwd())
+    RESN.add_model_specific_args(parser, os.getcwd())
     args = parser.parse_args()
     print(args)
 
@@ -310,12 +275,11 @@ def main():
     if args.output_dir is None:
         args.output_dir = os.path.join(
             "./results",
-            f"{__name__}_{time.strftime('%Y%m%d_%H%M%S')}",
-        )
+            f"{__name__}_{time.strftime('%Y%m%d_%H%M%S')}")
         os.makedirs(args.output_dir)
     
     dict_args = vars(args)
-    model = TripletNet(**dict_args)
+    model = RESN(**dict_args)
     trainer = train(model, args)
 
 if __name__ == "__main__":
