@@ -4,21 +4,20 @@ import argparse
 from pathlib import Path
 import numpy as np
 import warnings
-import utils
 import torch
 warnings.filterwarnings("ignore")
 
 
-model_name = "triplet_bs"
+model_name = "triplet_bs=32"
 name = 'emb10.l10' 
 
 
 if model_name == "resnt":
     from resnt_args import RESN
-elif model_name == "triplet_resn":
+else:
     from triplet_net_1_args import RESN
-elif model_name == "triplet_net":
-    from triplet_net_2_args import TripletNet as RESN
+# else:
+#     from triplet_net_2_args import TripletNet as RESN
 
 ckpts = {"resnt":
             'results/resnt/1nxuz6dz/checkpoints/best_model.ckpt',
@@ -59,6 +58,6 @@ for split in ["train", "valid"]:
     inputs = np.asarray([i.squeeze().detach().numpy() for i in inputs])[0]
     labels = np.asarray([l.squeeze().detach().numpy() for l in labels])[0]
 
-    path = "../results/{}_{}_{}.pkl".format(model_name, split, name)
+    path = "../embeds/{}_{}_{}.pkl".format(model_name, split, name)
     pickle.dump((fids, inputs, labels, embeds), open(path, "wb"))
     # print("Encoded {} findings (fids, inputs, labels, embeds) at ".format(path))
