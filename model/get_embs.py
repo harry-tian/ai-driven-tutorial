@@ -8,7 +8,7 @@ import torch
 warnings.filterwarnings("ignore")
 
 
-model_name = "triplet_bs=32"
+model_name = "triplet_bs=8"
 name = 'emb10.l10' 
 
 
@@ -26,7 +26,13 @@ ckpts = {"resnt":
          "triplet_net":
             "results/triplet/2m2o143t/checkpoints/best_model.ckpt",
          "triplet_bs=32":
-            "results/triplet/3682i8vx/checkpoints/best_model.ckpt"}
+            "results/triplet/3682i8vx/checkpoints/best_model.ckpt",
+         "triplet_bs=16":
+            "results/triplet/ipcc8t03/checkpoints/best_model.ckpt",
+         "triplet_bs=8":
+            "results/triplet/x5kzln87/checkpoints/best_model.ckpt",
+         "triplet_bs=40":
+            "results/triplet/11njtozj/checkpoints/best_model.ckpt"}
 
 ckpt = ckpts[model_name]
 train_dir = '/net/scratch/hanliu-shared/data/bm/train'
@@ -60,4 +66,4 @@ for split in ["train", "valid"]:
 
     path = "../embeds/{}_{}_{}.pkl".format(model_name, split, name)
     pickle.dump((fids, inputs, labels, embeds), open(path, "wb"))
-    # print("Encoded {} findings (fids, inputs, labels, embeds) at ".format(path))
+    print("Encoded {} findings at ".format(path))
