@@ -8,12 +8,14 @@ import torch
 warnings.filterwarnings("ignore")
 
 
-model_name = "triplet_bs=8"
+model_name = "triplet_subset"
 name = 'emb10.l10' 
 
 
 if model_name == "resnt":
     from resnt_args import RESN
+elif model_name == "triplet_subset":
+    from triplet_net_subset import TripletNet as RESN
 else:
     from triplet_net_1_args import RESN
 # else:
@@ -32,7 +34,9 @@ ckpts = {"resnt":
          "triplet_bs=8":
             "results/triplet/x5kzln87/checkpoints/best_model.ckpt",
          "triplet_bs=40":
-            "results/triplet/11njtozj/checkpoints/best_model.ckpt"}
+            "results/triplet/11njtozj/checkpoints/best_model.ckpt",
+         "triplet_subset":
+            "results/triplet/2t12623u/checkpoints/best_model.ckpt"}
 
 ckpt = ckpts[model_name]
 train_dir = '/net/scratch/hanliu-shared/data/bm/train'
@@ -43,16 +47,17 @@ args = argparse.Namespace(
 model = RESN.load_from_checkpoint(ckpt, **vars(args))
 _ = model.eval()
 
-for split in ["train", "valid"]:
+for split in ["valid"]:
     print(f"generating embeddings for split: {split}")
-    batch = model.val_dataloader() if split == "valid" else model.train_dataloader()
-
+    # batch = model.val_dataloader() if split == "valid" else model.train_dataloader()
+    batch = model.get_valid_dataset()
+    batch = list(iter(torch.utils.data.DataLoader(batch, batch_size=len(batch), num_workers=4, shuffle=False)))
     inputs = [b[0] for b in batch]
-    labels = [b[1] for b in batch]
+    # labels = [b[1] for b in batch]
 
     embeds = [model.feature_extractor(im) for im in inputs]
-    for layer in model.fc:
-        embeds = [layer(e) for e in embeds]
+    # for layer in model.fc:
+    #     embeds = [layer(e) for e in embeds]
     # embeds = [model.embed(im) for im in inputs]
     print((embeds[0].detach().numpy()).shape)
 
@@ -62,8 +67,9 @@ for split in ["train", "valid"]:
     fids = np.asarray(fids)
     embeds = np.asarray([e.squeeze().detach().numpy() for e in embeds])[0]
     inputs = np.asarray([i.squeeze().detach().numpy() for i in inputs])[0]
-    labels = np.asarray([l.squeeze().detach().numpy() for l in labels])[0]
+    # labels = np.asarray([l.squeeze().detach().numpy() for l in labels])[0]
 
     path = "../embeds/{}_{}_{}.pkl".format(model_name, split, name)
-    pickle.dump((fids, inputs, labels, embeds), open(path, "wb"))
+    # pickle.dump((fids, inputs, labels, embeds), open(path, "wb"))
+    pickle.dump((fids, inputs, embeds), open(path, "wb"))
     print("Encoded {} findings at ".format(path))

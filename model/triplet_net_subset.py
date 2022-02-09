@@ -27,11 +27,18 @@ class TripletNet(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        self.train_dataset = self.get_train_dataset()
         self.valid_dataset = self.get_valid_dataset()
 
-        self.train_pairwise_distance = torch.Tensor(pickle.load(open(self.hparams.train_pairwise_distance, "rb")), device=self.device)
-        self.valid_pairwise_distance = torch.Tensor(pickle.load(open(self.hparams.valid_pairwise_distance, "rb")), device=self.device)
+        self.triplets = torch.combinations(torch.arange(0, len(self.valid_dataset)).int(), r=3)
+        len_triplets = np.arange(0,self.triplets.shape[0])
+        self.train_idx = np.random.choice(len_triplets, len(len_triplets)*4//5, replace=False)
+        self.val_idx = np.setdiff1d(len_triplets, self.train_idx)
+        self.train_triplets = self.triplets[self.train_idx]
+        self.val_triplets = self.triplets[self.val_idx]
+
+        self.pairwise_distance = torch.Tensor(pickle.load(open(self.hparams.valid_pairwise_distance, "rb")), device=self.device)
+        # self.train_pairwise_distance = self.pairwise_distance[self.train_idx]
+        # self.valid_pairwise_distance = self.pairwise_distance[self.val_idx]
 
         self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
         num_features = 1000
@@ -57,12 +64,12 @@ class TripletNet(pl.LightningModule):
         return embeds
         
     def forward(self, batch):
-        if self.training:
-            dataset = self.train_dataset
-            pairwise = self.train_pairwise_distance
-        else:
-            dataset = self.valid_dataset
-            pairwise = self.valid_pairwise_distance
+        # if self.training:
+        #     pairwise = self.train_pairwise_distance
+        # else:
+        #     pairwise = self.valid_pairwise_distance
+        dataset = self.valid_dataset
+        pairwise = self.pairwise_distance
 
         triplet_idx = []
         for triplet in batch:
@@ -125,14 +132,6 @@ class TripletNet(pl.LightningModule):
         ])
         return transform
 
-    def get_train_dataset(self):
-        dataset = torchvision.datasets.ImageFolder(
-            self.hparams.train_dir, transform=self.parse_augmentation()
-            )
-        a = [dataset[i][0].numpy() for i in range(len(dataset))]
-        b = torch.utils.data.TensorDataset(torch.from_numpy(np.array(a)))
-        return b
-
     def get_valid_dataset(self):
         val_transform = transforms.Compose([
             transforms.Resize(256),
@@ -144,15 +143,14 @@ class TripletNet(pl.LightningModule):
             self.hparams.valid_dir, transform=val_transform
             )
             
-        a = [dataset[i][0].numpy() for i in range(len(dataset))]
+        a = [dataset[i][0].numpy() for i in range(len(dataset)//2)]
         b = torch.utils.data.TensorDataset(torch.from_numpy(np.array(a)))
         return b
 
     def train_dataloader(self):
-        total_combs = torch.combinations(torch.range(0, len(self.train_dataset)-1).int(), r=3)
-        # dataset = torch.utils.data.TensorDataset(total_combs)
-        subset = np.random.choice(len(total_combs), len(total_combs)//20, replace=False)
-        dataset = torch.utils.data.TensorDataset(total_combs[subset])
+        dataset = torch.utils.data.TensorDataset(self.train_triplets)
+        print("\n")
+        print(len(dataset))
         dataloader = torch.utils.data.DataLoader(
             dataset, 
             batch_size=self.hparams.train_batch_size, 
@@ -161,13 +159,13 @@ class TripletNet(pl.LightningModule):
         return dataloader
 
     def val_dataloader(self):
-        dataset = torch.utils.data.TensorDataset(
-        torch.combinations(torch.range(0, len(self.valid_dataset)-1).int(), r=3))
+        dataset = torch.utils.data.TensorDataset(self.val_triplets)
+        print("\n")
+        print(len(dataset))
         
-
         dataloader = torch.utils.data.DataLoader(
             dataset, 
-            batch_size=self.hparams.val_batch_size, 
+            batch_size=len(dataset), 
             num_workers=self.hparams.dataloader_num_workers, 
             drop_last=False, shuffle=False)
         return dataloader
