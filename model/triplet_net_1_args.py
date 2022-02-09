@@ -76,7 +76,10 @@ class RESN(pl.LightningModule):
     def forward(self, x, i):
         z = self.embed(x)
         logits = self.classifier(z)
-        pairwise = self.train_pairwise_distance[i][:, i]
+        if self.training:
+            pairwise = self.train_pairwise_distance[i][:, i]
+        else:
+            pairwise = self.valid_pairwise_distance[i][:, i]
         comb = torch.combinations(torch.range(0, len(z)-1).long(), r=3)
         triplet_idx = []
         for c in comb:
