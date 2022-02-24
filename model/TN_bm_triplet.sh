@@ -23,6 +23,4 @@ python TN_bm.py \
   --learning_rate=1e-4 \
   --train_batch_size=100 \
   --do_train \
-  --do_test
-
-  # --horizontal_flip=0.5 \
+  --do_test 

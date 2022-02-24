@@ -10,17 +10,19 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=20000
-#SBATCH --nodelist=aa[001,002,003]
+#SBATCH --nodelist=aa[001]
 
 hostname
 echo $CUDA_VISIBLE_DEVICES
 
-python TN_bm.py \
-  --split_by=img \
-  --wandb_project=TN_bm_img \
-  --wandb_group=bs=64_lr=1e-4 \
-  --max_epochs=5 \
+python MTL_BCE+TN.py \
+  --embed_dim=10 \
+  --wandb_project=MTL_2 \
+  --wandb_group=test \
+  --max_epochs=48 \
   --learning_rate=1e-4 \
   --train_batch_size=64 \
   --do_train \
-  --do_test 
+  --do_test \
+  --subset
+

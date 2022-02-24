@@ -10,10 +10,10 @@ import pytorch_lightning as pl
 import warnings
 warnings.filterwarnings("ignore")
 
-from RESN_TN import RESN_TN, generic_train
+from TN_base import TripletNet, generic_train
 import utils
 
-class TN_food(RESN_TN):
+class TN_food(TripletNet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -21,10 +21,13 @@ class TN_food(RESN_TN):
         dataset = self.dataset
         
         embeds = self.embed(dataset)
-        if self.trainer.testing and batch_idx==1:
-            embeds_path = f"embeds/{self.hparams.wandb_project}.pkl"
-            pickle.dump(embeds.cpu(), open(embeds_path,"wb"))
-            print(f"dumped embeds to {embeds_path}")
+        if self.trainer.testing and self.hparams.do_embed and batch_idx==1:
+            if not self.hparams.embed_path:
+                embed_path = f"embeds/{self.hparams.wandb_project}.pkl"
+            else:
+                embed_path = self.hparams.embed_path
+            pickle.dump(embeds.cpu(), open(embed_path,"wb"))
+            print(f"dumped embeds to {embed_path}")
 
         triplet_idx = triplet_idx.long()
         x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
@@ -34,8 +37,8 @@ class TN_food(RESN_TN):
     def setup(self, stage):
         self.triplets = np.array(pickle.load(open("/net/scratch/tianh/food100-dataset/triplets_idx.pkl", "rb")))
 
-        subset_idx = np.random.choice(len(self.triplets), len(self.triplets)//10, replace=False)
-        self.triplets = self.triplets[subset_idx]
+        # subset_idx = np.random.choice(len(self.triplets), len(self.triplets)//10, replace=False)
+        # self.triplets = self.triplets[subset_idx]
 
         data_dir = '/net/scratch/tianh/food100-dataset/images'
         dataset = torchvision.datasets.ImageFolder(data_dir, transform=utils.food_transform())
@@ -61,7 +64,7 @@ class TN_food(RESN_TN):
             train_triplets = []
             valid_triplets = []
             for t in self.triplets:
-                if t[0] in valid_label and t[1] in valid_label and t[2] in valid_label:
+                if t[0] in valid_label and t[1] in train_label and t[2] in train_label:
                     valid_triplets.append(t)
                 elif t[0] in train_label and t[1] in train_label and t[2] in train_label:
                     train_triplets.append(t)
@@ -80,7 +83,7 @@ class TN_food(RESN_TN):
 
 def main():
     parser = argparse.ArgumentParser()
-    RESN_TN.add_generic_args(parser)
+    TripletNet.add_generic_args(parser)
     parser = TN_food.add_model_specific_args(parser)
     args = parser.parse_args()
     print(args)
