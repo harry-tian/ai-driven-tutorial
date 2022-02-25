@@ -11,5 +11,4 @@ knn.ipynb
 
 local_data/
 
-embeds/
 *.npy

@@ -15,7 +15,7 @@
 hostname
 echo $CUDA_VISIBLE_DEVICES
 
-python MTL_BCE+TN.py \
+python MTL_BCETN.py \
   --embed_dim=10 \
   --wandb_project=MTL_2 \
   --wandb_group=test \

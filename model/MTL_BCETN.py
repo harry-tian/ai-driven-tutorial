@@ -12,9 +12,10 @@ warnings.filterwarnings("ignore")
 from MTL_base import MTL, generic_train
 import utils
 
-class MTL_2(MTL):
+class MTL_BCETN(MTL):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setup_data()
 
     def forward(self, triplet_idx, clf_idx, batch_idx):
         if self.trainer.training:
@@ -69,11 +70,11 @@ class MTL_2(MTL):
 
         return clf_loss, m, triplet_loss, triplet_acc, total_loss
     
-    def setup(self, stage):
+    def setup_data(self):
         train_dir = "/net/scratch/hanliu-shared/data/bm/train"
         valid_dir = "/net/scratch/hanliu-shared/data/bm/valid"
-        train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=utils.bm_valid_transform())
-        valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=utils.bm_valid_transform())
+        train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=utils.bm_transform())
+        valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=utils.bm_transform())
         self.train_inputs = torch.tensor(np.array([data[0].numpy() for data in train_dataset])).cuda()
         self.valid_inputs = torch.tensor(np.array([data[0].numpy() for data in valid_dataset])).cuda()
         self.train_labels = torch.tensor(np.array([data[1] for data in train_dataset])).cuda()
@@ -94,6 +95,9 @@ class MTL_2(MTL):
         self.valid_dataset = torch.utils.data.TensorDataset(torch.tensor(valid_triplets))
         self.test_dataset = torch.utils.data.TensorDataset(torch.tensor(test_triplets))
 
+    def get_datasets(self):
+        return self.train_inputs, self.valid_inputs
+
     @staticmethod
     def add_model_specific_args(parser):
         return parser
@@ -101,14 +105,14 @@ class MTL_2(MTL):
 def main():
     parser = argparse.ArgumentParser()
     MTL.add_generic_args(parser)
-    parser = MTL_2.add_model_specific_args(parser)
+    parser = MTL_BCETN.add_model_specific_args(parser)
     args = parser.parse_args()
     print(args)
 
     pl.seed_everything(args.seed)
     
     dict_args = vars(args)
-    model = MTL_2(**dict_args)
+    model = MTL_BCETN(**dict_args)
     trainer = generic_train(model, args)
 
 if __name__ == "__main__":

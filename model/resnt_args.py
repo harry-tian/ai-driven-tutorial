@@ -309,6 +309,8 @@ def main():
     dict_args = vars(args)
     model = RESN(**dict_args)
     trainer = train(model, args)
+    # from utils import generic_train
+    # trainer = generic_train(model, args)
 
 if __name__ == "__main__":
     main()

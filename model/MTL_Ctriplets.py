@@ -88,8 +88,8 @@ class MTL_3(MTL):
     def setup(self, stage):
         train_dir = "/net/scratch/hanliu-shared/data/bm/train"
         valid_dir = "/net/scratch/hanliu-shared/data/bm/valid"
-        train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=utils.bm_valid_transform())
-        valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=utils.bm_valid_transform())
+        train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=utils.bm_transform())
+        valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=utils.bm_transform())
         self.train_inputs = torch.tensor(np.array([data[0].numpy() for data in train_dataset])).cuda()
         self.valid_inputs = torch.tensor(np.array([data[0].numpy() for data in valid_dataset])).cuda()
         self.train_labels = torch.tensor(np.array([data[1] for data in train_dataset])).cuda()

@@ -70,11 +70,11 @@ class MTL_bm(MTL):
         valid_pairwise_distance = "../embeds/lpips.bm.valid.pkl" 
 
         ImageWithIndices = utils.dataset_with_indices(torchvision.datasets.ImageFolder)
-        self.train_dataset = ImageWithIndices(train_dir, transform=utils.bm_train_transform())
+        self.train_dataset = ImageWithIndices(train_dir, transform=utils.bm_transform_aug())
         ImageWithIndices = utils.dataset_with_indices(torchvision.datasets.ImageFolder)
-        self.valid_dataset = ImageWithIndices(valid_dir, transform=utils.bm_valid_transform())
+        self.valid_dataset = ImageWithIndices(valid_dir, transform=utils.bm_transform())
         ImageWithIndices = utils.dataset_with_indices(torchvision.datasets.ImageFolder)
-        self.test_dataset = ImageWithIndices(valid_dir, transform=utils.bm_valid_transform())
+        self.test_dataset = ImageWithIndices(valid_dir, transform=utils.bm_transform())
 
         self.train_pairwise_distance = torch.Tensor(pickle.load(open(train_pairwise_distance, "rb")), device=self.device)
         self.valid_pairwise_distance = torch.Tensor(pickle.load(open(valid_pairwise_distance, "rb")), device=self.device)

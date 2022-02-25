@@ -47,8 +47,8 @@ class TN_bm(TripletNet):
         train_triplets = "/net/scratch/tianh/bm/triplets/train_triplets.pkl"
         valid_triplets = "/net/scratch/tianh/bm/triplets/valid_triplets.pkl"
 
-        train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=utils.bm_valid_transform())
-        valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=utils.bm_valid_transform())
+        train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=utils.bm_transform())
+        valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=utils.bm_transform())
         self.train_dataset = torch.tensor(np.array([data[0].numpy() for data in train_dataset])).cuda()
         self.valid_dataset = torch.tensor(np.array([data[0].numpy() for data in valid_dataset])).cuda()
 

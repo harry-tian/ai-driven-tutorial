@@ -6,11 +6,12 @@ import time
 import shutil
 from pytorch_lightning.loggers import WandbLogger
 import wandb
-import os
+import os, pickle
 from pathlib import Path
 import pytorch_lightning as pl
 import torch
-
+import numpy as np
+from pydoc import locate
 def food_transform():
     transform = transforms.Compose([
         transforms.Resize([230,230]),
@@ -20,7 +21,7 @@ def food_transform():
     ])
     return transform
 
-def bm_train_transform(hparams=None):
+def bm_transform_aug(hparams=None):
     affine = {}
     affine["degrees"] = 30 #hparams.rotate
     # if hparams.translate > 0: 
@@ -42,7 +43,7 @@ def bm_train_transform(hparams=None):
     ])
     return transform
 
-def bm_valid_transform():
+def bm_transform():
     val_transform = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
@@ -50,7 +51,6 @@ def bm_valid_transform():
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     return val_transform
-
 
 def metrics(probs, target, threshold=0.5):
     pred = (probs >= threshold).long()
@@ -134,3 +134,46 @@ def get_dataloader(dataset, batch_size, split, num_workers):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
         num_workers=num_workers, drop_last=drop_last, shuffle=shuffle)
     return dataloader
+
+def get_embeds(model_path, args, ckpt, split, embed_path=None):
+    model = locate(model_path)
+    model = model.load_from_checkpoint(ckpt, **vars(args)).to("cuda")
+    model.eval()
+    train_dataset, valid_dataset = model.get_datasets()
+    if split == "train":
+        dataset = train_dataset
+    elif split == "val" or split == "valid":
+        dataset = valid_dataset
+    else:
+        print("???")
+        quit()
+    
+    # embeds = model.embed(dataset)
+    embeds = model.feature_extractor(dataset)
+    for layer in model.fc:
+        embeds = layer(embeds)
+    # dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset), num_workers=4, shuffle=False)
+    # embeds = []
+    # for batch_idx, batch in enumerate(dataloader):
+    #     if type(batch) == list:
+    #         batch = batch[0]
+    #     if type(batch) != torch.Tensor:
+    #         print("???")
+    #         quit()
+    
+    #     # print(batch)
+    #     # print(batch.shape)
+    #     # print(type(batch))
+    #     # quit()
+    #     embeds.append(model.embed(batch))
+
+    # embeds = np.asarray([e.squeeze().detach().numpy() for e in embeds])[0]
+    embeds = embeds.cpu().detach().numpy()
+    print(f"embeds.shape:{embeds.shape}")
+
+    if not embed_path:
+        embed_path = f"{model_path}_{split}.pkl"
+    pickle.dump(embeds, open(embed_path, "wb"))
+    print(f"dumped to {embed_path}")
+
+    return embeds
