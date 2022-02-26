@@ -9,7 +9,7 @@ class MTL(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
+        self.feature_extractor = models.resnet18(pretrained=True)
         num_features = 1000
 
         self.embed_dim = self.hparams.embed_dim
@@ -92,17 +92,17 @@ class MTL(pl.LightningModule):
     def train_dataloader(self):
         dataset = self.train_dataset
         print(f"\nlen_train:{len(dataset)}")
-        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
+        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train")
 
     def val_dataloader(self):
         dataset = self.valid_dataset
         print(f"\nlen_valid:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
+        return utils.get_dataloader(dataset, len(dataset), "valid")
 
     def test_dataloader(self):
         dataset = self.test_dataset
         print(f"\nlen_test:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
+        return utils.get_dataloader(dataset, len(dataset), "test")
 
     @staticmethod
     def add_generic_args(parser) -> None:
@@ -127,14 +127,11 @@ class MTL(pl.LightningModule):
         parser.add_argument("--hidden_size", default=256, type=int, help="Embedding size")
         parser.add_argument("--add_linear", action="store_true")
         
-        # parser.add_argument("--split_by", default="img", type=str, required=False)
-        # parser.add_argument("--img_split", default=0.6, type=float)
+        parser.add_argument("--split_by", default="img", type=str, required=False)
+        parser.add_argument("--img_split", default=0.6, type=float)
         parser.add_argument("--embed_path", default=None, type=str, required=False)
         parser.add_argument("--subset", action="store_true")
         parser.add_argument("--MTL_hparam", action="store_true")
-        parser.add_argument("--pretrained", action="store_true")
-        parser.add_argument("--w1", default=0.5, type=float)
-        parser.add_argument("--w2", default=1, type=float)
 
 def generic_train(model, args):
     moniter = "valid_total_loss"
