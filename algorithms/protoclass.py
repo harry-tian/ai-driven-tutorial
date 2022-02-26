@@ -108,7 +108,6 @@ def protoclass_mrange(X, Z, Y, m_range,  path_r_file="protoclass.r", lamda=None,
         if find_min_eps:
             eps_range = np.flip(eps_range) 
             
-
         for eps in eps_range:
             protoclass = ProtoclassExplainer(path_r_file=path_r_file)
             train_pclass_idx, train_prot = protoclass.explain(X, Z, Y, eps, lamda=lamda)
@@ -133,3 +132,8 @@ def protoclass_m(X, Z, Y, m,  path_r_file="protoclass.r", lamda=None, eps_step=N
     m_range = [m]
     proto_dict = protoclass_mrange(X, Z, Y, m_range,  path_r_file=path_r_file, lamda=lamda, eps_step=eps_step, find_min_eps=find_min_eps, debug=debug)
     return proto_dict[m]
+
+def protoclass_eps(X, Z, Y, eps, path_r_file="protoclass.r", lamda=None):
+    protoclass = ProtoclassExplainer(path_r_file=path_r_file)
+    train_pclass_idx, train_prot = protoclass.explain(X, Z, Y, eps, lamda=lamda)
+    return train_pclass_idx

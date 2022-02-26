@@ -2,6 +2,7 @@
 *.png
 *.npz
 *.zip
+*.npy
 
 models/results
 models/wandb
@@ -9,5 +10,3 @@ models/wandb
 dwac_knn.ipynb
 knn.ipynb
 
-
-*.npy
