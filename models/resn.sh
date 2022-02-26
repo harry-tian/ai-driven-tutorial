@@ -26,8 +26,8 @@ echo $CUDA_VISIBLE_DEVICES
   --wandb_mode=online \
   --wandb_group=resn-emb2 \
   --output_dir=results/resn-emb2 \
-  --train_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/train \
-  --valid_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/valid \
+  --train_dir=/net/scratch/hanliu-shared/data/bm/train \
+  --valid_dir=/net/scratch/hanliu-shared/data/bm/valid \
   --dataloader_num_workers=4 \
   --gpus=1 \
   --seed=42 \
@@ -40,3 +40,6 @@ echo $CUDA_VISIBLE_DEVICES
   --do_train
 
   # --horizontal_flip=0.5 \
+
+  # --train_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/train \
+  # --valid_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/valid \

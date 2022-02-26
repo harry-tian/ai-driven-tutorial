@@ -160,9 +160,15 @@ class RESN(pl.LightningModule):
         return transform
 
     def train_dataloader(self):
+        val_transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
         ImageWithIndices = dataset_with_indices(torchvision.datasets.ImageFolder)
         dataset = ImageWithIndices(
-            self.hparams.train_dir, transform=self.parse_augmentation()
+            self.hparams.train_dir, transform=val_transform
             )
         dataloader = torch.utils.data.DataLoader(
             dataset, 
@@ -309,6 +315,8 @@ def main():
     dict_args = vars(args)
     model = RESN(**dict_args)
     trainer = train(model, args)
+    # from utils import generic_train
+    # trainer = generic_train(model, args)
 
 if __name__ == "__main__":
     main()

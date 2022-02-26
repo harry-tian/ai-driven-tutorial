@@ -3,13 +3,11 @@
 *.npz
 *.zip
 
-model/results
-model/wandb
+models/results
+models/wandb
 
 dwac_knn.ipynb
 knn.ipynb
 
-local_data/
 
-embeds/
 *.npy

@@ -1,19 +1,10 @@
 import torch
-import argparse
-import os
-from pathlib import Path
 import pytorch_lightning as pl
-from torchmetrics import Accuracy
-from pathlib import Path
-from pytorch_lightning import loggers as pl_loggers
 from torchvision import models
 from torch import nn
-import time
-import shutil
-from pytorch_lightning.loggers import WandbLogger
-import wandb
+import utils
 
-class RESN_TN(pl.LightningModule):
+class TripletNet(pl.LightningModule):
     def __init__(self,**config_kwargs):
         super().__init__()
         self.save_hyperparameters()
@@ -25,24 +16,19 @@ class RESN_TN(pl.LightningModule):
         self.triplet_loss = nn.TripletMarginLoss()
         self.pdist = nn.PairwiseDistance()
 
-        self.hidden_size = self.hparams.hidden_size
-        self.fc = nn.ModuleList([nn.Sequential(
-            nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, self.hidden_size), 
-            nn.BatchNorm1d(self.hidden_size), nn.ReLU(), nn.Dropout(), nn.Linear(self.hidden_size, self.embed_dim)
-        )])
+        self.dropout = nn.Dropout()
 
         self.summarize()
 
-    def embed(self, x):
-        embeds = self.feature_extractor(x)
-        # for layer in self.fc:
-        #     embeds = layer(embeds)
+    def embed(self, inputs):
+        embeds = self.feature_extractor(inputs)
+        embeds = self.dropout(embeds)
         return embeds
 
     def forward(self, **inputs):
         raise NotImplementedError
 
-    def triplet_loss_acc(self, triplet_idx, batch_idx=0):
+    def triplet_loss_acc(self, triplet_idx, batch_idx):
         triplets = self(triplet_idx, batch_idx)
         
         triplet_loss = self.triplet_loss(*triplets)
@@ -107,67 +93,30 @@ class RESN_TN(pl.LightningModule):
     def add_generic_args(parser) -> None:
         parser.add_argument("--gpus", default=1, type=int)
         parser.add_argument("--seed", default=42, type=int)
+
         parser.add_argument("--max_epochs", default=200, type=int)
         parser.add_argument("--learning_rate", default=1e-4, type=float)
         parser.add_argument("--train_batch_size", default=16, type=int)
         parser.add_argument("--eval_batch_size", default=64, type=int)
         parser.add_argument("--dataloader_num_workers", default=4, type=int)
-        parser.add_argument("--train_dir", default=None, type=str, required=False)
-        parser.add_argument("--valid_dir", default=None, type=str, required=False)
+
         parser.add_argument("--wandb_group", default=None, type=str)
         parser.add_argument("--wandb_mode", default="online", type=str)
         parser.add_argument("--wandb_project", default="?", type=str)
+
         parser.add_argument("--do_train", action="store_true")
         parser.add_argument("--do_test", action="store_true")
+        parser.add_argument("--do_embed", action="store_true")
+
         parser.add_argument("--embed_dim", default=10, type=int, help="Embedding size")
         parser.add_argument("--hidden_size", default=256, type=int, help="Embedding size")
         parser.add_argument("--add_linear", action="store_true")
-        parser.add_argument("--split_by", default=None, type=str, required=True)
+
+        parser.add_argument("--split_by", default="img", type=str, required=False)
         parser.add_argument("--img_split", default=0.6, type=float)
+        parser.add_argument("--subset", action="store_true")
+        parser.add_argument("--embed_path", default=None, type=str, required=False)
 
-def generic_train(model: RESN_TN, args: argparse.Namespace,early_stopping_callback=False, extra_callbacks=[], checkpoint_callback=None, logging_callback=None,  **extra_train_kwargs):
-    output_dir = os.path.join("results", model.hparams.wandb_project)
-    odir = Path(output_dir)
-    odir.mkdir(parents=True, exist_ok=True)
-    log_dir = Path(os.path.join(output_dir, 'logs'))
-    log_dir.mkdir(parents=True, exist_ok=True)
-
-    experiment = wandb.init(
-        project=args.wandb_project,
-        mode=args.wandb_mode, 
-        group=args.wandb_group,
-        name=f"{time.strftime('%m/%d_%H:%M')}")
-
-    logger = WandbLogger(project="imagenet_bm", experiment=experiment)
-
-    ckpt_path = os.path.join(output_dir, logger.version, "checkpoints")
-    if checkpoint_callback is None:
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor="valid_triplet_loss", mode="min", save_last=True, save_top_k=2, verbose=True)
-
-    train_params = {}
-    train_params["max_epochs"] = args.max_epochs
-    if args.gpus == -1 or args.gpus > 1:
-        train_params["distributed_backend"] = "ddp"
-
-    trainer = pl.Trainer.from_argparse_args(
-        args,
-        auto_select_gpus=True,
-        weights_summary=None,
-        callbacks=extra_callbacks + [checkpoint_callback],
-        logger=logger,
-        check_val_every_n_epoch=1,
-        **train_params)
-
-    if args.do_train:
-        trainer.fit(model)
-        target_path = os.path.join(ckpt_path, 'best_model.ckpt')
-        print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
-        shutil.copy(checkpoint_callback.best_model_path, target_path)
-
-    if args.do_test:
-        # best_model_path = os.path.join(ckpt_path, "best_model.ckpt")
-        # model = model.load_from_checkpoint(best_model_path)
-        trainer.test(model)
-
-    return trainer
+def generic_train(model, args):
+    moniter = "valid_triplet_loss"
+    return utils.generic_train(model, args, moniter)

@@ -10,19 +10,17 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=20000
-#SBATCH --nodelist=aa[003]
+#SBATCH --nodelist=aa[001,002,003]
 
 hostname
 echo $CUDA_VISIBLE_DEVICES
 
-python TN_food.py \
+python TN_bm.py \
   --split_by=img \
-  --img_split=0.8 \
-  --wandb_project=triplet_net_food_img \
-  --wandb_group=split=0.8_lr=1e-4 \
-  --max_epochs=20 \
+  --wandb_project=TN_bm_img \
+  --wandb_group=bs=64_lr=1e-4 \
+  --max_epochs=5 \
   --learning_rate=1e-4 \
-  --train_batch_size=100 \
+  --train_batch_size=64 \
   --do_train \
-  --do_test
-
+  --do_test 

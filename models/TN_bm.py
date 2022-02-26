@@ -11,40 +11,32 @@ import pytorch_lightning as pl
 import warnings
 warnings.filterwarnings("ignore")
 
-from RESN_TN import RESN_TN, generic_train
+from TN_base import TripletNet, generic_train
 import utils
 
-class TN_bm(RESN_TN):
+class TN_bm(TripletNet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def forward(self, combs, batch_idx=0):
+    def forward(self, triplet_idx, batch_idx):
         if self.hparams.split_by == "triplet":
             dataset = self.dataset
-            pairwise = self.pairwise_distance
         elif self.hparams.split_by == "img":
             if self.trainer.training:
                 dataset = self.train_dataset
-                pairwise = self.train_pairwise_distance
             else:
                 dataset = self.valid_dataset
-                pairwise = self.valid_pairwise_distance
 
         embeds = self.embed(dataset)
-        if self.trainer.testing and batch_idx==1:
-            embeds_path = f"embeds/{self.hparams.wandb_project}.pkl"
-            pickle.dump(embeds.cpu(), open(embeds_path,"wb"))
-            print(f"dumped embeds to {embeds_path}")
-            
-        triplet_idx = []
-        for c in combs:
-            anchor, pos, neg = c[0], c[1], c[2]
-            if pairwise[anchor, pos] > pairwise[anchor, neg]:
-                triplet_idx.append((anchor, neg, pos))
+        if self.trainer.testing and self.hparams.do_embed and batch_idx==0:
+            if not self.hparams.embed_path:
+                embed_path = f"embeds/{self.hparams.wandb_project}.pkl"
             else:
-                triplet_idx.append((anchor, pos, neg))
-
-        triplet_idx = torch.Tensor(triplet_idx).long()
+                embed_path = self.hparams.embed_path
+            pickle.dump(embeds.cpu(), open(embed_path,"wb"))
+            print(f"\n dumped embeds to {embed_path}")
+            
+        triplet_idx = triplet_idx.long()
         x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
         return triplets
@@ -52,22 +44,17 @@ class TN_bm(RESN_TN):
     def setup(self, stage):
         train_dir = "/net/scratch/hanliu-shared/data/bm/train"
         valid_dir = "/net/scratch/hanliu-shared/data/bm/valid"
-        train_pairwise_distance= "../embeds/lpips.bm.train.pkl" 
-        valid_pairwise_distance= "../embeds/lpips.bm.valid.pkl" 
+        train_triplets = "/net/scratch/tianh/bm/triplets/train_triplets.pkl"
+        valid_triplets = "/net/scratch/tianh/bm/triplets/valid_triplets.pkl"
 
-        train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=utils.bm_train_transform())
-        valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=utils.bm_valid_transform())
+        train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=utils.bm_transform())
+        valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=utils.bm_transform())
         self.train_dataset = torch.tensor(np.array([data[0].numpy() for data in train_dataset])).cuda()
         self.valid_dataset = torch.tensor(np.array([data[0].numpy() for data in valid_dataset])).cuda()
 
-        self.train_pairwise_distance = torch.Tensor(pickle.load(open(train_pairwise_distance, "rb")), device=self.device)
-        self.valid_pairwise_distance = torch.Tensor(pickle.load(open(valid_pairwise_distance, "rb")), device=self.device)
-        
         if self.hparams.split_by == "triplet":
             self.dataset = self.train_dataset
-            self.pairwise_distance = self.train_pairwise_distance
-
-            self.triplets = torch.combinations(torch.arange(0, len(self.dataset)).int(), r=3)
+            self.triplets = pickle.load(open(train_triplets, "rb"))
 
             subset_idx = np.random.choice(len(self.triplets), len(self.triplets)//10, replace=False)
             self.triplets = self.triplets[subset_idx]
@@ -79,14 +66,22 @@ class TN_bm(RESN_TN):
             self.valid_triplets = self.triplets[self.valid_idx]
 
         elif self.hparams.split_by == "img":
-            self.train_triplets = torch.combinations(torch.range(0, len(self.train_dataset)-1).long(), r=3)
-            self.valid_triplets = torch.combinations(torch.range(0, len(self.valid_dataset)-1).long(), r=3)
+            self.train_triplets = pickle.load(open(train_triplets, "rb"))
+            self.valid_triplets = pickle.load(open(valid_triplets, "rb"))
+
+            if self.hparams.subset:
+                subset_idx = np.random.choice(len(self.train_triplets), len(self.train_triplets)//20, replace=False)
+                self.train_triplets = self.train_triplets[subset_idx]
 
         if self.hparams.split_by == "triplet":
-            self.test_triplets = self.valid_triplets
+            self.test_triplets = self.train_triplets
             # self.test_triplets = self.triplets
         elif self.hparams.split_by == "img":
-            self.test_triplets = self.train_triplets
+            self.test_triplets = self.valid_triplets
+    
+        self.train_triplets = np.array(self.train_triplets)
+        self.valid_triplets = np.array(self.valid_triplets)
+        self.test_triplets = np.array(self.test_triplets)
 
     @staticmethod
     def add_model_specific_args(parser):        
@@ -94,7 +89,7 @@ class TN_bm(RESN_TN):
 
 def main():
     parser = argparse.ArgumentParser()
-    RESN_TN.add_generic_args(parser)
+    TripletNet.add_generic_args(parser)
     parser = TN_bm.add_model_specific_args(parser)
     args = parser.parse_args()
     print(args)
