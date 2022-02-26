@@ -66,7 +66,7 @@ class MTL_BCETN(MTL):
             d_an = self.pdist(triplets[0], triplets[2])
             triplet_acc = (d_ap < d_an).float().mean()
 
-        total_loss = clf_loss + triplet_loss
+        total_loss = self.hparams.w1 * clf_loss + self.hparams.w2 * triplet_loss
 
         return clf_loss, m, triplet_loss, triplet_acc, total_loss
     

@@ -19,6 +19,8 @@ python MTL_BCETN.py \
   --embed_dim=10 \
   --wandb_project=MTL_2 \
   --wandb_group=test \
+  --wandb_mode=online \
+  --pretrained \
   --max_epochs=48 \
   --learning_rate=1e-4 \
   --train_batch_size=64 \

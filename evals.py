@@ -26,7 +26,6 @@ def triplet_acc(embeds, triplets, dist_f=euc_dist):
 
 def triplet_acc_distM(embeds, dist_matrix, dist_f=euc_dist):
     """Return triplet accuracy given ground-truth distance matrix."""
-<<<<<<< HEAD
     triplets = []
     combs = np.array(list(combinations(np.arange(0, len(dist_matrix)), r=3)))
     for c in combs:
@@ -36,14 +35,3 @@ def triplet_acc_distM(embeds, dist_matrix, dist_f=euc_dist):
         else:
             triplets.append([a, n, p])
     return triplet_acc(embeds, triplets, dist_f)
-=======
-    align = []
-    triplets = np.array(list(combinations(np.arange(0, len(dist_matrix)), r=3)))
-    for triplet in tqdm(triplets):
-        a, p, n = triplet
-        ap = dist_matrix[a, p] < dist_matrix[a, n]
-        rd = euc_dist(embeds[a], embeds[p]) < euc_dist(embeds[a], embeds[n])
-        align.append(ap == rd)
-    acc = np.mean(align)
-    return acc
->>>>>>> 078fec8ce8948fb83065944ab22bb030e7301d21
