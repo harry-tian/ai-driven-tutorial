@@ -1,5 +1,4 @@
 # AI driven tutorial
-Code for recreating the results in our CVPR 2018 paper.
 
 `algorithms` contains the teaching example selection algorithms  
 `code` contains ?  
