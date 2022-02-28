@@ -26,15 +26,15 @@ class RESN(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
+        self.feature_extractor = models.resnet18(pretrained=True)#self.hparams.pretrained)
         num_features = 1000
 
         self.embed_dim = self.hparams.embed_dim
         self.criterion = nn.BCEWithLogitsLoss()
-        self.fc = nn.Sequential(
+        self.fc = nn.ModuleList([nn.Sequential(
             nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, 256), 
             nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(), nn.Linear(256, self.embed_dim)
-        )
+        )])
         self.classifier = nn.Sequential(
             nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, 1)
         )
@@ -63,7 +63,8 @@ class RESN(pl.LightningModule):
 
     def embed(self, x):
         embeds = self.feature_extractor(x)
-        embeds = self.fc(embeds)
+        for layer in self.fc:
+            embeds = layer(embeds)
         return embeds
 
     def forward(self, x):

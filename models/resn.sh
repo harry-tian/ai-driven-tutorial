@@ -22,7 +22,7 @@ echo $CUDA_VISIBLE_DEVICES
 # nvidia-smi -l 1 &
 
 /home/hanliu/anaconda3/bin/python resn_args.py \
-  --embed_dim=2 \
+  --embed_dim=10 \
   --wandb_mode=online \
   --wandb_group=resn-emb2 \
   --output_dir=results/resn-emb2 \
@@ -36,8 +36,9 @@ echo $CUDA_VISIBLE_DEVICES
   --vertical_flip=0.5 \
   --rotate=30 \
   --scale=0.2 \
-  --train_batch_size=16 \
-  --do_train
+  --train_batch_size=160 \
+  --do_train \
+  --pretrained
 
   # --horizontal_flip=0.5 \
 

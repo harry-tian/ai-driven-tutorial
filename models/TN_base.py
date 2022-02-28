@@ -64,30 +64,23 @@ class TripletNet(pl.LightningModule):
         self.opt = optimizer
         return optimizer
 
-    def setup(self, stage):
+    def setup_data(self):
         raise NotImplementedError
 
-    def get_dataloader(self, dataset, batch_size, split):
-        drop_last = True if split == "train" else False
-        shuffle = True if split == "train" else False
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
-            num_workers=self.hparams.dataloader_num_workers, drop_last=drop_last, shuffle=shuffle)
-        return dataloader
-
     def train_dataloader(self):
-        dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))
+        dataset = self.train_dataset
         print(f"\nlen_train:{len(dataset)}")
-        return self.get_dataloader(dataset, self.hparams.train_batch_size, "train")
+        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
 
     def val_dataloader(self):
-        dataset = torch.utils.data.TensorDataset(torch.tensor(self.valid_triplets))
+        dataset = self.valid_dataset
         print(f"\nlen_valid:{len(dataset)}")
-        return self.get_dataloader(dataset, self.hparams.train_batch_size, "valid")
+        return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
 
     def test_dataloader(self):
-        dataset = torch.utils.data.TensorDataset(torch.tensor(self.test_triplets))
+        dataset = self.test_dataset
         print(f"\nlen_test:{len(dataset)}")
-        return self.get_dataloader(dataset, self.hparams.train_batch_size, "test")
+        return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 
     @staticmethod
     def add_generic_args(parser) -> None:

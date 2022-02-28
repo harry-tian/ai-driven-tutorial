@@ -12,6 +12,75 @@ import pytorch_lightning as pl
 import torch
 import numpy as np
 from pydoc import locate
+import torchvision
+
+def get_bm_datasets(train_dir="/net/scratch/hanliu-shared/data/bm/train", 
+                    valid_dir="/net/scratch/hanliu-shared/data/bm/valid"):
+    train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=bm_transform())
+    valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=bm_transform())
+    train_inputs = torch.tensor(np.array([data[0].numpy() for data in train_dataset]))
+    valid_inputs = torch.tensor(np.array([data[0].numpy() for data in valid_dataset]))
+    train_labels = torch.tensor(np.array([data[1] for data in train_dataset]))
+    valid_labels = torch.tensor(np.array([data[1] for data in valid_dataset]))
+
+    return train_inputs, valid_inputs
+
+
+def generic_train(model, args, moniter, 
+                    early_stopping_callback=False, extra_callbacks=[], checkpoint_callback=None, logging_callback=None,  **extra_train_kwargs):
+    output_dir = os.path.join("results", model.hparams.wandb_project)
+    odir = Path(output_dir)
+    odir.mkdir(parents=True, exist_ok=True)
+    log_dir = Path(os.path.join(output_dir, 'logs'))
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    experiment = wandb.init(
+        project=args.wandb_project,
+        mode=args.wandb_mode, 
+        group=args.wandb_group,
+        name=f"{time.strftime('%m/%d_%H:%M')}")
+
+    logger = WandbLogger(project="imagenet_bm", experiment=experiment)
+
+    ckpt_path = os.path.join(output_dir, logger.version, "checkpoints")
+    if checkpoint_callback is None:
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor=moniter, mode="min", save_last=True, save_top_k=2, verbose=True)
+
+    train_params = {}
+    train_params["max_epochs"] = args.max_epochs
+    if args.gpus == -1 or args.gpus > 1:
+        train_params["distributed_backend"] = "ddp"
+
+    trainer = pl.Trainer.from_argparse_args(
+        args,
+        auto_select_gpus=True,
+        weights_summary=None,
+        callbacks=extra_callbacks + [checkpoint_callback],
+        logger=logger,
+        check_val_every_n_epoch=1,
+        **train_params)
+
+    if args.do_train:
+        trainer.fit(model)
+        target_path = os.path.join(ckpt_path, 'best_model.ckpt')
+        print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
+        shutil.copy(checkpoint_callback.best_model_path, target_path)
+
+    if args.do_test:
+        # best_model_path = os.path.join(ckpt_path, "best_model.ckpt")
+        # model = model.load_from_checkpoint(best_model_path)
+        trainer.test(model)
+
+    return trainer
+
+def get_dataloader(dataset, batch_size, split, num_workers):
+    drop_last = True if split == "train" else False
+    shuffle = True if split == "train" else False
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
+        num_workers=num_workers, drop_last=drop_last, shuffle=shuffle)
+    return dataloader
+
 def food_transform():
     transform = transforms.Compose([
         transforms.Resize([230,230]),
@@ -80,66 +149,12 @@ def dataset_with_indices(cls):
         '__getitem__': __getitem__,
     })
 
-def generic_train(model, args, moniter, 
-                    early_stopping_callback=False, extra_callbacks=[], checkpoint_callback=None, logging_callback=None,  **extra_train_kwargs):
-    output_dir = os.path.join("results", model.hparams.wandb_project)
-    odir = Path(output_dir)
-    odir.mkdir(parents=True, exist_ok=True)
-    log_dir = Path(os.path.join(output_dir, 'logs'))
-    log_dir.mkdir(parents=True, exist_ok=True)
-
-    experiment = wandb.init(
-        project=args.wandb_project,
-        mode=args.wandb_mode, 
-        group=args.wandb_group,
-        name=f"{time.strftime('%m/%d_%H:%M')}")
-
-    logger = WandbLogger(project="imagenet_bm", experiment=experiment)
-
-    ckpt_path = os.path.join(output_dir, logger.version, "checkpoints")
-    if checkpoint_callback is None:
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor=moniter, mode="min", save_last=True, save_top_k=2, verbose=True)
-
-    train_params = {}
-    train_params["max_epochs"] = args.max_epochs
-    if args.gpus == -1 or args.gpus > 1:
-        train_params["distributed_backend"] = "ddp"
-
-    trainer = pl.Trainer.from_argparse_args(
-        args,
-        auto_select_gpus=True,
-        weights_summary=None,
-        callbacks=extra_callbacks + [checkpoint_callback],
-        logger=logger,
-        check_val_every_n_epoch=1,
-        **train_params)
-
-    if args.do_train:
-        trainer.fit(model)
-        target_path = os.path.join(ckpt_path, 'best_model.ckpt')
-        print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
-        shutil.copy(checkpoint_callback.best_model_path, target_path)
-
-    if args.do_test:
-        # best_model_path = os.path.join(ckpt_path, "best_model.ckpt")
-        # model = model.load_from_checkpoint(best_model_path)
-        trainer.test(model)
-
-    return trainer
-
-def get_dataloader(dataset, batch_size, split, num_workers):
-    drop_last = True if split == "train" else False
-    shuffle = True if split == "train" else False
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
-        num_workers=num_workers, drop_last=drop_last, shuffle=shuffle)
-    return dataloader
-
 def get_embeds(model_path, args, ckpt, split, embed_path=None):
     model = locate(model_path)
     model = model.load_from_checkpoint(ckpt, **vars(args)).to("cuda")
     model.eval()
     train_dataset, valid_dataset = model.get_datasets()
+
     if split == "train":
         dataset = train_dataset
     elif split == "val" or split == "valid":
@@ -148,26 +163,11 @@ def get_embeds(model_path, args, ckpt, split, embed_path=None):
         print("???")
         quit()
     
-    # embeds = model.embed(dataset)
-    embeds = model.feature_extractor(dataset)
-    for layer in model.fc:
-        embeds = layer(embeds)
-    # dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset), num_workers=4, shuffle=False)
-    # embeds = []
-    # for batch_idx, batch in enumerate(dataloader):
-    #     if type(batch) == list:
-    #         batch = batch[0]
-    #     if type(batch) != torch.Tensor:
-    #         print("???")
-    #         quit()
+    embeds = model.embed(dataset)
+    # embeds = model.feature_extractor(dataset)
+    # for layer in model.fc:
+    #     embeds = layer(embeds)
     
-    #     # print(batch)
-    #     # print(batch.shape)
-    #     # print(type(batch))
-    #     # quit()
-    #     embeds.append(model.embed(batch))
-
-    # embeds = np.asarray([e.squeeze().detach().numpy() for e in embeds])[0]
     embeds = embeds.cpu().detach().numpy()
     print(f"embeds.shape:{embeds.shape}")
 

@@ -80,29 +80,20 @@ class MTL(pl.LightningModule):
         self.opt = optimizer
         return optimizer
 
-    # def get_dataloader(self, dataset, batch_size, split):
-    #     drop_last = True if split == "train" else False
-    #     shuffle = True if split == "train" else False
-    #     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
-    #         num_workers=self.hparams.dataloader_num_workers, drop_last=drop_last, shuffle=shuffle)
-    #     return dataloader
-    # def get_datasets(self):
-    #     return self.train_inputs, self.valid_inputs
-
     def train_dataloader(self):
         dataset = self.train_dataset
         print(f"\nlen_train:{len(dataset)}")
-        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train")
+        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
 
     def val_dataloader(self):
         dataset = self.valid_dataset
         print(f"\nlen_valid:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "valid")
+        return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
 
     def test_dataloader(self):
         dataset = self.test_dataset
         print(f"\nlen_test:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "test")
+        return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 
     @staticmethod
     def add_generic_args(parser) -> None:
@@ -133,8 +124,7 @@ class MTL(pl.LightningModule):
         parser.add_argument("--subset", action="store_true")
         parser.add_argument("--MTL_hparam", action="store_true")
         parser.add_argument("--pretrained", action="store_true")
-        parser.add_argument("--w1", default=0.5, type=float)
-        parser.add_argument("--w2", default=1, type=float)
+        parser.add_argument("--lamda", default=0.5, type=float)
 
 def generic_train(model, args):
     moniter = "valid_total_loss"
