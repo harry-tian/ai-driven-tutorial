@@ -56,7 +56,8 @@ class MTL_BCETN(MTL):
             labels = self.train_labels
         else:
             labels = self.valid_labels
-        # labels = labels[clf_idx]
+        if self.hparams.MTL_hparam:
+            labels = labels[clf_idx]
 
         clf_loss = self.criterion(logits, labels.type_as(logits).unsqueeze(1))
         triplet_loss = self.triplet_loss(*triplets)

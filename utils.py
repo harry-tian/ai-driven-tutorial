@@ -160,6 +160,10 @@ def prototype_knn(data, proto_idx, k_range, m_range):
 
     return np.array(scores).reshape(len(k_range), len(m_range))
 
+
+
+### visualization stuff ######################
+
 if True:
     SMALL_SIZE = 10
     MEDIUM_SIZE = 15

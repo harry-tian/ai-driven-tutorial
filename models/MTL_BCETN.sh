@@ -18,7 +18,7 @@ echo $CUDA_VISIBLE_DEVICES
 python MTL_BCETN.py \
   --embed_dim=10 \
   --wandb_project=MTL_2 \
-  --wandb_group=test \
+  --wandb_group=lambdas \
   --wandb_mode=online \
   --pretrained \
   --max_epochs=48 \
@@ -26,5 +26,6 @@ python MTL_BCETN.py \
   --train_batch_size=64 \
   --do_train \
   --do_test \
-  --subset
+  --subset \
+  --lamda=0.1
 

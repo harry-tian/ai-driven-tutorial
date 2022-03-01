@@ -1,9 +1,7 @@
 import os, pickle
 import pandas as pd
 import numpy as np
-from sklearn.metrics.pairwise import euclidean_distances 
 import torch
-import torchvision
 from tqdm import tqdm
 # pdist = torch.nn.PairwiseDistance()
 from itertools import combinations
@@ -13,11 +11,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.svm import SVC, LinearSVC
-from torchvision import transforms
-import matplotlib.pyplot as plt
-
 np.random.seed(42)
-# def euc_dist(x, y): return euclidean_distances([x],[y])[0][0]
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
 def bm_eval(train_embeds, valid_embeds):
@@ -94,7 +88,8 @@ def get_val2train_triplets(val2train_dist_matrix):
             triplets.append(triplet)
     return np.array(triplets)
 
-def get_knn_score(x_train, y_train, x_valid, y_valid, k=1, metric="auc", weights="uniform"):
+def get_knn_score(x_train, y_train, x_valid, y_valid, 
+                k=1, metric="auc", weights="uniform"):
     knc = KNeighborsClassifier(n_neighbors=k, weights=weights)
     knc.fit(x_train, y_train)
     if metric == 'auc':
@@ -104,17 +99,3 @@ def get_knn_score(x_train, y_train, x_valid, y_valid, k=1, metric="auc", weights
     else:
         score = knc.score(x_valid, y_valid)
     return score
-
-
-# def get_knn_score(k, data, index, metric="auc", weights="uniform"):
-#     x_train, y_train, x_valid, y_valid = data
-#     knc = KNeighborsClassifier(n_neighbors=k, weights=weights)
-#     knc.fit(x_train[index], y_train[index])
-#     if metric == 'auc':
-#         probs = knc.predict_proba(x_valid)
-#         probs = probs[:, 1] if probs.shape[1] > 1 else probs
-#         score = roc_auc_score(y_valid, probs)
-#     else:
-#         score = knc.score(x_valid, y_valid)
-#     return score
-
