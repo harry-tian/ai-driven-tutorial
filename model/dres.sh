@@ -1,14 +1,14 @@
 #!/bin/bash
 #
-#SBATCH --output=/home/hanliu/slurm_out/%j.%N.stdout
-#SBATCH --error=/home/hanliu/slurm_out/%j.%N.stderr
+#SBATCH --output=/home/chacha/slurm_out/%j.%N.stdout
+#SBATCH --error=/home/chacha/slurm_out/%j.%N.stderr
 #SBATCH --job-name=train
 #SBATCH --partition=dev
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=20000
-#SBATCH --chdir=/net/scratch/hanliu/radiology/explain_teach/model
+#SBATCH --chdir=/net/scratch/chacha/radiology/explain_teach/model
 # #SBATCH --array=0-4
 
 hostname
@@ -21,13 +21,13 @@ echo $CUDA_VISIBLE_DEVICES
 
 # nvidia-smi -l 1 &
 
-/home/hanliu/anaconda3/bin/python dres_args.py \
+/net/scratch/chacha/anaconda3/envs/teaching/bin/python dres_args.py \
   --embed_dim=2 \
-  --wandb_mode=online \
+  --wandb_mode=disabled \
   --wandb_group=dres-emb2 \
   --output_dir=results/dres-emb2 \
-  --train_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/train \
-  --valid_dir=/net/scratch/hanliu/radiology/explain_teach/data/bm/valid \
+  --train_dir=/net/scratch/hanliu-shared/data/bm/train \
+  --valid_dir=/net/scratch/hanliu-shared/data/bm/valid \
   --dataloader_num_workers=4 \
   --gpus=1 \
   --seed=42 \
