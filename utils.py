@@ -14,38 +14,6 @@ import tste
 import pickle
 import matplotlib.pyplot as plt
 
-def get_tste(distance_matrix, triplets_fname, tste_fname, no_dims=2, max_iter=1000):
-    triplets = []
-    for point0, point0_dist_list in enumerate(distance_matrix):
-        for point1, point1_dist in enumerate(point0_dist_list[point0+1:]):
-            for point2, point2_dist in enumerate(point0_dist_list[point0+2:]):
-                anchor = point0
-                if point1_dist < point2_dist:
-                    pos = point1+1
-                    neg = point2+2
-                else: 
-                    pos = point2+2
-                    neg = point1+1
-                triplets.append([anchor, pos, neg])
-
-    triplets = np.array(triplets)
-    pickle.dump(triplets, open(triplets_fname,"wb"))   
-    print(f"triplets saved to {triplets_fname}")
-
-    embedding = tste.tste(triplets, no_dims=no_dims, verbose=True, max_iter=max_iter)
-    pickle.dump(embedding, open(tste_fname,"wb"))  
-    print(f"tste embedding saved to {tste_fname}")
-
-    return embedding
-
-def bm_transform():
-    return transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
 METRIC = "auc"
 WEIGHTS = "uniform"
 LINEAR = True
@@ -191,6 +159,10 @@ def prototype_knn(data, proto_idx, k_range, m_range):
             scores.append(get_knn_score(k, data, proto_idx[m]))
 
     return np.array(scores).reshape(len(k_range), len(m_range))
+
+
+
+### visualization stuff ######################
 
 if True:
     SMALL_SIZE = 10
@@ -354,3 +326,29 @@ def normalize_xylim(ax):
     for i in range(len(ax)):
         ax[i].set_xlim(min_x0, max_x1)
         ax[i].set_ylim(min_y0, max_y1)
+
+### not very useful stuff: ###
+
+def get_tste(distance_matrix, triplets_fname, tste_fname, no_dims=2, max_iter=1000):
+    triplets = []
+    for point0, point0_dist_list in enumerate(distance_matrix):
+        for point1, point1_dist in enumerate(point0_dist_list[point0+1:]):
+            for point2, point2_dist in enumerate(point0_dist_list[point0+2:]):
+                anchor = point0
+                if point1_dist < point2_dist:
+                    pos = point1+1
+                    neg = point2+2
+                else: 
+                    pos = point2+2
+                    neg = point1+1
+                triplets.append([anchor, pos, neg])
+
+    triplets = np.array(triplets)
+    pickle.dump(triplets, open(triplets_fname,"wb"))   
+    print(f"triplets saved to {triplets_fname}")
+
+    embedding = tste.tste(triplets, no_dims=no_dims, verbose=True, max_iter=max_iter)
+    pickle.dump(embedding, open(tste_fname,"wb"))  
+    print(f"tste embedding saved to {tste_fname}")
+
+    return embedding
