@@ -7,7 +7,6 @@ import numpy as np
 import torch
 import torchvision
 import pytorch_lightning as pl
-# from torchmetrics.functional.classification import auroc, stat_scores, average_precision, precision_recall_curve, auc
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -21,14 +20,14 @@ class TN_bm(TripletNet):
 
     def forward(self, triplet_idx, batch_idx):
         if self.hparams.split_by == "triplet":
-            dataset = self.dataset
-        elif self.hparams.split_by == "img":
+            input = self.input
+        else:
             if self.trainer.training:
-                dataset = self.train_dataset
+                input = self.train_input
             else:
-                dataset = self.valid_dataset
+                input = self.valid_input
 
-        embeds = self.embed(dataset)
+        embeds = self.embed(input)
         if self.trainer.testing and self.hparams.do_embed and batch_idx==0:
             if not self.hparams.embed_path:
                 embed_path = f"embeds/{self.hparams.wandb_project}.pkl"
@@ -45,6 +44,7 @@ class TN_bm(TripletNet):
     def setup_data(self):
         train_dir = "/net/scratch/hanliu-shared/data/bm/train"
         valid_dir = "/net/scratch/hanliu-shared/data/bm/valid"
+        all_dir = "/net/scratch/tianh/bm/all"
         train_triplets = "/net/scratch/tianh/bm/triplets/train_triplets.pkl"
         valid_triplets = "/net/scratch/tianh/bm/triplets/valid_triplets.pkl"
 
@@ -54,7 +54,7 @@ class TN_bm(TripletNet):
         self.valid_input = torch.tensor(np.array([data[0].numpy() for data in valid_dataset])).cuda()
 
         if self.hparams.split_by == "triplet":
-            self.dataset = self.train_input
+            self.input = self.train_input
             self.triplets = pickle.load(open(train_triplets, "rb"))
 
             subset_idx = np.random.choice(len(self.triplets), len(self.triplets)//10, replace=False)
@@ -65,30 +65,30 @@ class TN_bm(TripletNet):
             self.valid_idx = np.setdiff1d(len_triplets, self.train_idx)
             self.train_triplets = self.triplets[self.train_idx]
             self.valid_triplets = self.triplets[self.valid_idx]
+            self.test_triplets = self.train_triplets
 
         elif self.hparams.split_by == "img":
             self.train_triplets = pickle.load(open(train_triplets, "rb"))
             self.valid_triplets = pickle.load(open(valid_triplets, "rb"))
+            self.test_triplets = self.valid_triplets
 
             if self.hparams.subset:
                 subset_idx = np.random.choice(len(self.train_triplets), len(self.train_triplets)//20, replace=False)
                 self.train_triplets = self.train_triplets[subset_idx]
-
-        if self.hparams.split_by == "triplet":
-            self.test_triplets = self.train_triplets
-            # self.test_triplets = self.triplets
-        elif self.hparams.split_by == "img":
+        
+        elif self.hparams.split_by == "human":
+            train_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets.pkl"
+            valid_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/valid_triplets.pkl"
+            self.train_triplets = pickle.load(open(train_triplets, "rb"))
+            self.valid_triplets = pickle.load(open(valid_triplets, "rb"))
             self.test_triplets = self.valid_triplets
     
-        # self.train_triplets = np.array(self.train_triplets)
-        # self.valid_triplets = np.array(self.valid_triplets)
-        # self.test_triplets = np.array(self.test_triplets)
         self.train_dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))
         self.valid_dataset = torch.utils.data.TensorDataset(torch.tensor(self.valid_triplets))
         self.test_dataset = torch.utils.data.TensorDataset(torch.tensor(self.test_triplets))
 
-    def get_datasets(self):
-        return self.train_input, self.valid_input
+    # def get_datasets(self):
+    #     return self.train_input, self.valid_input
 
     @staticmethod
     def add_model_specific_args(parser):        

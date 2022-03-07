@@ -109,6 +109,7 @@ class MTL(pl.LightningModule):
         parser.add_argument("--wandb_group", default=None, type=str)
         parser.add_argument("--wandb_mode", default="offline", type=str)
         parser.add_argument("--wandb_project", default="?", type=str)
+        parser.add_argument("--wandb_entity", default="harry-tian", type=str)
 
         parser.add_argument("--do_train", action="store_true")
         parser.add_argument("--do_test", action="store_true")
@@ -118,8 +119,6 @@ class MTL(pl.LightningModule):
         parser.add_argument("--hidden_size", default=256, type=int, help="Embedding size")
         parser.add_argument("--add_linear", action="store_true")
         
-        # parser.add_argument("--split_by", default="img", type=str, required=False)
-        # parser.add_argument("--img_split", default=0.6, type=float)
         parser.add_argument("--embed_path", default=None, type=str, required=False)
         parser.add_argument("--subset", action="store_true")
         parser.add_argument("--MTL_hparam", action="store_true")
@@ -127,5 +126,5 @@ class MTL(pl.LightningModule):
         parser.add_argument("--lamda", default=0.5, type=float)
 
 def generic_train(model, args):
-    moniter = "valid_total_loss"
-    return utils.generic_train(model, args, moniter)
+    monitor = "valid_total_loss"
+    return utils.generic_train(model, args, monitor)

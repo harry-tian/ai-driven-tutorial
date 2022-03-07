@@ -10,3 +10,4 @@ models/wandb
 dwac_knn.ipynb
 knn.ipynb
 
+*.sh

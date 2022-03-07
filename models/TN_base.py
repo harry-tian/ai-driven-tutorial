@@ -12,17 +12,22 @@ class TripletNet(pl.LightningModule):
         self.feature_extractor = models.resnet18(pretrained=True)
         num_features = 1000
 
-        self.embed_dim = self.hparams.embed_dim
         self.triplet_loss = nn.TripletMarginLoss()
         self.pdist = nn.PairwiseDistance()
 
-        self.dropout = nn.Dropout()
+        self.embed_dim = self.hparams.embed_dim
+        self.hidden_size = 256
+        self.fc = nn.ModuleList([nn.Sequential(
+            nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, self.hidden_size), 
+            nn.BatchNorm1d(self.hidden_size), nn.ReLU(), nn.Dropout(), nn.Linear(self.hidden_size, self.embed_dim)
+        )])
 
         self.summarize()
 
     def embed(self, inputs):
         embeds = self.feature_extractor(inputs)
-        embeds = self.dropout(embeds)
+        for layer in self.fc:
+            embeds = layer(embeds)
         return embeds
 
     def forward(self, **inputs):
@@ -87,15 +92,16 @@ class TripletNet(pl.LightningModule):
         parser.add_argument("--gpus", default=1, type=int)
         parser.add_argument("--seed", default=42, type=int)
 
-        parser.add_argument("--max_epochs", default=200, type=int)
+        parser.add_argument("--max_epochs", default=45, type=int)
         parser.add_argument("--learning_rate", default=1e-4, type=float)
-        parser.add_argument("--train_batch_size", default=16, type=int)
+        parser.add_argument("--train_batch_size", default=64, type=int)
         parser.add_argument("--eval_batch_size", default=64, type=int)
         parser.add_argument("--dataloader_num_workers", default=4, type=int)
 
         parser.add_argument("--wandb_group", default=None, type=str)
         parser.add_argument("--wandb_mode", default="online", type=str)
         parser.add_argument("--wandb_project", default="?", type=str)
+        parser.add_argument("--wandb_entity", default="harry-tian", type=str)
 
         parser.add_argument("--do_train", action="store_true")
         parser.add_argument("--do_test", action="store_true")

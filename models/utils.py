@@ -15,18 +15,21 @@ from pydoc import locate
 import torchvision
 
 def get_bm_datasets(train_dir="/net/scratch/hanliu-shared/data/bm/train", 
-                    valid_dir="/net/scratch/hanliu-shared/data/bm/valid"):
+                    valid_dir="/net/scratch/hanliu-shared/data/bm/valid",
+                    train_idx=None, valid_idx=None):
     train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=bm_transform())
     valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=bm_transform())
     train_inputs = torch.tensor(np.array([data[0].numpy() for data in train_dataset]))
     valid_inputs = torch.tensor(np.array([data[0].numpy() for data in valid_dataset]))
     train_labels = torch.tensor(np.array([data[1] for data in train_dataset]))
     valid_labels = torch.tensor(np.array([data[1] for data in valid_dataset]))
-
+    
+    if train_idx: train_inputs = train_inputs[train_idx]
+    if valid_idx: valid_inputs = valid_inputs[valid_idx]
     return train_inputs, valid_inputs
 
 
-def generic_train(model, args, moniter, 
+def generic_train(model, args, monitor, 
                     early_stopping_callback=False, extra_callbacks=[], checkpoint_callback=None, logging_callback=None,  **extra_train_kwargs):
     output_dir = os.path.join("results", model.hparams.wandb_project)
     odir = Path(output_dir)
@@ -35,6 +38,7 @@ def generic_train(model, args, moniter,
     log_dir.mkdir(parents=True, exist_ok=True)
 
     experiment = wandb.init(
+        entity=args.wandb_entity,
         project=args.wandb_project,
         mode=args.wandb_mode, 
         group=args.wandb_group,
@@ -45,7 +49,7 @@ def generic_train(model, args, moniter,
     ckpt_path = os.path.join(output_dir, logger.version, "checkpoints")
     if checkpoint_callback is None:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor=moniter, mode="min", save_last=True, save_top_k=2, verbose=True)
+            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor=monitor, mode="min", save_last=True, save_top_k=2, verbose=True)
 
     train_params = {}
     train_params["max_epochs"] = args.max_epochs
@@ -67,10 +71,8 @@ def generic_train(model, args, moniter,
         print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
         shutil.copy(checkpoint_callback.best_model_path, target_path)
 
-    if args.do_test:
-        # best_model_path = os.path.join(ckpt_path, "best_model.ckpt")
-        # model = model.load_from_checkpoint(best_model_path)
-        trainer.test(model)
+    # if args.do_test:
+    #     trainer.test(model)
 
     return trainer
 
@@ -137,7 +139,7 @@ def metrics(probs, target, threshold=0.5):
     m['f1'] = 2 * tp / (2 * tp + fp + fn)
     m['ap'] = average_precision(probs, target)
     m['auprc'] = auprc if 0 < sup < len(target) else None
-    return m
+    return m    
 
 def dataset_with_indices(cls):
 
@@ -148,32 +150,3 @@ def dataset_with_indices(cls):
     return type(cls.__name__, (cls,), {
         '__getitem__': __getitem__,
     })
-
-def get_embeds(model_path, args, ckpt, split, embed_path=None):
-    model = locate(model_path)
-    model = model.load_from_checkpoint(ckpt, **vars(args)).to("cuda")
-    model.eval()
-    train_dataset, valid_dataset = model.get_datasets()
-
-    if split == "train":
-        dataset = train_dataset
-    elif split == "val" or split == "valid":
-        dataset = valid_dataset
-    else:
-        print("???")
-        quit()
-    
-    embeds = model.embed(dataset)
-    # embeds = model.feature_extractor(dataset)
-    # for layer in model.fc:
-    #     embeds = layer(embeds)
-    
-    embeds = embeds.cpu().detach().numpy()
-    print(f"embeds.shape:{embeds.shape}")
-
-    if not embed_path:
-        embed_path = f"{model_path}_{split}.pkl"
-    pickle.dump(embeds, open(embed_path, "wb"))
-    print(f"dumped to {embed_path}")
-
-    return embeds

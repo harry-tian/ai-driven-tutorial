@@ -83,6 +83,8 @@ class MTL_BCETN(MTL):
 
         train_triplets = "/net/scratch/tianh/bm/triplets/train_triplets.pkl"
         valid_triplets = "/net/scratch/tianh/bm/triplets/valid_triplets.pkl"
+        train_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets.pkl"
+        valid_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/valid_triplets.pkl"
         train_triplets = pickle.load(open(train_triplets, "rb"))
         valid_triplets = pickle.load(open(valid_triplets, "rb"))
 

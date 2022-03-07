@@ -10,9 +10,9 @@ from sklearn.svm import SVC, LinearSVC
 from aix360.algorithms.protodash import ProtodashExplainer
 from sklearn.metrics.pairwise import euclidean_distances
 from torchvision import transforms
-import tste
 import pickle
 import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
 
 METRIC = "auc"
 WEIGHTS = "uniform"
@@ -176,7 +176,36 @@ if True:
     plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-def vis_data(x_train, y_train, x_valid, y_valid, title, save=False):
+def normalize_xylim(ax):
+    min_x0 = np.inf
+    max_x1 = np.NINF
+    min_y0 = np.inf
+    max_y1 = np.NINF
+    xlims = []
+    ylims = []
+    for i in range(len(ax)):
+        xlims.append(ax[i].get_xlim()[0])
+        xlims.append(ax[i].get_xlim()[1])
+        ylims.append(ax[i].get_ylim()[0])
+        ylims.append(ax[i].get_ylim()[1])
+
+    min_x0 = min(xlims)
+    max_x1 = max(xlims)
+    min_y0 = min(ylims)
+    max_y1 = max(ylims)
+    
+    for i in range(len(ax)):
+        ax[i].set_xlim(min_x0, max_x1)
+        ax[i].set_ylim(min_y0, max_y1)
+
+def vis_data(x_train, y_train, x_valid, y_valid, title, legend, prototype_idx=None, save=False):
+    if x_train.shape[1] != 2 and x_valid.shape[1] != 2:
+        split = len(x_train)
+        print("TSNEing")
+        x_all = TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(np.concatenate((x_train,x_valid)))
+        x_train = x_all[:split]
+        x_valid = x_all[split:]
+
     x_all = np.concatenate((x_train, x_valid))
     y_all = np.concatenate((y_train, y_valid))
     classes = np.unique(y_train)
@@ -189,13 +218,20 @@ def vis_data(x_train, y_train, x_valid, y_valid, title, save=False):
             c_idx = np.where(y==c)[0]
             ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
 
-        ax[i].legend(['non-cancer','cancer'])
+        if prototype_idx:
+            for j, c in enumerate(classes):
+                train_proto = x_train[[int(i) for i in prototype_idx if y_train[i] == c]]
+                ax[i].scatter(train_proto[:,0], train_proto[:,1], s=300, c=f"C{str(j)}", marker='^', linewidths=1, edgecolors='k') 
+
+        ax[i].legend(legend)
         ax[i].set_title("{}".format(subtitles[i]))
     
-    utils.normalize_xylim(ax)
+    normalize_xylim(ax)
     fig.suptitle(title)
     if save:
         plt.savefig(f"{title}.png", dpi=300)
+
+    return x_train, x_valid
 
 def vis_data_all(x, y, title, save=False):
     classes = np.unique(y)
@@ -304,28 +340,6 @@ def vis_knn(k_range, m_range, scores, legend, title, save=False):
 
     if save:
         plt.savefig(f"{title}.png", dpi=300)
-
-def normalize_xylim(ax):
-    min_x0 = np.inf
-    max_x1 = np.NINF
-    min_y0 = np.inf
-    max_y1 = np.NINF
-    xlims = []
-    ylims = []
-    for i in range(len(ax)):
-        xlims.append(ax[i].get_xlim()[0])
-        xlims.append(ax[i].get_xlim()[1])
-        ylims.append(ax[i].get_ylim()[0])
-        ylims.append(ax[i].get_ylim()[1])
-
-    min_x0 = min(xlims)
-    max_x1 = max(xlims)
-    min_y0 = min(ylims)
-    max_y1 = max(ylims)
-    
-    for i in range(len(ax)):
-        ax[i].set_xlim(min_x0, max_x1)
-        ax[i].set_ylim(min_y0, max_y1)
 
 ### not very useful stuff: ###
 
