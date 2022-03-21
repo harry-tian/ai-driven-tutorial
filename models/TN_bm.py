@@ -19,13 +19,10 @@ class TN_bm(TripletNet):
         self.setup_data()
 
     def forward(self, triplet_idx, batch_idx):
-        if self.hparams.split_by == "triplet":
-            input = self.input
+        if self.trainer.training:
+            input = self.train_input
         else:
-            if self.trainer.training:
-                input = self.train_input
-            else:
-                input = self.valid_input
+            input = self.valid_input
 
         embeds = self.embed(input)
         if self.trainer.testing and self.hparams.do_embed and batch_idx==0:
@@ -44,54 +41,32 @@ class TN_bm(TripletNet):
     def setup_data(self):
         train_dir = "/net/scratch/hanliu-shared/data/bm/train"
         valid_dir = "/net/scratch/hanliu-shared/data/bm/valid"
-        all_dir = "/net/scratch/tianh/bm/all"
-        train_triplets = "/net/scratch/tianh/bm/triplets/train_triplets.pkl"
-        valid_triplets = "/net/scratch/tianh/bm/triplets/valid_triplets.pkl"
+        # all_dir = "/net/scratch/tianh/bm/all"
+        # train_triplets = "/net/scratch/tianh/bm/triplets/train_triplets.pkl"
+        # valid_triplets = "/net/scratch/tianh/bm/triplets/valid_triplets.pkl"
 
         train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=utils.bm_transform())
         valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=utils.bm_transform())
         self.train_input = torch.tensor(np.array([data[0].numpy() for data in train_dataset])).cuda()
         self.valid_input = torch.tensor(np.array([data[0].numpy() for data in valid_dataset])).cuda()
 
-        if self.hparams.split_by == "triplet":
-            self.input = self.train_input
-            self.triplets = pickle.load(open(train_triplets, "rb"))
+        self.train_triplets = pickle.load(open(self.hparams.train_triplets, "rb"))
+        self.valid_triplets = pickle.load(open(self.hparams.valid_triplets, "rb"))
+        self.test_triplets = self.valid_triplets
 
-            subset_idx = np.random.choice(len(self.triplets), len(self.triplets)//10, replace=False)
-            self.triplets = self.triplets[subset_idx]
-
-            len_triplets = np.arange(0,self.triplets.shape[0])
-            self.train_idx = np.random.choice(len_triplets, int(len(len_triplets)*0.8), replace=False)
-            self.valid_idx = np.setdiff1d(len_triplets, self.train_idx)
-            self.train_triplets = self.triplets[self.train_idx]
-            self.valid_triplets = self.triplets[self.valid_idx]
-            self.test_triplets = self.train_triplets
-
-        elif self.hparams.split_by == "img":
-            self.train_triplets = pickle.load(open(train_triplets, "rb"))
-            self.valid_triplets = pickle.load(open(valid_triplets, "rb"))
-            self.test_triplets = self.valid_triplets
-
-            if self.hparams.subset:
-                subset_idx = np.random.choice(len(self.train_triplets), len(self.train_triplets)//20, replace=False)
-                self.train_triplets = self.train_triplets[subset_idx]
+        if self.hparams.subset:
+            subset_idx = np.random.choice(len(self.train_triplets), len(self.train_triplets)//20, replace=False)
+            self.train_triplets = self.train_triplets[subset_idx]
         
-        elif self.hparams.split_by == "human":
-            train_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets.pkl"
-            valid_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/valid_triplets.pkl"
-            self.train_triplets = pickle.load(open(train_triplets, "rb"))
-            self.valid_triplets = pickle.load(open(valid_triplets, "rb"))
-            self.test_triplets = self.valid_triplets
     
         self.train_dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))
         self.valid_dataset = torch.utils.data.TensorDataset(torch.tensor(self.valid_triplets))
         self.test_dataset = torch.utils.data.TensorDataset(torch.tensor(self.test_triplets))
 
-    # def get_datasets(self):
-    #     return self.train_input, self.valid_input
-
     @staticmethod
-    def add_model_specific_args(parser):        
+    def add_model_specific_args(parser):   
+        parser.add_argument("--train_triplets", default=None, type=str, required=True)
+        parser.add_argument("--valid_triplets", default=None, type=str, required=True)     
         return parser
 
 def main():

@@ -34,16 +34,16 @@ def get_embeds(model_path, args, ckpt, split, train_idx=None, valid_idx=None, em
 
     return embeds
 
-model_path = "MTL_BCETN.MTL_BCETN"
+model_path = "TN_bm.TN_bm"
 
 args = argparse.Namespace(embed_dim=10)
-ckpt = 'butterfly-moth/3nuz36yz'
+ckpt = 'butterfly-moth/2u171z7r'
 
 
 
 subdir = "bm/human"
 split = "valid"
-name = "NTL.BCETN_split_emb10"
+name = "TN_split_emb101"
 
 
 # train_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets.pkl"

@@ -18,6 +18,187 @@ METRIC = "auc"
 WEIGHTS = "uniform"
 LINEAR = True
 
+### visualization stuff ######################
+
+if True:
+    SMALL_SIZE = 10
+    MEDIUM_SIZE = 15
+    BIGGER_SIZE = 25
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+def normalize_xylim(ax):
+    min_x0 = np.inf
+    max_x1 = np.NINF
+    min_y0 = np.inf
+    max_y1 = np.NINF
+    xlims = []
+    ylims = []
+    for i in range(len(ax)):
+        xlims.append(ax[i].get_xlim()[0])
+        xlims.append(ax[i].get_xlim()[1])
+        ylims.append(ax[i].get_ylim()[0])
+        ylims.append(ax[i].get_ylim()[1])
+
+    min_x0 = min(xlims)
+    max_x1 = max(xlims)
+    min_y0 = min(ylims)
+    max_y1 = max(ylims)
+    
+    for i in range(len(ax)):
+        ax[i].set_xlim(min_x0, max_x1)
+        ax[i].set_ylim(min_y0, max_y1)
+
+def vis_data(x_train, y_train, x_valid, y_valid, title, legend, prototype_idx=None, save=False, save_dir=None):
+    if x_train.shape[1] != 2 and x_valid.shape[1] != 2:
+        split = len(x_train)
+        print("TSNEing")
+        x_all = TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(np.concatenate((x_train,x_valid)))
+        x_train = x_all[:split]
+        x_valid = x_all[split:]
+
+    x_all = np.concatenate((x_train, x_valid))
+    y_all = np.concatenate((y_train, y_valid))
+    classes = np.unique(y_train)
+    subtitles = ["all", "train", "valid"]
+    fig, ax = plt.subplots(1, len(subtitles), figsize=(24, 6))
+
+    for i, data in enumerate([(x_all, y_all), (x_train, y_train),(x_valid, y_valid)]):
+        x, y = data
+        for c in classes:
+            c_idx = np.where(y==c)[0]
+            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
+
+        if prototype_idx:
+            for j, c in enumerate(classes):
+                train_proto = x_train[[int(i) for i in prototype_idx if y_train[i] == c]]
+                ax[i].scatter(train_proto[:,0], train_proto[:,1], s=300, c=f"C{str(j)}", marker='^', linewidths=1, edgecolors='k') 
+
+        ax[i].set_title("{}".format(subtitles[i]))
+    ax[2].legend(legend)
+    
+    normalize_xylim(ax)
+    fig.suptitle(title,fontsize=30)
+    if save:
+        if not save_dir: save_dir = f"figs/{title}.png"
+        plt.savefig(save_dir)
+
+    return x_train, x_valid
+
+def vis_data_all(x, y, title, save=False):
+    classes = np.unique(y)
+    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+
+    for i, data in enumerate([(x,y),(x,y)]):
+        x, y = data
+        for c in classes:
+            c_idx = np.where(y==c)[0]
+            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
+
+        ax[i].legend(['non-cancer','cancer'])
+    
+    utils.normalize_xylim(ax)
+    fig.suptitle(title)
+    if save:
+        plt.savefig(f"{title}.png", dpi=300)
+
+def vis_proto(x_train, y_train,train_proto_idx, title, save=False, order=False, eps=0, x_valid=None, y_valid=None,valid_proto_idx=None):
+    classes = np.unique(y_train)
+    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+    # for i, data in enumerate([(x_train, y_train),(x_valid, y_valid)]):
+    for i, data in enumerate([(x_train, y_train)]):
+        x, y = data
+        for c in classes:
+            c_idx = np.where(y==c)[0]
+            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
+        ax[i].legend(['non-cancer','cancer'])
+        ax[i].set_title(title)
+        # ax[i].set_title("{}.{}.{}".format(model, name, "train" if i == 0 else "valid"))
+
+    for j, c in enumerate(classes):
+        train_proto = x_train[[int(i) for i in train_proto_idx if y_train[i] == c]]
+        ax[0].scatter(train_proto[:,0], train_proto[:,1], s=300, c=f"C{str(j)}", marker='^', linewidths=1, edgecolors='k') 
+        # valid_proto = x_valid[[int(i) for i in valid_proto_idx if y_valid[i] == c]]
+        # ax[1].scatter(valid_proto[:,0], valid_proto[:,1], s=300, c=f"C{str(j)}",marker='^', linewidths=1, edgecolors='k') 
+
+    for o, i in enumerate(train_proto_idx):
+        proto = x_train[i]
+        c = plt.Circle(proto, radius=eps, fill=False,lw=0.75)
+        
+        if order:
+            ax[0].text(proto[0],proto[1],str(o), size="xx-large", weight="bold", c="0")
+        ax[0].add_patch(c)
+
+    if save:
+        plt.savefig(f"{title}.png", dpi=300)
+
+def vis_triplets(x_train, y_train, triplet_dict, title, save=False):
+    classes = np.unique(y_train)
+    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+    for i, data in enumerate([(x_train, y_train)]):
+        x, y = data
+        for c in classes:
+            c_idx = np.where(y==c)[0]
+            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
+        
+        ax[i].legend(['non-cancer','cancer'])
+        ax[i].set_title("{}".format("train" if i == 0 else "valid"))
+    
+    for i, triplet in enumerate(triplet_dict):
+        anchor, pos, neg = triplet
+        anchor = x_train[anchor]
+        pos = x_train[pos]
+        neg = x_train[neg]
+        ax[0].scatter(anchor[0], anchor[1], s=300, c='0.5', marker='^', linewidths=1, edgecolors='k') 
+        ax[0].scatter(pos[0], pos[1], s=300, c='0', marker='^', linewidths=1, edgecolors='k') 
+        ax[0].scatter(neg[0], neg[1], s=300, c='1', marker='^', linewidths=1, edgecolors='k') 
+        ax[0].text(anchor[0], anchor[1], str(i), c='0', size="xx-large", weight="bold") 
+        ax[0].text(pos[0], pos[1], str(i), c='0', size="xx-large", weight="bold") 
+        ax[0].text(neg[0], neg[1], str(i), c='0', size="xx-large", weight="bold") 
+
+    # utils.normalize_xylim(ax)
+    fig.suptitle(title)
+    if save:
+        plt.savefig(f"{title}.png", dpi=300)
+
+def vis_proto_2(x_train, y_train, proto_idx1, proto_idx2, title, save=False, order=False, eps=0):
+    classes = np.unique(y_train)
+    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+    for i, data in enumerate([(x_train, y_train)]):
+        x, y = data
+        for c in classes:
+            c_idx = np.where(y==c)[0]
+            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
+        ax[i].legend(['non-cancer','cancer'])
+        ax[i].set_title(title)
+
+        protos1 = x_train[proto_idx1]
+        protos2 = x_train[proto_idx2]
+        ax[i].scatter(protos1[:,0], protos1[:,1], s=300, c = 'g', marker='^', linewidths=1, edgecolors='k') 
+        ax[i].scatter(protos2[:,0], protos2[:,1], s=300, c = 'r', marker='^', linewidths=1, edgecolors='k') 
+    if save:
+        plt.savefig(f"{title}.png", dpi=300)
+    
+def vis_knn(k_range, m_range, scores, legend, title, save=False):
+    lw = 3
+    fig, ax = plt.subplots(1, len(k_range), figsize=(24,6), sharey=True)
+    for k in range(len(k_range)):
+        for score in scores:
+            ax[k].plot(m_range, score[k], lw=lw)
+
+        ax[k].legend(legend, loc='lower right')
+        ax[k].set_title('K={}'.format(k_range[k]))
+    fig.suptitle(title)
+
+    if save:
+        plt.savefig(f"{title}.png", dpi=300)
+
+
 def get_knn_score(k, data, index, metric="auc", weights="uniform"):
     x_train, y_train, x_valid, y_valid = data
     knc = KNeighborsClassifier(n_neighbors=k, weights=weights)
@@ -161,185 +342,6 @@ def prototype_knn(data, proto_idx, k_range, m_range):
     return np.array(scores).reshape(len(k_range), len(m_range))
 
 
-
-### visualization stuff ######################
-
-if True:
-    SMALL_SIZE = 10
-    MEDIUM_SIZE = 15
-    BIGGER_SIZE = 20
-    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
-    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
-    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-
-def normalize_xylim(ax):
-    min_x0 = np.inf
-    max_x1 = np.NINF
-    min_y0 = np.inf
-    max_y1 = np.NINF
-    xlims = []
-    ylims = []
-    for i in range(len(ax)):
-        xlims.append(ax[i].get_xlim()[0])
-        xlims.append(ax[i].get_xlim()[1])
-        ylims.append(ax[i].get_ylim()[0])
-        ylims.append(ax[i].get_ylim()[1])
-
-    min_x0 = min(xlims)
-    max_x1 = max(xlims)
-    min_y0 = min(ylims)
-    max_y1 = max(ylims)
-    
-    for i in range(len(ax)):
-        ax[i].set_xlim(min_x0, max_x1)
-        ax[i].set_ylim(min_y0, max_y1)
-
-def vis_data(x_train, y_train, x_valid, y_valid, title, legend, prototype_idx=None, save=False):
-    if x_train.shape[1] != 2 and x_valid.shape[1] != 2:
-        split = len(x_train)
-        print("TSNEing")
-        x_all = TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(np.concatenate((x_train,x_valid)))
-        x_train = x_all[:split]
-        x_valid = x_all[split:]
-
-    x_all = np.concatenate((x_train, x_valid))
-    y_all = np.concatenate((y_train, y_valid))
-    classes = np.unique(y_train)
-    subtitles = ["all", "train", "valid"]
-    fig, ax = plt.subplots(1, len(subtitles), figsize=(24, 6))
-
-    for i, data in enumerate([(x_all, y_all), (x_train, y_train),(x_valid, y_valid)]):
-        x, y = data
-        for c in classes:
-            c_idx = np.where(y==c)[0]
-            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
-
-        if prototype_idx:
-            for j, c in enumerate(classes):
-                train_proto = x_train[[int(i) for i in prototype_idx if y_train[i] == c]]
-                ax[i].scatter(train_proto[:,0], train_proto[:,1], s=300, c=f"C{str(j)}", marker='^', linewidths=1, edgecolors='k') 
-
-        ax[i].legend(legend)
-        ax[i].set_title("{}".format(subtitles[i]))
-    
-    normalize_xylim(ax)
-    fig.suptitle(title)
-    if save:
-        plt.savefig(f"{title}.png", dpi=300)
-
-    return x_train, x_valid
-
-def vis_data_all(x, y, title, save=False):
-    classes = np.unique(y)
-    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
-
-    for i, data in enumerate([(x,y),(x,y)]):
-        x, y = data
-        for c in classes:
-            c_idx = np.where(y==c)[0]
-            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
-
-        ax[i].legend(['non-cancer','cancer'])
-    
-    utils.normalize_xylim(ax)
-    fig.suptitle(title)
-    if save:
-        plt.savefig(f"{title}.png", dpi=300)
-
-def vis_proto(x_train, y_train,train_proto_idx, title, save=False, order=False, eps=0, x_valid=None, y_valid=None,valid_proto_idx=None):
-    classes = np.unique(y_train)
-    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
-    # for i, data in enumerate([(x_train, y_train),(x_valid, y_valid)]):
-    for i, data in enumerate([(x_train, y_train)]):
-        x, y = data
-        for c in classes:
-            c_idx = np.where(y==c)[0]
-            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
-        ax[i].legend(['non-cancer','cancer'])
-        ax[i].set_title(title)
-        # ax[i].set_title("{}.{}.{}".format(model, name, "train" if i == 0 else "valid"))
-
-    for j, c in enumerate(classes):
-        train_proto = x_train[[int(i) for i in train_proto_idx if y_train[i] == c]]
-        ax[0].scatter(train_proto[:,0], train_proto[:,1], s=300, c=f"C{str(j)}", marker='^', linewidths=1, edgecolors='k') 
-        # valid_proto = x_valid[[int(i) for i in valid_proto_idx if y_valid[i] == c]]
-        # ax[1].scatter(valid_proto[:,0], valid_proto[:,1], s=300, c=f"C{str(j)}",marker='^', linewidths=1, edgecolors='k') 
-
-    for o, i in enumerate(train_proto_idx):
-        proto = x_train[i]
-        c = plt.Circle(proto, radius=eps, fill=False,lw=0.75)
-        
-        if order:
-            ax[0].text(proto[0],proto[1],str(o), size="xx-large", weight="bold", c="0")
-        ax[0].add_patch(c)
-
-    if save:
-        plt.savefig(f"{title}.png", dpi=300)
-
-def vis_triplets(x_train, y_train, triplet_dict, title, save=False):
-    classes = np.unique(y_train)
-    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
-    for i, data in enumerate([(x_train, y_train)]):
-        x, y = data
-        for c in classes:
-            c_idx = np.where(y==c)[0]
-            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
-        
-        ax[i].legend(['non-cancer','cancer'])
-        ax[i].set_title("{}".format("train" if i == 0 else "valid"))
-    
-    for i, triplet in enumerate(triplet_dict):
-        anchor, pos, neg = triplet
-        anchor = x_train[anchor]
-        pos = x_train[pos]
-        neg = x_train[neg]
-        ax[0].scatter(anchor[0], anchor[1], s=300, c='0.5', marker='^', linewidths=1, edgecolors='k') 
-        ax[0].scatter(pos[0], pos[1], s=300, c='0', marker='^', linewidths=1, edgecolors='k') 
-        ax[0].scatter(neg[0], neg[1], s=300, c='1', marker='^', linewidths=1, edgecolors='k') 
-        ax[0].text(anchor[0], anchor[1], str(i), c='0', size="xx-large", weight="bold") 
-        ax[0].text(pos[0], pos[1], str(i), c='0', size="xx-large", weight="bold") 
-        ax[0].text(neg[0], neg[1], str(i), c='0', size="xx-large", weight="bold") 
-
-    # utils.normalize_xylim(ax)
-    fig.suptitle(title)
-    if save:
-        plt.savefig(f"{title}.png", dpi=300)
-
-def vis_proto_2(x_train, y_train, proto_idx1, proto_idx2, title, save=False, order=False, eps=0):
-    classes = np.unique(y_train)
-    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
-    for i, data in enumerate([(x_train, y_train)]):
-        x, y = data
-        for c in classes:
-            c_idx = np.where(y==c)[0]
-            ax[i].scatter(x[c_idx][:,0], x[c_idx][:,1])
-        ax[i].legend(['non-cancer','cancer'])
-        ax[i].set_title(title)
-
-        protos1 = x_train[proto_idx1]
-        protos2 = x_train[proto_idx2]
-        ax[i].scatter(protos1[:,0], protos1[:,1], s=300, c = 'g', marker='^', linewidths=1, edgecolors='k') 
-        ax[i].scatter(protos2[:,0], protos2[:,1], s=300, c = 'r', marker='^', linewidths=1, edgecolors='k') 
-    if save:
-        plt.savefig(f"{title}.png", dpi=300)
-    
-def vis_knn(k_range, m_range, scores, legend, title, save=False):
-    lw = 3
-    fig, ax = plt.subplots(1, len(k_range), figsize=(24,6), sharey=True)
-    for k in range(len(k_range)):
-        for score in scores:
-            ax[k].plot(m_range, score[k], lw=lw)
-
-        ax[k].legend(legend, loc='lower right')
-        ax[k].set_title('K={}'.format(k_range[k]))
-    fig.suptitle(title)
-
-    if save:
-        plt.savefig(f"{title}.png", dpi=300)
 
 ### not very useful stuff: ###
 

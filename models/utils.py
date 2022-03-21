@@ -37,12 +37,13 @@ def generic_train(model, args, monitor,
     log_dir = Path(os.path.join(output_dir, 'logs'))
     log_dir.mkdir(parents=True, exist_ok=True)
 
+    wandb_name = f"{time.strftime('%m/%d_%H:%M')}" if not args.wandb_name else args.wandb_name
     experiment = wandb.init(
         entity=args.wandb_entity,
         project=args.wandb_project,
         mode=args.wandb_mode, 
         group=args.wandb_group,
-        name=f"{time.strftime('%m/%d_%H:%M')}")
+        name=wandb_name)
 
     logger = WandbLogger(project="imagenet_bm", experiment=experiment)
 

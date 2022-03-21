@@ -110,6 +110,7 @@ class MTL(pl.LightningModule):
         parser.add_argument("--wandb_mode", default="offline", type=str)
         parser.add_argument("--wandb_project", default="?", type=str)
         parser.add_argument("--wandb_entity", default="harry-tian", type=str)
+        parser.add_argument("--wandb_name", default=None, type=str)
 
         parser.add_argument("--do_train", action="store_true")
         parser.add_argument("--do_test", action="store_true")

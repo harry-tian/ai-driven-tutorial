@@ -24,13 +24,13 @@ class MTL_BCETN(MTL):
             inputs = self.valid_inputs
 
         embeds = self.embed(inputs)
-        if self.trainer.testing and self.hparams.do_embed and batch_idx==0:
-            if not self.hparams.embed_path:
-                embed_path = f"embeds/{self.hparams.wandb_project}.pkl"
-            else:
-                embed_path = self.hparams.embed_path
-            pickle.dump(embeds.cpu(), open(embed_path,"wb"))
-            print(f"\n dumped embeds to {embed_path}")
+        # if self.trainer.testing and self.hparams.do_embed and batch_idx==0:
+        #     if not self.hparams.embed_path:
+        #         embed_path = f"embeds/{self.hparams.wandb_project}.pkl"
+        #     else:
+        #         embed_path = self.hparams.embed_path
+        #     pickle.dump(embeds.cpu(), open(embed_path,"wb"))
+        #     print(f"\n dumped embeds to {embed_path}")
 
         if self.hparams.MTL_hparam:
             clf_data = embeds[clf_idx]
@@ -81,12 +81,12 @@ class MTL_BCETN(MTL):
         self.train_labels = torch.tensor(np.array([data[1] for data in train_dataset])).cuda()
         self.valid_labels = torch.tensor(np.array([data[1] for data in valid_dataset])).cuda()
 
-        train_triplets = "/net/scratch/tianh/bm/triplets/train_triplets.pkl"
-        valid_triplets = "/net/scratch/tianh/bm/triplets/valid_triplets.pkl"
-        train_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets.pkl"
-        valid_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/valid_triplets.pkl"
-        train_triplets = pickle.load(open(train_triplets, "rb"))
-        valid_triplets = pickle.load(open(valid_triplets, "rb"))
+        # train_triplets = "/net/scratch/tianh/bm/triplets/train_triplets.pkl"
+        # valid_triplets = "/net/scratch/tianh/bm/triplets/valid_triplets.pkl"
+        # train_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets.pkl"
+        # valid_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/valid_triplets.pkl"
+        train_triplets = pickle.load(open(self.hparams.train_triplets, "rb"))
+        valid_triplets = pickle.load(open(self.hparams.valid_triplets, "rb"))
 
         if self.hparams.subset:
             subset_idx = np.random.choice(len(train_triplets), len(train_triplets)//10, replace=False)
@@ -103,6 +103,8 @@ class MTL_BCETN(MTL):
 
     @staticmethod
     def add_model_specific_args(parser):
+        parser.add_argument("--train_triplets", default=None, type=str, required=True)
+        parser.add_argument("--valid_triplets", default=None, type=str, required=True)  
         return parser
 
 def main():
