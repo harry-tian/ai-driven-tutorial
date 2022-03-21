@@ -11,9 +11,10 @@ from sklearn.metrics.pairwise import euclidean_distances
 import matplotlib.pyplot as plt
 import math, pickle
 np.random.seed(42)
-import sys
+import sys, pickle
 sys.path.insert(0,'..')
 import algorithms.pdash as pdash
+from algorithms.selection import select
 
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 # global y_train
@@ -51,21 +52,27 @@ def protodash(X, m, kernel="Gaussian"):
     _, prototype_idx, _ = protodash.explain(X, X, m=m, kernelType=kernel)
     return prototype_idx
 
-def protogreedy(X, m, kernel=None):
+def protogreedy(X, m):
     return pdash.proto_g(X, np.arange(len(X)), m)
+
+def prototriplet(X, m):
+    triplets = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
+    return list(select(X, m, triplets, labels=y_train, topk=10, verbose=False)[0])
 
 ########### knn helpers ############################
 
-def get_prototype_knn_scores(X, knn_dist, m_range, selection_alg, kernel="Linear", k=1):
+def get_prototype_knn_scores(X, knn_dist, m_range, selection_alg, k=1):
     if selection_alg == "protodash":
         selection_alg = protodash
     elif selection_alg == "protogreedy":
         selection_alg = protogreedy
+    elif selection_alg == "prototriplet":
+        selection_alg = prototriplet
     knn = get_lpips_knn_score if knn_dist == "lpips" else get_htriplet_knn_score
 
     prototype_knn_scores = []
     for m in m_range:
-        prototype_idx = selection_alg(X, m, kernel)
+        prototype_idx = selection_alg(X, m)
         knn_score = knn(prototype_idx, k=k)
         prototype_knn_scores.append(knn_score)
 
@@ -119,11 +126,11 @@ if True:
     plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('legend', fontsize=12)    # legend fontsize
-    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    plt.rc('figure', titlesize=25)  # fontsize of the figure title
     colors = ["black", "","red", "blue", "green","yellow"]
     linewidth = 4.0
 
-def vis_all_knn_scores(m_range, all_scores, legend=None, title=None, save=False):
+def vis_all_knn_scores(m_range, all_scores, legend=None, title=None, save=False, save_dir=None):
     plt.figure(figsize=(16,10))
 
     for i, scores in enumerate(all_scores):
@@ -142,9 +149,10 @@ def vis_all_knn_scores(m_range, all_scores, legend=None, title=None, save=False)
 
     if not title:
         title = "knn_scores"
-    plt.title(title)
+    plt.title(title,fontsize=30)
     if save:
-        plt.savefig(f"{title}.png", dpi=600)
+        if not save_dir: save_dir = f"figs/{title}.png"
+        plt.savefig(save_dir)
 
 def vis_all_knn_scores_multiplot(m_range, all_scores, legend=None, subtitles=None, title=None, save=False):
     num_figs = len(all_scores)

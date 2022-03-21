@@ -12,11 +12,11 @@ def get_topk(scores, visits, topk, type="count", confidence=0.01, verbose=False)
     if type == "count":
         keys = heapq.nlargest(topk, scores, key=scores.__getitem__)
         weights = [scores[k] for k in keys]
-    if type == "acc":
+    elif type == "acc":
         acc = {b: scores[b] / (visits[b] + 1e-10) for b in scores}
         keys = heapq.nlargest(topk, acc, key=acc.__getitem__)
         weights = [acc[k] for k in keys]
-    if type == "lcb":
+    elif type == "lcb":
         t = sum(visits.values())
         acc = {b: scores[b] / (visits[b] + 1e-10) for b in scores}
         lcb = {b: acc[b] - confidence * np.sqrt(t / visits[b] if visits[b] > 0 else 0) for b in scores}
@@ -24,7 +24,7 @@ def get_topk(scores, visits, topk, type="count", confidence=0.01, verbose=False)
             print({b: lcb[b] for b in heapq.nlargest(3, lcb, key=lcb.__getitem__)})
         keys = heapq.nlargest(topk, lcb, key=lcb.__getitem__)
         weights = [lcb[k] for k in keys] 
-    if type == "ucb":
+    elif type == "ucb":
         t = sum(visits.values())
         acc = {b: scores[b] / (visits[b] + 1e-10) for b in scores}
         ucb = {b: acc[b] + confidence * np.sqrt(t / visits[b] if visits[b] > 0 else 0) for b in scores}
@@ -58,6 +58,7 @@ def select(embeds, m, triplets, labels=None, topk=10, verbose=False):
     scores = defaultdict(lambda: 0)
     visits = defaultdict(lambda: 0)
 
+    ### using distance matrix with shape (n,n)
     if len(triplets[0]) > 3:
         uni = np.arange(len(triplets))
         n = len(uni)
@@ -66,6 +67,7 @@ def select(embeds, m, triplets, labels=None, topk=10, verbose=False):
                 correct = (dist[i] <= dist[j]) & (triplets[i] <= triplets[j])
                 scores[(j, i)] += correct.sum() - 2
                 visits[(j, i)] += n - 2
+    ### using triplets with shape (T, 3)
     else:
         for t in triplets:
             a, p, n = t
