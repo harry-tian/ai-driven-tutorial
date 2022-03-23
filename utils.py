@@ -54,7 +54,7 @@ def normalize_xylim(ax):
         ax[i].set_xlim(min_x0, max_x1)
         ax[i].set_ylim(min_y0, max_y1)
 
-def vis_data(x_train, y_train, x_valid, y_valid, title, legend, prototype_idx=None, save=False, save_dir=None):
+def vis_all_data(x_train, y_train, x_valid, y_valid, title, legend, prototype_idx=None, save=False, save_dir=None):
     if x_train.shape[1] != 2 and x_valid.shape[1] != 2:
         split = len(x_train)
         print("TSNEing")
@@ -89,6 +89,31 @@ def vis_data(x_train, y_train, x_valid, y_valid, title, legend, prototype_idx=No
         plt.savefig(save_dir)
 
     return x_train, x_valid
+
+def vis_data(x_train, y_train, title, legend, prototype_idx=None, save=False, save_dir=None):
+    if x_train.shape[1] != 2:
+        print("TSNEing")
+        x_train = TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(x_train)
+
+    classes = np.unique(y_train)
+    plt.figure(figsize=(8, 6))
+
+    for c in classes:
+        c_idx = np.where(y_train==c)[0]
+        plt.scatter(x_train[c_idx][:,0], x_train[c_idx][:,1])
+
+    if prototype_idx is not None:
+        for j, c in enumerate(classes):
+            train_proto = x_train[[int(i) for i in prototype_idx if y_train[i] == c]]
+            plt.scatter(train_proto[:,0], train_proto[:,1], s=300, c=f"C{str(j)}", marker='^', linewidths=1, edgecolors='k') 
+
+    plt.legend(legend)
+    plt.title(title,fontsize=30)
+    if save:
+        if not save_dir: save_dir = f"figs/{title}.png"
+        plt.savefig(save_dir)
+
+    return x_train
 
 def vis_data_all(x, y, title, save=False):
     classes = np.unique(y)
