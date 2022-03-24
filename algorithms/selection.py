@@ -4,6 +4,7 @@ import torch
 import heapq
 from collections import defaultdict
 from copy import deepcopy
+from itertools import combinations
 
 skey = lambda k: tuple(sorted(k))
 
@@ -102,4 +103,50 @@ def tripet_greedy(embeds, m, triplets, labels=None, topk=10, metric="count", ver
         curr_scores = new_scores
         curr_visits = new_visits
         beam, w = get_topk(curr_scores, curr_visits, topk, metric=metric, verbose=verbose)
+    return beam[0], w[0]
+
+
+def nn_greedy(dist, m, labels, topk=10, metric="count", verbose=False):
+    if len(dist) == 2:
+        x1, x2 = dist
+        z1, z2 = torch.tensor(x1), torch.tensor(x2)
+        dist = torch.cdist(z1, z2).numpy()
+    y1, y2 = labels
+    uni = np.arange(len(dist))
+    n = len(uni)
+
+    scores = defaultdict(lambda: 0)
+    # nearns = defaultdict(lambda: np.zeros(n, dtype=np.int8) - 1)
+
+    for c in combinations(range(n), 2):
+        key = skey(c)
+        dsx = dist[key, :]
+        nn1mask = np.argmin(dsx, axis=0)
+        nn1 = np.take(key, nn1mask)
+        nn1pred = np.take(y1, nn1)
+        score = (nn1pred == y2).sum()
+        scores[key] = score
+        # nearns[key] = nn1
+
+    curr_scores = deepcopy(scores)
+    # curr_nearns = deepcopy(nearns)
+    beam, w = get_topk(curr_scores, defaultdict(lambda: len(y2)), topk, metric=metric, verbose=verbose)
+    for _ in range(3, m+1):
+        new_scores = defaultdict(lambda: 0)
+        # new_nearns = deepcopy(new_scores)
+        for b in beam:
+            for k in uni:
+                if k not in b:
+                    key = skey(b + (k,))
+                    dsx = dist[key, :]
+                    nn1mask = np.argmin(dsx, axis=0)
+                    nn1 = np.take(key, nn1mask)
+                    nn1pred = np.take(y1, nn1)
+                    score = (nn1pred == y2).sum()
+                    new_scores[key] = score
+                    # new_nearns[key] = nn1
+        curr_scores = new_scores
+        # curr_nearns = new_nearns
+        beam, w = get_topk(curr_scores, defaultdict(lambda: len(y2)), topk, metric=metric, verbose=verbose)
+
     return beam[0], w[0]
