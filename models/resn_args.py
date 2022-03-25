@@ -2,17 +2,11 @@
 import os
 import time
 import argparse
-import shutil
-from pathlib import Path
-
-import numpy as np
 import torch
-from torch import nn
-import torch.nn.functional as F
 import torchvision
-from torchvision import transforms, models
+from torch import nn
+from torchvision import  models
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import WandbLogger
 import wandb
 import utils
 
@@ -21,8 +15,7 @@ warnings.filterwarnings("ignore")
 
 
 class RESN(pl.LightningModule):
-
-    def __init__(self, verbose=False, **config_kwargs):
+    def __init__(self, train_idx=None, valid_idx=None, verbose=False, **config_kwargs):
         super().__init__()
         self.save_hyperparameters()
 
@@ -81,109 +74,58 @@ class RESN(pl.LightningModule):
         self.log('valid_auprc', m['auprc'], sync_dist=True)
         return {'valid_loss': loss, 'valid_auc': m['auc']}
 
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        prob = torch.sigmoid(logits)
+        loss = self.criterion(logits, y.type_as(logits).unsqueeze(1))
+        m = utils.metrics(prob, y.unsqueeze(1))
+        self.log('test_acc', m['acc'], prog_bar=True, sync_dist=True)
+        self.log('test_auc', m['auc'], prog_bar=True, sync_dist=True)
+        return {'test_loss': loss, 'test_auc': m['auc']}
+
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        self.opt = optimizer
         return optimizer
 
     def train_dataloader(self):
-        dataset = torchvision.datasets.ImageFolder(
-            self.hparams.train_dir, transform=utils.bm_transform_aug()
-            )
-        dataloader = torch.utils.data.DataLoader(
-            dataset, 
-            batch_size=self.hparams.train_batch_size, 
-            num_workers=self.hparams.dataloader_num_workers, 
-            drop_last=True, shuffle=True)
-        return dataloader
+        transform = utils.bm_transform_aug() if self.hparams.transform == "bm" else utils.xray_transform_aug()
+        dataset = torchvision.datasets.ImageFolder(self.hparams.train_dir, transform=transform)
+        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
 
     def val_dataloader(self):
-        dataset = torchvision.datasets.ImageFolder(
-            self.hparams.valid_dir, transform=utils.bm_transform()
-            )
-        dataloader = torch.utils.data.DataLoader(
-            dataset, 
-            batch_size=len(dataset), 
-            num_workers=self.hparams.dataloader_num_workers, 
-            drop_last=False, shuffle=False)
-        return dataloader
+        transform = utils.bm_transform() if self.hparams.transform == "bm" else utils.xray_transform()
+        dataset = torchvision.datasets.ImageFolder(self.hparams.valid_dir, transform=transform)
+        return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
+
+
+    def test_dataloader(self):
+        transform = utils.bm_transform() if self.hparams.transform == "bm" else utils.xray_transform()
+        dataset = torchvision.datasets.ImageFolder(self.hparams.test_dir, transform=transform)
+        return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
+
 
     @staticmethod
-    def add_model_specific_args(parser, root_dir):
+    def add_model_specific_args(parser):
         parser.add_argument("--pretrained", action="store_true")
         parser.add_argument("--embed_dim", default=10, type=int, help="Embedding size")
-        parser.add_argument('--kernel', type=str, default='gaussian', help='hparam for kernel [guassian|laplace|invquad]')
-        parser.add_argument('--gamma', type=float, default=1.0, help='hparam for kernel')
-        parser.add_argument('--eps', type=float, default=1e-12, help='label smoothing factor for learning')
-        parser.add_argument("--horizontal_flip", default=0, type=float)
-        parser.add_argument("--vertical_flip", default=0, type=float)
-        parser.add_argument("--rotate", default=0, type=int)
-        parser.add_argument("--translate", default=0, type=float)
-        parser.add_argument("--scale", default=0, type=float)
-        parser.add_argument("--shear", default=0, type=float)
+        parser.add_argument("--transform", default="bm", type=str)
         return parser
 
-def train(
-    model:RESN,
-    args: argparse.Namespace,
-    early_stopping_callback=False,
-    extra_callbacks=[],
-    checkpoint_callback=None,
-    logging_callback=None,
-    **extra_train_kwargs
-    ):
-
-    # init model
-    odir = Path(model.hparams.output_dir)
-    odir.mkdir(parents=True, exist_ok=True)
-    log_dir = Path(os.path.join(model.hparams.output_dir, 'logs'))
-    log_dir.mkdir(parents=True, exist_ok=True)
-
-    # build logger
-    ## WandB logger
-    experiment = wandb.init(
-        mode=args.wandb_mode, 
-        group=args.wandb_group
-    )
-    logger = WandbLogger(
-        project="imagenet_bm",
-        experiment=experiment
-    )
-
-    # add custom checkpoints
-    ckpt_path = os.path.join(
-        args.output_dir, logger.version, "checkpoints",
-    )
-    if checkpoint_callback is None:
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor="valid_loss", mode="min", save_last=True, save_top_k=3, verbose=True
-        )
-
-    train_params = {}
-    train_params["max_epochs"] = args.max_epochs
-    if args.gpus == -1 or args.gpus > 1:
-        train_params["distributed_backend"] = "ddp"
-
-    trainer = pl.Trainer.from_argparse_args(
-        args,
-        auto_select_gpus=True,
-        weights_summary=None,
-        callbacks=extra_callbacks + [checkpoint_callback],
-        logger=logger,
-        **train_params,
-    )
-
-    if args.do_train:
-        trainer.fit(model)
-        # save best model to `best_model.ckpt`
-        target_path = os.path.join(ckpt_path, 'best_model.ckpt')
-        print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
-        shutil.copy(checkpoint_callback.best_model_path, target_path)
-
-    return trainer
-
-
 def main():
+    parser = utils.add_generic_args()
+    RESN.add_model_specific_args(parser)
+    args = parser.parse_args()
+    print(args)
 
+    pl.seed_everything(args.seed)
+    
+    dict_args = vars(args)
+    model = RESN(**dict_args)
+    trainer = utils.generic_train(model, args, "valid_loss")
+
+def cross_validate():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gpus", default=1, type=int)
     parser.add_argument("--seed", default=42, type=int)
@@ -214,8 +156,14 @@ def main():
         os.makedirs(args.output_dir)
     
     dict_args = vars(args)
-    model = RESN(**dict_args)
-    trainer = utils.generic_train(model, args, "valid_loss")
+
+
+
+    for split in splits:
+        train_idx, valid_idx = split
+        model = RESN(train_idx=train_idx, valid_idx=valid_idx, **dict_args)
+        trainer = utils.generic_train(model, args, "valid_loss")
 
 if __name__ == "__main__":
     main()
+    # cross_validate()

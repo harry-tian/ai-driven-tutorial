@@ -63,7 +63,6 @@ def human_1NN_align(x_train, x_valid):
     
     return correct/total
 
-
 def get_triplet_acc(embeds, triplets, dist_f=euc_dist):
     """Return triplet accuracy given ground-truth triplets."""
     align = []

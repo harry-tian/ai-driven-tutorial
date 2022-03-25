@@ -108,19 +108,21 @@ def vis_data_multiplot(all_data, legend, title=None, subtitles=None, prototype_i
 def vis_knn_scores(m_range, scores, title=None, save=False, save_dir=None):
     plt.figure(figsize=(10,6))
 
-    plt.axhline(scores["full_score"] , c='black', linewidth=2, linestyle="solid", label="full score")  
+    plt.axhline(scores["full"] , c='black', linewidth=2, linestyle="solid", label="full")  
 
-    random_knn_scores, random_knn_ci = scores["random_scores"], scores["random_ci"]
+    random_knn_scores, random_knn_ci = scores["random_scores"]
     plt.plot(m_range, random_knn_scores, linewidth=2, linestyle="dashed", label="random score")
     plt.fill_between(m_range, random_knn_scores + random_knn_ci / 2, random_knn_scores - random_knn_ci / 2, alpha=0.5, label="random ci")
-
-    plt.plot(m_range, scores["prototype_knn_scores"], c="red", linewidth=4,linestyle="solid",label="proto score")
+    
+    for model, score in scores.items():
+        if model == "full" or model == "random_scores": continue
+        plt.plot(m_range, score,linewidth=4,linestyle="solid",label=model)
 
     plt.xlim((m_range[0]-1,m_range[-1]+1))
     plt.ylim((0.5, 1.05))
     plt.xlabel("number of examples")
     plt.ylabel("acc")
-    plt.legend(loc='upper right', bbox_to_anchor=(1.02, -0.1),fancybox=True, shadow=True, ncol=4)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.02, -0.1),fancybox=True, shadow=True, ncol=20, fontsize=15)
 
     if not title:
         title = "knn_scores"

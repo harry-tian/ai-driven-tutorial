@@ -9,25 +9,38 @@ import wandb
 import os, pickle
 from pathlib import Path
 import pytorch_lightning as pl
-import torch
+import torch, argparse
 import numpy as np
 from pydoc import locate
 import torchvision
 
-def get_bm_datasets(train_dir="/net/scratch/hanliu-shared/data/bm/train", 
-                    valid_dir="/net/scratch/hanliu-shared/data/bm/valid",
-                    train_idx=None, valid_idx=None):
-    train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=bm_transform())
-    valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=bm_transform())
-    train_inputs = torch.tensor(np.array([data[0].numpy() for data in train_dataset]))
-    valid_inputs = torch.tensor(np.array([data[0].numpy() for data in valid_dataset]))
-    train_labels = torch.tensor(np.array([data[1] for data in train_dataset]))
-    valid_labels = torch.tensor(np.array([data[1] for data in valid_dataset]))
-    
-    if train_idx: train_inputs = train_inputs[train_idx]
-    if valid_idx: valid_inputs = valid_inputs[valid_idx]
-    return train_inputs, valid_inputs
+######## training helpers ####################
 
+def add_generic_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gpus", default=1, type=int)
+    parser.add_argument("--seed", default=42, type=int)
+
+    parser.add_argument("--max_epochs", default=200, type=int)
+    parser.add_argument("--learning_rate", default=1e-4, type=float)
+    parser.add_argument("--train_batch_size", default=16, type=int)
+    parser.add_argument("--eval_batch_size", default=64, type=int)
+    parser.add_argument("--dataloader_num_workers", default=4, type=int)
+
+    parser.add_argument("--train_dir", default=None, type=str, required=True)
+    parser.add_argument("--valid_dir", default=None, type=str, required=True)
+    parser.add_argument("--test_dir", default=None, type=str, required=True)
+
+    parser.add_argument("--wandb_group", default=None, type=str)
+    parser.add_argument("--wandb_mode", default="offline", type=str)
+    parser.add_argument("--wandb_project", default="?", type=str)
+    parser.add_argument("--wandb_entity", default="ai-driven-tutorial", type=str)
+    parser.add_argument("--wandb_name", default=None, type=str)
+
+    parser.add_argument("--do_train", action="store_true")
+    parser.add_argument("--do_test", action="store_true")
+
+    return parser
 
 def generic_train(model, args, monitor, 
                     early_stopping_callback=False, extra_callbacks=[], checkpoint_callback=None, logging_callback=None,  **extra_train_kwargs):
@@ -72,8 +85,8 @@ def generic_train(model, args, monitor,
         print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
         shutil.copy(checkpoint_callback.best_model_path, target_path)
 
-    # if args.do_test:
-    #     trainer.test(model)
+    if args.do_test:
+        trainer.test(model)
 
     return trainer
 
@@ -83,6 +96,32 @@ def get_dataloader(dataset, batch_size, split, num_workers):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
         num_workers=num_workers, drop_last=drop_last, shuffle=shuffle)
     return dataloader
+
+def metrics(probs, target, threshold=0.5):
+    pred = (probs >= threshold).long()
+    tp, fp, tn, fn, sup = stat_scores(pred, target, ignore_index=0)
+    if 0 < sup < len(target):
+        precision, recall, _ = precision_recall_curve(pred, target)
+        auprc = auc(recall, precision)
+    m = {}
+    m['pred'] = pred
+    m['auc'] = auroc(probs, target) if 0 < sup < len(target) else None
+    m['acc'] = (tp + tn) / (tp + tn + fp + fn)
+    m['tpr'] = tp / (tp + fn)
+    m['tnr'] = tn / (tn + fp)
+    m['ppv'] = tp / (tp + fp)
+    m['f1'] = 2 * tp / (2 * tp + fp + fn)
+    m['ap'] = average_precision(probs, target)
+    m['auprc'] = auprc if 0 < sup < len(target) else None
+    return m    
+
+######### transforms ############################
+
+def get_transform(dataset, aug=True):
+    if dataset == "bm":
+        return bm_transform_aug() if aug else bm_transform()
+    elif dataset == "xray":
+        return xray_transform_aug() if aug else xray_transform()
 
 def food_transform():
     transform = transforms.Compose([
@@ -116,31 +155,32 @@ def bm_transform_aug(hparams=None):
     return transform
 
 def bm_transform():
-    val_transform = transforms.Compose([
+    return transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    return val_transform
 
-def metrics(probs, target, threshold=0.5):
-    pred = (probs >= threshold).long()
-    tp, fp, tn, fn, sup = stat_scores(pred, target, ignore_index=0)
-    if 0 < sup < len(target):
-        precision, recall, _ = precision_recall_curve(pred, target)
-        auprc = auc(recall, precision)
-    m = {}
-    m['pred'] = pred
-    m['auc'] = auroc(probs, target) if 0 < sup < len(target) else None
-    m['acc'] = (tp + tn) / (tp + tn + fp + fn)
-    m['tpr'] = tp / (tp + fn)
-    m['tnr'] = tn / (tn + fp)
-    m['ppv'] = tp / (tp + fp)
-    m['f1'] = 2 * tp / (2 * tp + fp + fn)
-    m['ap'] = average_precision(probs, target)
-    m['auprc'] = auprc if 0 < sup < len(target) else None
-    return m    
+def xray_transform_aug():
+    return transforms.Compose([
+    transforms.Resize((224,224)),
+    #transforms.CenterCrop(224),
+    transforms.RandomRotation(20),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+def xray_transform():
+    return transforms.Compose([
+    transforms.Resize((224,224)),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+######## misc ##################################
 
 def dataset_with_indices(cls):
 
@@ -151,3 +191,19 @@ def dataset_with_indices(cls):
     return type(cls.__name__, (cls,), {
         '__getitem__': __getitem__,
     })
+
+
+def get_bm_datasets(train_dir="/net/scratch/hanliu-shared/data/bm/train", 
+                    valid_dir="/net/scratch/hanliu-shared/data/bm/valid",
+                    train_idx=None, valid_idx=None):
+    train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=bm_transform())
+    valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=bm_transform())
+    train_inputs = torch.tensor(np.array([data[0].numpy() for data in train_dataset]))
+    valid_inputs = torch.tensor(np.array([data[0].numpy() for data in valid_dataset]))
+    train_labels = torch.tensor(np.array([data[1] for data in train_dataset]))
+    valid_labels = torch.tensor(np.array([data[1] for data in valid_dataset]))
+    
+    if train_idx: train_inputs = train_inputs[train_idx]
+    if valid_idx: valid_inputs = valid_inputs[valid_idx]
+    return train_inputs, valid_inputs
+

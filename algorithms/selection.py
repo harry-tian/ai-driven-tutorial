@@ -141,7 +141,7 @@ def nn_greedy(dist, m, labels, topk=10, metric="count", verbose=False):
                     dsx = dist[key, :]
                     nn1mask = np.argmin(dsx, axis=0)
                     nn1 = np.take(key, nn1mask)
-                    nn1pred = np.take(y1, nn1)
+                    nn1pred = np.take(y1, nn1) 
                     score = (nn1pred == y2).sum()
                     new_scores[key] = score
                     # new_nearns[key] = nn1

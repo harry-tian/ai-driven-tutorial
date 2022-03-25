@@ -12,14 +12,12 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
 import sys, pickle
 sys.path.insert(0,'..')
-import seaborn as sn
+from sklearn.metrics.pairwise import euclidean_distances
 
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 y_train = np.array([0]*80+[1]*80)
 y_valid = np.array([0]*20+[1]*20)
 full_idx = np.arange(160)
-
-########### knn helpers ############################
 
 def get_full_random(data,m_range):
     x_train, y_train, x_valid, y_valid = data
@@ -60,6 +58,25 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
         score = knc.score(x_valid, y_valid)
     return score
 
+
+def human_1NN_align(embeds, proto_idx):
+    human_embs = pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb"))
+    assert(len(embeds) == len(human_embs))
+
+    correct = 0
+    total = 0
+    human_embs = human_embs[proto_idx]
+    embeds = embeds[proto_idx]
+    for idx in range(len(proto_idx)):
+        total += 1
+        if get_1nn(human_embs, idx) == get_1nn(embeds, idx):
+            correct += 1
+    
+    return correct/total
+
+def get_1nn(data, index):
+    dist = euclidean_distances(data)
+    return np.argsort(dist[index])[1]
 
 # def get_lpips_knn_score(prototype_idx=full_idx, k=1):
 #     lpips = pickle.load(open("embeds/lpips/lpips.bm.trxvl.pkl","rb"))
