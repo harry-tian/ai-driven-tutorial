@@ -15,43 +15,55 @@ from sklearn.metrics.pairwise import euclidean_distances
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
+bm_triplets_train = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
+bm_triplets_valid = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/valid_triplets.pkl", "rb")))
+bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
+bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
+
 def bm_eval_human(x_train, x_valid):
     y_train = np.array([0]*80+[1]*80)
     y_valid = np.array([0]*20+[1]*20)
     assert(x_train.shape[0] == 160)
     assert(x_valid.shape[0] == 40)
 
-    train_triplets = "data/bm_triplets/3c2_unique=182/train_triplets.pkl"
-    valid_triplets = "data/bm_triplets/3c2_unique=182/valid_triplets.pkl"
-    # val2train_triplets = "data/bm_lpips_triplets/val2train_triplets.pkl"
-    train_triplets = pickle.load(open(train_triplets, "rb"))
-    valid_triplets = pickle.load(open(valid_triplets, "rb"))
-    # val2train_triplets = pickle.load(open(val2train_triplets,"rb"))
-
-    train_triplet_acc = get_triplet_acc(x_train, train_triplets)
-    valid_triplet_acc = get_triplet_acc(x_valid, valid_triplets)
-    # val2train_triplet_acc = get_val2train_triplet_acc(x_train, x_valid, val2train_triplets)
+    train_triplet_acc = get_triplet_acc(x_train, bm_triplets_train)
+    valid_triplet_acc = get_triplet_acc(x_valid, bm_triplets_valid)
     knn_acc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="")
     knn_auc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="auc")
     human_align = human_1NN_align(x_train, x_valid)
+    class_1NN = class_1NN_score(x_train, y_train, x_valid, y_valid)
 
     results = {
         "train_triplet_acc":train_triplet_acc,
         "valid_triplet_acc":valid_triplet_acc,
         "knn_acc":knn_acc,
         "knn_auc":knn_auc,
-        # "val2train_triplet_acc":val2train_triplet_acc,
         "human_1NN_align":human_align,
+        "class_1NN":class_1NN,
     }
     print(results)
 
     return results
 
+def class_1NN_score(x_train, y_train, x_test, y_test):
+    classes = np.unique(y_train)
+    idx_by_class = {c: np.where(y_train==c) for c in classes}
+    dists = euclidean_distances(x_test, x_train)
+
+    correct = 0
+    total = len(y_test)
+    for i in range(len(y_test)):
+        cur_dist = dists[i]
+        d2idx = {d:j for j,d in enumerate(cur_dist)}
+        examples = [d2idx[min(cur_dist[idx_by_class[c]])] for c in classes]
+
+        correct += get_knn_score(bm_train_embs[examples], y_train[examples], [bm_valid_embs[i]], [y_test[i]])
+
+    return correct/total
+
 def human_1NN_align(x_train, x_valid):
     embeds = np.concatenate((np.array(x_train),np.array(x_valid)))
-    train_embs = pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb"))
-    valid_embs = pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb"))
-    human_embs = np.concatenate((np.array(train_embs),np.array(valid_embs)))
+    human_embs = np.concatenate((bm_train_embs,bm_valid_embs))
     assert(len(embeds) == len(human_embs))
 
     correct = 0

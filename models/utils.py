@@ -13,8 +13,35 @@ import torch, argparse
 import numpy as np
 from pydoc import locate
 import torchvision
+from sklearn.model_selection import KFold
 
 ######## training helpers ####################
+
+def cross_val_multiclass(idxs, k=10):
+    splits_by_class = []
+    for idx in idxs:
+        splits_by_class.append(gen_cross_val(idx, k=k))
+
+    splits = np.copy(splits_by_class[0])  
+    for data, split in zip(idxs[1:],splits_by_class[1:]):
+        for i in range(k):
+            for j in range(3):
+                splits[i,j] = np.concatenate((splits[i,j], data[split[i,j]]))
+
+    for split in splits:
+        temp = np.concatenate((split[0],split[1],split[2]))
+        assert(len(np.unique(temp))==np.concatenate(idxs).shape[0])
+
+    return splits
+
+def gen_cross_val(indexes, k=10):
+    splits = []
+    kf = KFold(n_splits=k, shuffle=True)
+    for i, (trainval, test) in enumerate(kf.split(indexes)):
+        valid = np.random.choice(trainval, len(test),replace=False)
+        train = np.setdiff1d(trainval, valid)
+        splits.append((train, valid, test))
+    return np.array(splits)
 
 def add_generic_args():
     parser = argparse.ArgumentParser()
@@ -26,10 +53,11 @@ def add_generic_args():
     parser.add_argument("--train_batch_size", default=16, type=int)
     parser.add_argument("--eval_batch_size", default=64, type=int)
     parser.add_argument("--dataloader_num_workers", default=4, type=int)
+    parser.add_argument("--multiclass", action="store_true")
 
     parser.add_argument("--train_dir", default=None, type=str, required=True)
-    parser.add_argument("--valid_dir", default=None, type=str, required=True)
-    parser.add_argument("--test_dir", default=None, type=str, required=True)
+    parser.add_argument("--valid_dir", default=None, type=str, required=False)
+    parser.add_argument("--test_dir", default=None, type=str, required=False)
 
     parser.add_argument("--wandb_group", default=None, type=str)
     parser.add_argument("--wandb_mode", default="offline", type=str)
@@ -63,7 +91,7 @@ def generic_train(model, args, monitor,
     ckpt_path = os.path.join(output_dir, logger.version, "checkpoints")
     if checkpoint_callback is None:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor=monitor, mode="min", save_last=True, save_top_k=2, verbose=True)
+            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor=monitor, mode="min", save_last=True, save_top_k=3, verbose=True)
 
     train_params = {}
     train_params["max_epochs"] = args.max_epochs
@@ -97,8 +125,12 @@ def get_dataloader(dataset, batch_size, split, num_workers):
         num_workers=num_workers, drop_last=drop_last, shuffle=shuffle)
     return dataloader
 
-def metrics(probs, target, threshold=0.5):
-    pred = (probs >= threshold).long()
+def metrics(probs, target, threshold=0.5, multiclass=False):
+    if multiclass:
+        pred = probs.argmax(1)
+    else:
+        pred = (probs >= threshold).long()
+    
     tp, fp, tn, fn, sup = stat_scores(pred, target, ignore_index=0)
     if 0 < sup < len(target):
         precision, recall, _ = precision_recall_curve(pred, target)
@@ -113,7 +145,18 @@ def metrics(probs, target, threshold=0.5):
     m['f1'] = 2 * tp / (2 * tp + fp + fn)
     m['ap'] = average_precision(probs, target)
     m['auprc'] = auprc if 0 < sup < len(target) else None
-    return m    
+    return m   
+
+def get_acc(probs, target, threshold=0.5, multiclass=False): 
+    if multiclass:
+        pred = torch.argmax(probs, dim=1)
+    else:
+        pred = (probs >= threshold).long()
+
+    correct = (pred == target).sum().item()
+    total = len(target)
+
+    return correct/total
 
 ######### transforms ############################
 

@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore")
 
 
 class RESN(pl.LightningModule):
-    def __init__(self, verbose=False, **config_kwargs):
+    def __init__(self, split=None, verbose=False, **config_kwargs):
         super().__init__()
         self.save_hyperparameters()
 
@@ -24,17 +24,23 @@ class RESN(pl.LightningModule):
         num_features = 1000
 
         self.embed_dim = self.hparams.embed_dim
-        self.criterion = nn.BCEWithLogitsLoss()
+        if self.hparams.multiclass:
+            self.criterion = nn.CrossEntropyLoss()
+        else:
+            self.criterion = nn.BCEWithLogitsLoss()
         self.fc = nn.ModuleList([nn.Sequential(
             nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, 256), 
             nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(), nn.Linear(256, self.embed_dim)
         )])
         self.classifier = nn.Sequential(
-            nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, 1)
+            nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, 4)
         )
 
-        if verbose: 
-            self.summarize()
+        self.train_idx, self.valid_idx, self.test_idx = split
+        transform = utils.bm_transform_aug() if self.hparams.transform == "bm" else utils.xray_transform_aug()
+        self.dataset = torchvision.datasets.ImageFolder(self.hparams.train_dir, transform=transform)
+
+        self.summarize()
 
     def embed(self, x):
         embeds = self.feature_extractor(x)
@@ -48,19 +54,16 @@ class RESN(pl.LightningModule):
         return x
 
     def get_loss_acc(self, logits, target):
-        prob = torch.sigmoid(logits)
-        loss = self.criterion(logits, target.type_as(logits).unsqueeze(1))
+        prob = torch.nn.functional.softmax(logits)
+        loss = self.criterion(logits, target)
         with torch.no_grad():
-            m = utils.metrics(prob, target.unsqueeze(1), multiclass=self.hparams.multiclass)
-        return loss, m
+            acc = utils.get_acc(prob, target, multiclass=self.hparams.multiclass)
+            # print(acc)
+        return loss, {"acc":acc}
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        # prob = torch.sigmoid(logits)
-        # loss = self.criterion(logits, y.type_as(logits).unsqueeze(1))
-        # with torch.no_grad():
-        #     m = utils.metrics(prob, y.unsqueeze(1))
         loss, m = self.get_loss_acc(logits, y)
         self.log('train_loss', loss, sync_dist=True)
         self.log('train_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -69,29 +72,16 @@ class RESN(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        # prob = torch.sigmoid(logits)
-        # loss = self.criterion(logits, y.type_as(logits).unsqueeze(1))
-        # m = utils.metrics(prob, y.unsqueeze(1))
         loss, m = self.get_loss_acc(logits, y)
         self.log('valid_loss', loss, sync_dist=True)
         self.log('valid_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('valid_auc', m['auc'], prog_bar=True, sync_dist=True)
-        self.log('valid_sensitivity', m['tpr'], sync_dist=True)
-        self.log('valid_specificity', m['tnr'], sync_dist=True)
-        self.log('valid_precision', m['ppv'], sync_dist=True)
-        self.log('valid_f1', m['f1'], sync_dist=True)
-        self.log('valid_ap', m['ap'], sync_dist=True)
-        self.log('valid_auprc', m['auprc'], sync_dist=True)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        # prob = torch.sigmoid(logits)
-        # loss = self.criterion(logits, y.type_as(logits).unsqueeze(1))
-        # m = utils.metrics(prob, y.unsqueeze(1))
         loss, m = self.get_loss_acc(logits, y)
+        self.log('test_loss', loss, sync_dist=True)
         self.log('test_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('test_auc', m['auc'], prog_bar=True, sync_dist=True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -99,21 +89,23 @@ class RESN(pl.LightningModule):
         return optimizer
 
     def train_dataloader(self):
-        transform = utils.bm_transform_aug() if self.hparams.transform == "bm" else utils.xray_transform_aug()
-        dataset = torchvision.datasets.ImageFolder(self.hparams.train_dir, transform=transform)
-        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
+        dataloader = torch.utils.data.DataLoader(self.dataset, batch_size=self.hparams.train_batch_size, 
+            num_workers=self.hparams.dataloader_num_workers, drop_last=True, sampler=self.train_idx)
+        print(f"\ntrain:{len(list(dataloader)[0][0])}")
+        return dataloader
 
     def val_dataloader(self):
-        transform = utils.bm_transform() if self.hparams.transform == "bm" else utils.xray_transform()
-        dataset = torchvision.datasets.ImageFolder(self.hparams.valid_dir, transform=transform)
-        return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
+        dataloader = torch.utils.data.DataLoader(self.dataset, batch_size=len(self.valid_idx), 
+            num_workers=self.hparams.dataloader_num_workers, drop_last=False, sampler=self.valid_idx)
+        print(f"\nvalid:{len(list(dataloader)[0][0])}")
+        return dataloader
 
 
     def test_dataloader(self):
-        transform = utils.bm_transform() if self.hparams.transform == "bm" else utils.xray_transform()
-        dataset = torchvision.datasets.ImageFolder(self.hparams.test_dir, transform=transform)
-        return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
-
+        dataloader = torch.utils.data.DataLoader(self.dataset, batch_size=len(self.test_idx), 
+            num_workers=self.hparams.dataloader_num_workers, drop_last=False, sampler=self.test_idx)
+        print(f"\ntest:{len(list(dataloader)[0][0])}")
+        return dataloader
 
     @staticmethod
     def add_model_specific_args(parser):
@@ -124,6 +116,7 @@ class RESN(pl.LightningModule):
 
 def main():
     parser = utils.add_generic_args()
+    parser.add_argument("--splits", default=None, type=str, required=True)
     RESN.add_model_specific_args(parser)
     args = parser.parse_args()
     print(args)
@@ -131,8 +124,13 @@ def main():
     pl.seed_everything(args.seed)
     
     dict_args = vars(args)
-    model = RESN(**dict_args)
-    trainer = utils.generic_train(model, args, "valid_loss")
+    
+    import pickle
+    splits = pickle.load(open(dict_args["splits"],"rb"))
+    for split in splits:
+        model = RESN(split, **dict_args)
+        trainer = utils.generic_train(model, args, "valid_loss")
+        break
 
 if __name__ == "__main__":
     main()
