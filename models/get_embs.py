@@ -34,27 +34,16 @@ def get_embeds(model_path, args, ckpt, split, train_idx=None, valid_idx=None, em
 
     return embeds
 
-model_path = "TN_bm.TN_bm"
+model_path = "resn_args.RESN"
 
 args = argparse.Namespace(embed_dim=10)
-ckpt = 'butterfly-moth/2u171z7r'
+ckpt = 'bm-htriplets/2t9qo786'
 
 
 
-subdir = "bm/human"
+subdir = "bm/human/unpretrained"
+name = "RESN_split_emb10"
 split = "valid"
-name = "TN_split_emb101"
-
-
-# train_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets.pkl"
-# valid_triplets = "/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/valid_triplets.pkl"
-# train_triplets = pickle.load(open(train_triplets, "rb"))
-# valid_triplets = pickle.load(open(valid_triplets, "rb"))
-# train_idx = np.unique(np.array(train_triplets).flatten())
-# valid_idx = np.unique(np.array(valid_triplets).flatten())
-
-
-
 
 
 
