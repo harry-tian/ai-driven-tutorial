@@ -8,6 +8,7 @@ import torch
 import torchvision
 import pytorch_lightning as pl
 import warnings
+from torchvision import  models
 warnings.filterwarnings("ignore")
 
 from resn_args import RESN
@@ -17,6 +18,7 @@ from torch import nn
 class TN(RESN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.feature_extractor = models.resnet18(pretrained=False)
         self.triplet_loss = nn.TripletMarginLoss()
         self.pdist = nn.PairwiseDistance()
 
@@ -109,9 +111,6 @@ class TN(RESN):
 
     @staticmethod
     def add_model_specific_args(parser):   
-        # parser.add_argument("--pretrained", action="store_true")
-        # parser.add_argument("--embed_dim", default=10, type=int, help="Embedding size")
-        # parser.add_argument("--transform", default="bm", type=str) 
         parser = RESN.add_model_specific_args(parser)   
 
         parser.add_argument("--train_triplets", default=None, type=str, required=True)

@@ -37,11 +37,11 @@ def get_embeds(model_path, args, ckpt, split, train_idx=None, valid_idx=None, em
 model_path = "resn_args.RESN"
 
 args = argparse.Namespace(embed_dim=10)
-ckpt = 'bm-htriplets/2t9qo786'
+ckpt = 'baselines/3r1dhwq2'
 
 
 
-subdir = "bm/human/unpretrained"
+subdir = "bm"
 name = "RESN_split_emb10"
 split = "valid"
 

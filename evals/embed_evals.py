@@ -45,6 +45,19 @@ def bm_eval_human(x_train, x_valid):
 
     return results
 
+def class_1NN_idx(x_train, y_train, x_test, y_test):
+    classes = np.unique(y_train)
+    idx_by_class = {c: np.where(y_train==c) for c in classes}
+    dists = euclidean_distances(x_test, x_train)
+
+    examples = []
+    for i in range(len(y_test)):
+        cur_dist = dists[i]
+        d2idx = {d:j for j,d in enumerate(cur_dist)}
+        examples.append([d2idx[min(cur_dist[idx_by_class[c]])] for c in classes])
+
+    return np.array(examples)
+        
 def class_1NN_score(x_train, y_train, x_test, y_test):
     classes = np.unique(y_train)
     idx_by_class = {c: np.where(y_train==c) for c in classes}

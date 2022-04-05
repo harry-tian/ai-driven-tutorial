@@ -20,44 +20,64 @@ from os.path import isfile, join
 
 ######## cross validation ####################
 
-def cross_val_multiclass(idxs, k=10):
-    splits_by_class = []
-    for idx in idxs:
-        splits_by_class.append(gen_cross_val(idx, k=k))
+def auto_split(src_dir, dst_dir):
+    instances = dataset_filenames(src_dir)
+    classes = find_classes(src_dir).keys()
+    train_dir = os.path.join(dst_dir, "train")
+    valid_dir = os.path.join(dst_dir, "valid")
+    if not os.path.isdir(train_dir): os.mkdir(train_dir)
+    if not os.path.isdir(valid_dir): os.mkdir(valid_dir)
 
-    splits = np.copy(splits_by_class[0])  
-    for data, split in zip(idxs[1:],splits_by_class[1:]):
-        for i in range(k):
-            for j in range(3):
-                splits[i,j] = np.concatenate((splits[i,j], data[split[i,j]]))
+    for c in classes:
+        c_idx = np.where(instances[:,1] == c)[0]
+        c_valid = np.random.choice(c_idx, len(c_idx)//10, replace=False)
+        c_train = np.setdiff1d(c_idx,c_valid)
+        c_train_dir = os.path.join(train_dir, c)
+        if not os.path.isdir(c_train_dir): os.mkdir(c_train_dir)
+        for f in instances[c_train,0]: shutil.copy(f,c_train_dir)
+        c_valid_dir = os.path.join(valid_dir, c)
+        if not os.path.isdir(c_valid_dir): os.mkdir(c_valid_dir)
+        for f in instances[c_valid,0]: shutil.copy(f,c_valid_dir)
+        
+
+def cross_val_multiclass(idxs, k=10):
+    splits_by_class = [gen_cross_val(idx, k=k) for idx in idxs]
+
+    splits = []
+    for i in range(k-1):
+        splits.append([])
+        for j in range(3):
+            split_i = np.concatenate([split[i][j] for split in splits_by_class])
+            splits[i].append(split_i)
+        splits[i] = np.array(splits[i])
 
     for split in splits:
-        temp = np.concatenate((split[0],split[1],split[2]))
-        assert(len(np.unique(temp))==np.concatenate(idxs).shape[0])
+        temp = np.concatenate([split[0],split[1],split[2]])
+        assert(np.equal(np.sort(np.unique(temp)),np.concatenate(idxs)).all())
 
-    return splits
+    return np.array(splits)
 
 def gen_cross_val(indexes, k=10):
     splits = []
-    kf = KFold(n_splits=k, shuffle=True)
-    for i, (trainval, test) in enumerate(kf.split(indexes)):
-        valid = np.random.choice(trainval, len(test),replace=False)
-        train = np.setdiff1d(trainval, valid)
-        splits.append((train, valid, test))
+    test = np.random.choice(indexes, len(indexes)//10,replace=False)
+    indexes = np.setdiff1d(indexes, test)
+    kf = KFold(n_splits=k-1, shuffle=True)
+    for train, valid in kf.split(indexes):
+        splits.append(np.array([indexes[train], indexes[valid], test]))
     return np.array(splits)
 
 def gen_split(src_dir, dst_dir, split):
     instances = dataset_filenames(src_dir)
     cp_split(dst_dir, split, instances)
 
+def find_classes(directory):
+    classes = sorted(entry.name for entry in os.scandir(directory) if entry.is_dir())
+    if not classes:
+        raise FileNotFoundError(f"Couldn't find any class folder in {directory}.")
+    class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
+    return class_to_idx
+    
 def dataset_filenames(directory):
-    def find_classes(directory):
-        classes = sorted(entry.name for entry in os.scandir(directory) if entry.is_dir())
-        if not classes:
-            raise FileNotFoundError(f"Couldn't find any class folder in {directory}.")
-        class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
-        return class_to_idx
-
     class_to_idx = find_classes(directory)
     instances = []
     for target_class in sorted(class_to_idx.keys()):
@@ -183,7 +203,7 @@ def generic_train(model, args, monitor,
 def get_dataloader(dataset, batch_size, split, num_workers):
     drop_last = True if split == "train" else False
     shuffle = True if split == "train" else False
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=min(512,batch_size), 
         num_workers=num_workers, drop_last=drop_last, shuffle=shuffle)
     return dataloader
 

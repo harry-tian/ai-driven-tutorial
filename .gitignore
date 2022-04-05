@@ -5,6 +5,7 @@
 
 models/results
 models/wandb
+models/checkpoints
 
 dwac_knn.ipynb
 knn.ipynb
