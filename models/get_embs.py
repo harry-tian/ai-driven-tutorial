@@ -4,52 +4,68 @@ import utils
 import argparse, pickle
 from pydoc import locate
 import numpy as np
+import torchvision, torch, os
 
-def get_embeds(model_path, args, ckpt, split, train_idx=None, valid_idx=None, embed_path=None):
+bm = {"data_dir":"/net/scratch/tianh-shared/bm",
+            "transform": "bm"}
+
+bird = {"data_dir":"/net/scratch/tianh-shared/bird",
+            "transform": "xray"}
+
+prostatex = {"data_dir":"/net/scratch/tianh-shared/bird",
+            "transform": "xray"}
+
+def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     model = locate(model_path)
     model = model.load_from_checkpoint(ckpt, **vars(args)).to("cuda")
     model.eval()
-    train_dataset, valid_dataset = utils.get_bm_datasets(train_idx=train_idx, valid_idx=valid_idx)
 
-    if split == "train":
-        dataset = train_dataset.cuda()
-    elif split == "val" or split == "valid":
-        dataset = valid_dataset.cuda()
+    transform = utils.get_transform(transform, aug=False)
+
+    data_dir = os.path.join(data_dir, split)
+    dataset = torchvision.datasets.ImageFolder(data_dir, transform=transform)
+    if len(dataset) <= 128:
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset), num_workers=4)
+        embeds = model.embed(list(iter(model.val_dataloader()))[0][0].cuda())
+        embeds = embeds.cpu().detach().numpy()
     else:
-        print("???")
-        quit()
-    
-    embeds = model.embed(dataset)
-    # embeds = model.feature_extractor(dataset)
-    # for layer in model.fc:
-    #     embeds = layer(embeds)
-    
-    embeds = embeds.cpu().detach().numpy()
-    print(f"embeds.shape:{embeds.shape}")
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=128, num_workers=4)
+        i = 0
+        for x, _ in dataloader:
+            z = model.embed(x.cuda())
+            pickle.dump(z.cpu().detach().numpy(),open(embed_path.replace(".pkl",f"_{i}.pkl"),"wb"))
+            i += 1
 
-    if not embed_path:
-        embed_path = f"{model_path}_{split}.pkl"
+        embeds = []
+        for j in range(i):
+            p = embed_path.replace(".pkl",f"_{j}.pkl")
+            embed = pickle.load(open(p,"rb"))
+            embeds.append(embed)
+            os.remove(p)
+        embeds = np.concatenate(embeds)
+    
+    
+    print(f"embeds.shape:{embeds.shape}")
     pickle.dump(embeds, open(embed_path, "wb"))
     print(f"dumped to {embed_path}")
 
-    return embeds
 
 model_path = "resn_args.RESN"
 
-args = argparse.Namespace(embed_dim=10)
-ckpt = 'baselines/3r1dhwq2'
+ckpt = 'baselines/5i3qt0bw'
 
+dataset = bird
 
-
-subdir = "bm"
+subdir = "bird"
 name = "RESN_split_emb10"
-split = "valid"
+split = "train"
 
 
 
 
 
+args = argparse.Namespace(embed_dim=10)
 name = name.replace("split",split)
 embed_path = f"../embeds/{subdir}/{name}.pkl"
 ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt" 
-get_embeds(model_path, args, ckpt, split, embed_path=embed_path)
+get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path=embed_path)

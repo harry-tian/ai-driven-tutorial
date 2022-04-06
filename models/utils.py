@@ -362,19 +362,3 @@ def dataset_with_indices(cls):
     return type(cls.__name__, (cls,), {
         '__getitem__': __getitem__,
     })
-
-
-def get_bm_datasets(train_dir="/net/scratch/hanliu-shared/data/bm/train", 
-                    valid_dir="/net/scratch/hanliu-shared/data/bm/valid",
-                    train_idx=None, valid_idx=None):
-    train_dataset = torchvision.datasets.ImageFolder(train_dir, transform=bm_transform())
-    valid_dataset = torchvision.datasets.ImageFolder(valid_dir, transform=bm_transform())
-    train_inputs = torch.tensor(np.array([data[0].numpy() for data in train_dataset]))
-    valid_inputs = torch.tensor(np.array([data[0].numpy() for data in valid_dataset]))
-    train_labels = torch.tensor(np.array([data[1] for data in train_dataset]))
-    valid_labels = torch.tensor(np.array([data[1] for data in valid_dataset]))
-    
-    if train_idx: train_inputs = train_inputs[train_idx]
-    if valid_idx: valid_inputs = valid_inputs[valid_idx]
-    return train_inputs, valid_inputs
-
