@@ -9,5 +9,3 @@ models/checkpoints
 
 dwac_knn.ipynb
 knn.ipynb
-
-*.sh
