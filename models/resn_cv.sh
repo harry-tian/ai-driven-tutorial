@@ -12,21 +12,21 @@
 #SBATCH --mem=20000
 #SBATCH --nodelist=aa002
   
-python resn_args.py \
+python resn_cv.py \
   --wandb_mode=online \
   --wandb_entity=ai-driven-tutorial \
-  --wandb_project=baselines \
-  --wandb_group=chest_xray \
-  --wandb_name=bs=32 \
-  --train_dir=/net/scratch/tianh-shared/chest_xray/train \
-  --valid_dir=/net/scratch/tianh-shared/chest_xray/valid \
-  --test_dir=/net/scratch/tianh-shared/chest_xray/test \
+  --wandb_project=warblers \
+  --wandb_group=cv \
+  --wandb_name=split3 \
+  --split_idx=3 \
+  --train_dir=/net/scratch/tianh-shared/misc/inat/4class \
+  --splits=bird_splits.pkl \
   --num_class=4 \
-  --transform=xray \
-  --embed_dim=10 \
-  --max_epochs=200 \
-  --train_batch_size=32 \
-  --learning_rate=1e-4 \
+  --embed_dim=9 \
   --pretrained \
+  --max_epochs=200 \
+  --train_batch_size=128 \
+  --learning_rate=1e-4 \
+  --transform=xray \
   --do_train \
-  --do_test
+  --do_test \
