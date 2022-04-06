@@ -15,6 +15,7 @@ import pytorch_lightning as pl
 from torchmetrics.functional.classification import auroc, stat_scores, average_precision, precision_recall_curve, auc
 from pytorch_lightning.loggers import WandbLogger
 import wandb
+import utils
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -98,24 +99,6 @@ class DWAC(pl.LightningModule):
             self.summarize()
 
 
-    def metrics(self, prob, target, threshold=0.5):
-        pred = (prob >= threshold).long()
-        tp, fp, tn, fn, sup = stat_scores(pred, target, ignore_index=0)
-        if 0 < sup < len(target):
-            precision, recall, _ = precision_recall_curve(pred, target)
-            auprc = auc(recall, precision)
-        m = {}
-        m['pred'] = pred
-        m['auc'] = auroc(prob, target) if 0 < sup < len(target) else None
-        m['acc'] = (tp + tn) / (tp + tn + fp + fn)
-        m['tpr'] = tp / (tp + fn)
-        m['tnr'] = tn / (tn + fp)
-        m['ppv'] = tp / (tp + fp)
-        m['f1'] = 2 * tp / (2 * tp + fp + fn)
-        m['ap'] = average_precision(prob, target)
-        m['auprc'] = auprc if 0 < sup < len(target) else None
-        return m
-
     def embed(self, x):
         x = x[:, self.mri_index]
         conv = [conv(x[:, i].unsqueeze(1).repeat(1, 16, 1, 1))
@@ -157,7 +140,7 @@ class DWAC(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         output_dict = self(x, y)
-        m = self.metrics(output_dict['probs'][:, 1].exp(), y)
+        m = utils.metrics(output_dict['probs'][:, 1].exp(), y)
         self.log('train_loss', output_dict['loss'], sync_dist=True)
         self.log('train_acc', m['acc'], prog_bar=True, sync_dist=True)
         return output_dict['loss']
@@ -191,7 +174,7 @@ class DWAC(pl.LightningModule):
         probs = class_dists.div(class_dists.sum(dim=1, keepdim=True)).log()
         total_loss = self.criterion(probs, y)
         loss = total_loss.div(x.shape[0])
-        m = self.metrics(probs[:, 1].exp(), y)
+        m = utils.metrics(probs[:, 1].exp(), y)
         self.log('valid_loss', loss, sync_dist=True)
         self.log('valid_acc', m['acc'], prog_bar=True, sync_dist=True)
         self.log('valid_auc', m['auc'], prog_bar=True, sync_dist=True)
@@ -206,32 +189,10 @@ class DWAC(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         return optimizer
-    
-    def parse_augmentation(self):
-        affine = {}
-        affine["degrees"] = self.hparams.rotate
-        if self.hparams.translate > 0: 
-            translate = self.hparams.translate
-            affine["translate"] = (translate, translate)
-        if self.hparams.scale > 0: 
-            scale = self.hparams.scale
-            affine["scale"] = (1 - scale, 1 + scale)
-        if self.hparams.shear > 0:
-            shear = self.hparams.shear
-            affine["shear"] = (-shear, shear, -shear, shear)
-        transform = transforms.Compose([
-            transforms.RandomResizedCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            transforms.RandomHorizontalFlip(self.hparams.horizontal_flip),
-            transforms.RandomVerticalFlip(self.hparams.vertical_flip),
-            transforms.RandomAffine(**affine)
-        ])
-        return transform
 
     def train_dataloader(self):
         dataset = torchvision.datasets.ImageFolder(
-            self.hparams.train_dir, transform=self.parse_augmentation()
+            self.hparams.train_dir, transform=utils.bm_transform_aug()
             )
         dataloader = torch.utils.data.DataLoader(
             dataset, 
@@ -241,14 +202,8 @@ class DWAC(pl.LightningModule):
         return dataloader
 
     def val_dataloader(self):
-        val_transform = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
         dataset = torchvision.datasets.ImageFolder(
-            self.hparams.valid_dir, transform=val_transform
+            self.hparams.valid_dir, transform=utils.bm_transform()
             )
         dataloader = torch.utils.data.DataLoader(
             dataset, 
@@ -258,14 +213,8 @@ class DWAC(pl.LightningModule):
         return dataloader
 
     def ref_dataloader(self):
-        ref_transform = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
         dataset = torchvision.datasets.ImageFolder(
-            self.hparams.train_dir, transform=ref_transform
+            self.hparams.train_dir, transform=utils.bm_transform()
             )
         dataloader = torch.utils.data.DataLoader(
             dataset, 
@@ -378,7 +327,7 @@ def train(
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gpus", default=0, type=int)
+    parser.add_argument("--gpus", default=1, type=int)
     parser.add_argument("--seed", default=42, type=int)
     parser.add_argument("--max_epochs", default=10, type=int)
     parser.add_argument("--learning_rate", default=1e-4, type=float)
@@ -387,9 +336,11 @@ def main():
     parser.add_argument("--dataloader_num_workers", default=4, type=int)
     parser.add_argument("--train_dir", default=None, type=str, required=True)
     parser.add_argument("--valid_dir", default=None, type=str, required=True)
-    parser.add_argument("--output_dir", default=None, type=str, required=True)
+    parser.add_argument("--output_dir", default=None, type=str, required=False)
     parser.add_argument("--wandb_group", default=None, type=str)
     parser.add_argument("--wandb_mode", default="online", type=str)
+    parser.add_argument("--wandb_project", default="?", type=str)
+    parser.add_argument("--wandb_entity", default="harry-tian", type=str)
     parser.add_argument("--do_train", action="store_true")
     DWAC.add_model_specific_args(parser, os.getcwd())
     args = parser.parse_args()
@@ -406,7 +357,7 @@ def main():
     
     dict_args = vars(args)
     model = DWAC(**dict_args)
-    trainer = train(model, args)
+    trainer = utils.generic_train(model, args, monitor="valid_loss")
 
 if __name__ == "__main__":
     main()

@@ -2,7 +2,9 @@
 
 `algorithms` contains the teaching example selection algorithms  
 `code` contains ?  
+`data` contains mostly triplets  
 `embeds` contains generated embeddings or distance functions.  
+`evals` packages for evaluating embeddings and teaching algorithms  
 `models` contains models used to generated embeddings  
 
 
