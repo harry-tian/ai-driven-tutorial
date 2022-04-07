@@ -25,19 +25,28 @@ def auto_split(src_dir, dst_dir):
     classes = find_classes(src_dir).keys()
     train_dir = os.path.join(dst_dir, "train")
     valid_dir = os.path.join(dst_dir, "valid")
+    test_dir = os.path.join(dst_dir, "test")
     if not os.path.isdir(train_dir): os.mkdir(train_dir)
     if not os.path.isdir(valid_dir): os.mkdir(valid_dir)
+    if not os.path.isdir(test_dir): os.mkdir(test_dir)
 
     for c in classes:
         c_idx = np.where(instances[:,1] == c)[0]
-        c_valid = np.random.choice(c_idx, len(c_idx)//10, replace=False)
-        c_train = np.setdiff1d(c_idx,c_valid)
+        split = len(c_idx)//10
+        c_test = np.random.choice(c_idx, split, replace=False)
+        c_idx = np.setdiff1d(c_idx,c_test)
+        c_valid = np.random.choice(c_idx, split, replace=False)
+        c_idx = np.setdiff1d(c_idx,c_valid)
+        c_train = c_idx
         c_train_dir = os.path.join(train_dir, c)
         if not os.path.isdir(c_train_dir): os.mkdir(c_train_dir)
         for f in instances[c_train,0]: shutil.copy(f,c_train_dir)
         c_valid_dir = os.path.join(valid_dir, c)
         if not os.path.isdir(c_valid_dir): os.mkdir(c_valid_dir)
         for f in instances[c_valid,0]: shutil.copy(f,c_valid_dir)
+        c_test_dir = os.path.join(test_dir, c)
+        if not os.path.isdir(c_test_dir): os.mkdir(c_test_dir)
+        for f in instances[c_test,0]: shutil.copy(f,c_test_dir)
         
 
 def cross_val_multiclass(idxs, k=10):
@@ -257,17 +266,6 @@ def get_transform(dataset, aug=True):
         return xray_transform_aug() if aug else xray_transform()
     elif dataset == "bird":
         return bird_transform_aug() if aug else bird_transform()
-    elif dataset == "inception":
-        return inception_transform_aug() if aug else inception_transform()
-
-def food_transform():
-    transform = transforms.Compose([
-        transforms.Resize([230,230]),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-    return transform
 
 def bm_transform_aug(hparams=None):
     affine = {}
@@ -333,22 +331,6 @@ def bird_transform():
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-def inception_transform_aug():
-    return transforms.Compose([
-        transforms.Resize((299,299)),
-        transforms.RandomRotation(20),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-
-def inception_transform():
-    return transforms.Compose([
-        transforms.Resize((299,299)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
 
 
 ######## misc ##################################
