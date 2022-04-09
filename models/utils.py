@@ -182,7 +182,7 @@ def generic_train(model, args, monitor,
 
     trainer = pl.Trainer.from_argparse_args(
         args,
-        auto_select_gpus=True,
+        auto_select_gpus=True, ## true
         weights_summary=None,
         callbacks=extra_callbacks + [checkpoint_callback],
         logger=logger,
@@ -253,6 +253,8 @@ def get_acc(probs, target, threshold=0.5, multiclass=False, verbose=False):
 def get_transform(dataset, aug=True):
     if dataset == "bm":
         return bm_transform_aug() if aug else bm_transform()
+    elif dataset == "wv":
+        return no_transform()
     elif dataset == "xray":
         return xray_transform_aug() if aug else xray_transform()
     elif dataset == "bird":
@@ -297,6 +299,14 @@ def bm_transform():
         transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+
+def no_transform():
+    return transforms.Compose([
+        # transforms.Resize(256),
+        # transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
 def xray_transform_aug():
