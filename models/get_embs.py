@@ -14,6 +14,10 @@ bm = {"data_dir":"/net/scratch/tianh-shared/bm",
 bird = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "xray"}
 
+chest_xray = {"data_ddir":"/net/scratch/tianh-shared/chest_xray",
+            "data_dir":"/net/scratch/tianh-shared/NIH/4classes/auto_split",
+            "transform": "xray"}
+
 prostatex = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "xray"}
 
@@ -57,15 +61,21 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
 
 model_path = "resn_args.RESN"
 
-# ckpt = 'baselines/5i3qt0bw'
-ckpt = 'baselines/21tiniqd'
+# <<<<<<< HEAD
+# # ckpt = 'baselines/5i3qt0bw'
+# ckpt = 'baselines/21tiniqd'
 
 
-# dataset = bird
-dataset = wv
+# # dataset = bird
+# dataset = wv
 
-# subdir = "bird"
-subdir = "wv"
+# # subdir = "bird"
+# subdir = "wv"
+ckpt = 'baselines/252xx75f'
+
+dataset = chest_xray
+
+subdir = "chest_xray"
 name = "RESN_split_emb10"
 split = "test"
 
@@ -76,5 +86,10 @@ split = "test"
 args = argparse.Namespace(embed_dim=10)
 name = name.replace("split",split)
 embed_path = f"../embeds/{subdir}/{name}.pkl"
-ckpt = f"/net/scratch/chacha/explain_teach/models/results/{ckpt}/checkpoints/best_model.ckpt" 
-get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path=embed_path)
+# <<<<<<< HEAD
+# ckpt = f"/net/scratch/chacha/explain_teach/models/results/{ckpt}/checkpoints/best_model.ckpt" 
+# get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path=embed_path)
+# =======
+ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt" 
+get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
+# >>>>>>> 03f67bcb1ecf5f92198e5eb45357b8e23d90d7fa

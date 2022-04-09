@@ -16,7 +16,7 @@ np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
 bm_triplets_train = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
-bm_triplets_valid = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/valid_triplets.pkl", "rb")))
+bm_triplets_valid = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
 bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
 bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
 

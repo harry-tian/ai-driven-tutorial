@@ -7,5 +7,7 @@ models/results
 models/wandb
 models/checkpoints
 
+model/results
+
 dwac_knn.ipynb
 knn.ipynb
