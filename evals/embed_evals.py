@@ -1,16 +1,9 @@
 import os, pickle
-# import pandas as pd
 import numpy as np
 import torch
-# from tqdm import tqdm
-# pdist = torch.nn.PairwiseDistance()
 from itertools import combinations
-# from scipy import stats
-# from sklearn import neighbors
 from sklearn.neighbors import KNeighborsClassifier
-# from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, accuracy_score
-# from sklearn.svm import SVC, LinearSVC
 from sklearn.metrics.pairwise import euclidean_distances
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
@@ -20,30 +13,29 @@ bm_triplets_valid = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/t
 bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
 bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
 
-def bm_eval_human(x_train, x_valid):
-    y_train = np.array([0]*80+[1]*80)
-    y_valid = np.array([0]*20+[1]*20)
-    assert(x_train.shape[0] == 160)
-    assert(x_valid.shape[0] == 40)
+"""Return triplet accuracy given ground-truth triplets."""
+def get_triplet_acc(embeds, triplets, dist_f=euc_dist):
+    align = []
+    for triplet in triplets:
+        a, p, n = triplet
+        ap = dist_f(embeds[a], embeds[p]) 
+        an = dist_f(embeds[a], embeds[n])
+        align.append(ap < an)
+    acc = np.mean(align)
+    return acc
 
-    train_triplet_acc = get_triplet_acc(x_train, bm_triplets_train)
-    valid_triplet_acc = get_triplet_acc(x_valid, bm_triplets_valid)
-    knn_acc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="")
-    knn_auc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="auc")
-    human_align = human_1NN_align(x_train, x_valid)
-    class_1NN = class_1NN_score(x_train, y_train, x_valid, y_valid)
-
-    results = {
-        "train_triplet_acc":train_triplet_acc,
-        "valid_triplet_acc":valid_triplet_acc,
-        "knn_acc":knn_acc,
-        "knn_auc":knn_auc,
-        "human_1NN_align":human_align,
-        "class_1NN":class_1NN,
-    }
-    print(results)
-
-    return results
+"""Return K=1NN accuracy"""
+def get_knn_score(x_train, y_train, x_valid, y_valid, 
+                k=1, metric="acc", weights="uniform"):
+    knc = KNeighborsClassifier(n_neighbors=k, weights=weights)
+    knc.fit(x_train, y_train)
+    if metric == 'auc':
+        probs = knc.predict_proba(x_valid)
+        probs = probs[:, 1] if probs.shape[1] > 1 else probs
+        score = roc_auc_score(y_valid, probs)
+    else:
+        score = knc.score(x_valid, y_valid)
+    return score
 
 def class_1NN_idx(x_train, y_train, x_test, y_test):
     classes = np.unique(y_train)
@@ -88,32 +80,31 @@ def human_1NN_align(x_train, x_valid):
     
     return correct/total
 
-def get_triplet_acc(embeds, triplets, dist_f=euc_dist):
-    """Return triplet accuracy given ground-truth triplets."""
-    align = []
-    for triplet in triplets:
-        a, p, n = triplet
-        ap = dist_f(embeds[a], embeds[p]) 
-        an = dist_f(embeds[a], embeds[n])
-        align.append(ap < an)
-    acc = np.mean(align)
-    return acc
-
-def get_knn_score(x_train, y_train, x_valid, y_valid, 
-                k=1, metric="acc", weights="uniform"):
-    knc = KNeighborsClassifier(n_neighbors=k, weights=weights)
-    knc.fit(x_train, y_train)
-    if metric == 'auc':
-        probs = knc.predict_proba(x_valid)
-        probs = probs[:, 1] if probs.shape[1] > 1 else probs
-        score = roc_auc_score(y_valid, probs)
-    else:
-        score = knc.score(x_valid, y_valid)
-    return score
-
 def get_1nn(data, index):
     dist = euclidean_distances(data)
     return np.argsort(dist[index])[1]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ####### MISC #############################
 

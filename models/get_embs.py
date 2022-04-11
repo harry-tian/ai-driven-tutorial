@@ -24,6 +24,11 @@ prostatex = {"data_dir":"/net/scratch/tianh-shared/bird",
 wv = {"data_dir":"/net/scratch/chacha/data/weevil_vespula",
             "transform": "wv"}
 
+model_path = {"RESN":"resn_args.RESN",
+            "TN":"TN.TN",
+            "MTL":"MTL_RESNTN.MTL_RESNTN",
+}
+
 def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     model = locate(model_path)
     model = model.load_from_checkpoint(ckpt, **vars(args)).to("cuda")
@@ -59,7 +64,7 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     print(f"dumped to {embed_path}")
 
 
-model_path = "resn_args.RESN"
+model = "RESN"
 
 # <<<<<<< HEAD
 # # ckpt = 'baselines/5i3qt0bw'
@@ -90,6 +95,6 @@ embed_path = f"../embeds/{subdir}/{name}.pkl"
 # ckpt = f"/net/scratch/chacha/explain_teach/models/results/{ckpt}/checkpoints/best_model.ckpt" 
 # get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path=embed_path)
 # =======
-ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt" 
-get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
+# ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt" 
+get_embeds(model_path[model], args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
 # >>>>>>> 03f67bcb1ecf5f92198e5eb45357b8e23d90d7fa
