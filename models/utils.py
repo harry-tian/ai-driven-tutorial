@@ -48,27 +48,6 @@ def auto_split(src_dir, dst_dir):
         if not os.path.isdir(c_test_dir): os.mkdir(c_test_dir)
         for f in instances[c_test,0]: shutil.copy(f,c_test_dir)
         
-def auto_split_px(px_np):
-    classes = [0,1]
-    train_idx = []
-    valid_idx = []
-    test_idx = []
-    for c in classes:
-        c_idx = np.where(px_np[:,1] == c)[0]
-        split = len(c_idx)//10
-        c_test = np.random.choice(c_idx, split, replace=False)
-        c_idx = np.setdiff1d(c_idx,c_test)
-        c_valid = np.random.choice(c_idx, split, replace=False)
-        c_idx = np.setdiff1d(c_idx,c_valid)
-        c_train = c_idx
-        train_idx.append(c_train)
-        valid_idx.append(c_valid)
-        test_idx.append(c_test)
-        
-    train_idx = np.concatenate(train_idx)
-    valid_idx = np.concatenate(valid_idx)
-    test_idx = np.concatenate(test_idx)
-    return px_np[train_idx], px_np[valid_idx], px_np[test_idx]
 
 def cross_val_multiclass(idxs, k=10):
     splits_by_class = [gen_cross_val(idx, k=k) for idx in idxs]

@@ -18,19 +18,14 @@ from torch import nn
 class TN(RESN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.feature_extractor = models.resnet18(pretrained=False)
+        # self.feature_extractor = models.resnet18(pretrained=False)
         self.triplet_loss = nn.TripletMarginLoss()
         self.pdist = nn.PairwiseDistance()
 
         self.setup_data()
         self.summarize()
 
-    def forward(self, triplet_idx, batch_idx):
-        if self.trainer.training:
-            input = self.train_input
-        else:
-            input = self.valid_input
-
+    def forward(self, triplet_idx, input, batch_idx):
         embeds = self.embed(input)
             
         triplet_idx = triplet_idx.long()
@@ -38,8 +33,8 @@ class TN(RESN):
         triplets = (x1, x2, x3)
         return triplets
     
-    def get_loss_acc(self, triplet_idx, batch_idx):
-        triplets = self(triplet_idx, batch_idx)
+    def get_loss_acc(self, triplet_idx, input, batch_idx):
+        triplets = self(triplet_idx, input, batch_idx)
         
         triplet_loss = self.triplet_loss(*triplets)
         with torch.no_grad():
@@ -50,20 +45,23 @@ class TN(RESN):
         return triplet_loss, triplet_acc
 
     def training_step(self, batch, batch_idx):
-        triplet_loss, triplet_acc = self.get_loss_acc(batch[0], batch_idx)
+        input = self.train_input
+        triplet_loss, triplet_acc = self.get_loss_acc(batch[0], input, batch_idx)
 
         self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('train_triplet_loss', triplet_loss, sync_dist=True)
         return triplet_loss
 
     def validation_step(self, batch, batch_idx):
-        triplet_loss, triplet_acc = self.get_loss_acc(batch[0], batch_idx)
+        input = self.valid_input
+        triplet_loss, triplet_acc = self.get_loss_acc(batch[0], input, batch_idx)
 
         self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('valid_triplet_loss', triplet_loss, sync_dist=True)
 
     def test_step(self, batch, batch_idx):
-        triplet_loss, triplet_acc = self.get_loss_acc(batch[0], batch_idx)
+        input = self.test_input
+        triplet_loss, triplet_acc = self.get_loss_acc(batch[0], input, batch_idx)
 
         self.log('test_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('test_triplet_loss', triplet_loss, sync_dist=True)
@@ -83,8 +81,8 @@ class TN(RESN):
 
         self.train_triplets = pickle.load(open(self.hparams.train_triplets, "rb"))
         self.valid_triplets = pickle.load(open(self.hparams.valid_triplets, "rb"))
-        # self.test_triplets = pickle.load(open(self.hparams.test_triplets, "rb"))
-        self.test_triplets = self.valid_triplets
+        self.test_triplets = pickle.load(open(self.hparams.test_triplets, "rb"))
+        # self.test_triplets = self.valid_triplets
 
         if self.hparams.subset:
             subset_idx = np.random.choice(len(self.train_triplets), len(self.train_triplets)//20, replace=False)
@@ -115,6 +113,7 @@ class TN(RESN):
 
         parser.add_argument("--train_triplets", default=None, type=str, required=True)
         parser.add_argument("--valid_triplets", default=None, type=str, required=True) 
+        parser.add_argument("--test_triplets", default=None, type=str, required=False) 
         parser.add_argument("--subset", action="store_true")
         return parser
 
