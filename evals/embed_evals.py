@@ -17,8 +17,42 @@ def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y
 
 bm_triplets_train = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
 bm_triplets_valid = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
-bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
-bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
+# bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
+# bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
+
+
+
+def wv_eval_human(x_train, x_valid, x_test, y_train, y_valid, y_test, wv_triplets_train_path, wv_triplets_valid_path, wv_triplets_test_path):
+    # y_train = np.array([0]*80+[1]*80)
+    # y_valid = np.array([0]*20+[1]*20)
+    # assert(x_train.shape[0] == 160)
+    # assert(x_valid.shape[0] == 40)
+
+    wv_triplets_train = np.array(pickle.load(open(wv_triplets_train_path, "rb")))
+    wv_triplets_valid = np.array(pickle.load(open(wv_triplets_valid_path, "rb")))
+    wv_triplets_test = np.array(pickle.load(open(wv_triplets_test_path, "rb")))
+
+    train_triplet_acc = get_triplet_acc(x_train, wv_triplets_train)
+    valid_triplet_acc = get_triplet_acc(x_valid, wv_triplets_valid)
+    test_triplet_acc = get_triplet_acc(x_test, wv_triplets_test)
+    knn_acc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="")
+    knn_auc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="auc")
+    # knn_auc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="auc")
+    # human_align = human_1NN_align(x_train, x_valid)
+    # class_1NN = class_1NN_score(x_train, y_train, x_valid, y_valid)
+
+    results = {
+        "train_triplet_acc":train_triplet_acc,
+        "valid_triplet_acc":valid_triplet_acc,
+        "test_triplet_acc":test_triplet_acc,
+        "knn_acc":knn_acc,
+        "knn_auc":knn_auc,
+        # "human_1NN_align":human_align,
+        # "class_1NN":class_1NN,
+    }
+    print(results)
+
+    return results
 
 def bm_eval_human(x_train, x_valid):
     y_train = np.array([0]*80+[1]*80)

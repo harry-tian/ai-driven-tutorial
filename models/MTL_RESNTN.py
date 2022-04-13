@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from email.policy import default
 import os, pickle
 import argparse
 from torch import nn
@@ -93,6 +94,7 @@ class MTL_RESNTN(TN):
         parser = TN.add_model_specific_args(parser)
         parser.add_argument("--MTL_hparam", action="store_true")
         parser.add_argument("--lamda", default=0.5, type=float)
+        parser.add_argument("--check_val_every_n_epoch", default = 5, type=int)
         return parser
 
 def main():

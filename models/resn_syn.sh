@@ -9,13 +9,13 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
-#SBATCH --mem=20000
+#SBATCH --mem=10G
 #SBATCH --nodelist=aa002
 
 python resn_args.py \
   --wandb_mode=online \
   --wandb_entity=ai-driven-tutorial \
-  --wandb_project=resn \
+  --wandb_project=resn_syn \
   --wandb_group=bird \
   --wandb_name=bs=32 \
   --train_dir=/net/scratch/chacha/data/weevil_vespula/train \
