@@ -18,7 +18,7 @@ from torch import nn
 class TN(RESN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.feature_extractor = models.resnet18(pretrained=False)
+        self.feature_extractor = models.resnet18(pretrained=False)
         self.triplet_loss = nn.TripletMarginLoss()
         self.pdist = nn.PairwiseDistance()
 
