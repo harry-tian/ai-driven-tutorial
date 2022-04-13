@@ -7,6 +7,7 @@ import argparse, pickle
 from pydoc import locate
 import numpy as np
 import torchvision, torch, os
+from sklearn.metrics.pairwise import euclidean_distances
 
 bm = {"data_dir":"/net/scratch/tianh-shared/bm",
             "transform": "bm"}
@@ -74,7 +75,7 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
 # subdir = "wv"
 # ckpt = 'resn/u9as2wx6'
 model_name = "MTL"
-ckpt = 'synthetic_MTL/3sk1rynk' #'chacha-syn-htriplets/2ul5cslk'
+ckpt = 'synthetic_MTL/11hwl4ch' #synthetic_MTL/3sk1rynk' #'chacha-syn-htriplets/2ul5cslk'
 
 model_path_dict ={
     'TN': "TN.TN",
@@ -103,7 +104,7 @@ ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt"
 for split in splits:
     # name = name.replace("split",split)
     name = f"{model_name}_{split}_emb10"
-    embed_path = f"../embeds/{subdir}/{name}.pkl"
+    embed_path = f"../embeds/{subdir}/{name}_lambda_1.pkl"
 
     get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
 # >>>>>>> 03f67bcb1ecf5f92198e5eb45357b8e23d90d7fa

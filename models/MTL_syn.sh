@@ -4,13 +4,13 @@
 #SBATCH --mail-type=ALL
 #SBATCH --output=/home/chacha/slurm/out/%j.%N.stdout
 #SBATCH --error=/home/chacha/slurm/stderr/%j.%N.stderr
-#SBATCH --job-name=MTL_syn_lambda_1
+#SBATCH --job-name=MTL_syn_lambda_0.8
 #SBATCH --partition=cdac-own
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --mem=20000
-#SBATCH --nodelist=a006
+#SBATCH --nodelist=a008
 
 python MTL_RESNTN.py \
   --wandb_mode=online \
@@ -28,7 +28,7 @@ python MTL_RESNTN.py \
   --max_epochs=200 \
   --learning_rate=1e-4 \
   --train_batch_size=120 \
-  --lamda=1 \
+  --lamda=0.5 \
   --transform=wv \
   --do_train \
   --do_test

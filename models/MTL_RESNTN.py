@@ -10,6 +10,8 @@ import torchvision
 import pytorch_lightning as pl
 import warnings
 warnings.filterwarnings("ignore")
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
 
 from TN import TN
 import utils
@@ -94,7 +96,8 @@ class MTL_RESNTN(TN):
         parser = TN.add_model_specific_args(parser)
         parser.add_argument("--MTL_hparam", action="store_true")
         parser.add_argument("--lamda", default=0.5, type=float)
-        parser.add_argument("--check_val_every_n_epoch", default = 5, type=int)
+        parser.add_argument("--check_val_every_n_epoch", default = 1, type=int)
+        parser.add_argument("--early_stop_patience", default = 10, type=int)
         return parser
 
 def main():
@@ -109,7 +112,10 @@ def main():
     model = MTL_RESNTN(**dict_args)
 
     monitor = "valid_total_loss"
-    trainer = utils.generic_train(model, args, monitor)
+    print(args.early_stop_patience, args.check_val_every_n_epoch)
+    early_stop_callback = EarlyStopping(monitor="valid_total_loss", min_delta=0.00, patience=args.early_stop_patience, verbose=True, mode="min")
+    # trainer = Trainer(callbacks=[early_stop_callback])
+    trainer = utils.generic_train(model, args, monitor, callbacks = [early_stop_callback], check_val_every_n_epoch = args.check_val_every_n_epoch)
 
 if __name__ == "__main__":
     main()
