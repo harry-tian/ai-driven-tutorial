@@ -31,9 +31,10 @@ def auto_split(src_dir, dst_dir):
     if not os.path.isdir(test_dir): os.mkdir(test_dir)
 
     for c in classes:
+        if c == "auto_split": continue
         c_idx = np.where(instances[:,1] == c)[0]
         split = len(c_idx)//10
-        c_test = np.random.choice(c_idx, split, replace=False)
+        c_test = np.random.choice(c_idx, split*2, replace=False)
         c_idx = np.setdiff1d(c_idx,c_test)
         c_valid = np.random.choice(c_idx, split, replace=False)
         c_idx = np.setdiff1d(c_idx,c_valid)
@@ -307,7 +308,7 @@ def no_transform():
         # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-def xray_transform_aug():
+def bird_transform_aug():
     return transforms.Compose([
     transforms.Resize((224,224)),
     transforms.RandomRotation(20),
@@ -316,29 +317,25 @@ def xray_transform_aug():
     transforms.Normalize([0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-def xray_transform():
+def bird_transform():
     return transforms.Compose([
     transforms.Resize((224,224)),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-def bird_transform_aug():
+def xray_transform_aug():
     return transforms.Compose([
-        transforms.Resize(299),
-        transforms.CenterCrop(224),
+        transforms.Resize((2500,2500)),
         transforms.RandomRotation(20),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-def bird_transform():
+def xray_transform():
     return transforms.Compose([
-        transforms.Resize(299),
-        transforms.CenterCrop(224),
+        transforms.Resize((2500,2500)),
         transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
 

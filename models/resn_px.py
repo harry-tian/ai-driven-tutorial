@@ -101,20 +101,21 @@ class RESN(pl.LightningModule):
 
     def train_dataloader(self):
         transform = utils.get_transform(self.hparams.transform, aug=True) 
-        dataset = torchvision.datasets.DatasetFolder(self.hparams.train_dir, extensions='npy', loader=np.load, transform=transforms.ToTensor())
+        # transform=transforms.ToTensor()
+        dataset = torchvision.datasets.DatasetFolder(self.hparams.train_dir, extensions='npy', loader=np.load, transform=transform)
         print(f"\n train:{len(dataset)}")
         return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
 
     def val_dataloader(self):
         transform = utils.get_transform(self.hparams.transform, aug=False)
-        dataset = torchvision.datasets.DatasetFolder(self.hparams.valid_dir, extensions='npy', loader=np.load, transform=transforms.ToTensor())
+        dataset = torchvision.datasets.DatasetFolder(self.hparams.valid_dir, extensions='npy', loader=np.load, transform=transform)
         print(f"\n valid:{len(dataset)}")
         return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
 
 
     def test_dataloader(self):
         transform = utils.get_transform(self.hparams.transform, aug=False)
-        dataset = torchvision.datasets.DatasetFolder(self.hparams.test_dir, extensions='npy', loader=np.load, transform=transforms.ToTensor())
+        dataset = torchvision.datasets.DatasetFolder(self.hparams.test_dir, extensions='npy', loader=np.load, transform=transform)
         print(f"\n test:{len(dataset)}")
         return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 

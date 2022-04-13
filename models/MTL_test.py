@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from email.policy import default
 import os, pickle
 import argparse
 from torch import nn
@@ -9,7 +8,6 @@ import torch
 import torchvision
 import pytorch_lightning as pl
 import warnings
-from torchvision import  models
 warnings.filterwarnings("ignore")
 
 from TN import TN
@@ -18,10 +16,14 @@ import utils
 class MTL_RESNTN(TN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs) 
-        self.feature_extractor = models.resnet18(pretrained=True)
 
-    def forward(self, triplet_idx, clf_idx, input, batch_idx):
-        embeds = self.embed(input)
+    def forward(self, triplet_idx, clf_idx, batch_idx):
+        if self.trainer.training:
+            inputs = self.train_input
+        else:
+            inputs = self.valid_input
+
+        embeds = self.embed(inputs)
 
         if self.hparams.MTL_hparam:
             clf_data = embeds[clf_idx]
@@ -36,12 +38,19 @@ class MTL_RESNTN(TN):
         
         return logits, triplets
 
-    def get_loss_acc(self, batch, input, labels, batch_idx):
+    def get_loss_acc(self, batch, batch_idx):
         triplet_idx = batch[0]
         clf_idx = torch.unique(torch.flatten(triplet_idx))
-        logits, triplets = self(triplet_idx, clf_idx, input, batch_idx)
+        logits, triplets = self(triplet_idx, clf_idx, batch_idx)
 
         probs = torch.sigmoid(logits)
+
+        if self.trainer.training:
+            labels = self.train_label
+        else:
+            labels = self.valid_label
+        if self.hparams.MTL_hparam:
+            labels = labels[clf_idx]
 
         clf_loss = self.criterion(logits, labels.type_as(logits).unsqueeze(1))
         triplet_loss = self.triplet_loss(*triplets)
@@ -56,9 +65,7 @@ class MTL_RESNTN(TN):
         return clf_loss, m, triplet_loss, triplet_acc, total_loss
 
     def training_step(self, batch, batch_idx):
-        input = self.train_input
-        labels = self.train_label
-        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels, batch_idx)
+        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, batch_idx)
 
         self.log('train_clf_loss', clf_loss, sync_dist=True)
         self.log('train_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -68,9 +75,7 @@ class MTL_RESNTN(TN):
         return total_loss
 
     def validation_step(self, batch, batch_idx):
-        input = self.valid_input
-        labels = self.valid_label
-        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels, batch_idx)
+        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, batch_idx)
 
         self.log('valid_clf_loss', clf_loss, sync_dist=True)
         self.log('valid_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -80,9 +85,7 @@ class MTL_RESNTN(TN):
         self.log('valid_total_loss', total_loss, sync_dist=True)
 
     def test_step(self, batch, batch_idx):
-        input = self.test_input
-        labels = self.test_label
-        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels, batch_idx)
+        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, batch_idx)
 
         self.log('test_clf_loss', clf_loss, sync_dist=True)
         self.log('test_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -93,10 +96,16 @@ class MTL_RESNTN(TN):
 
     @staticmethod
     def add_model_specific_args(parser):
+        # parser.add_argument("--pretrained", action="store_true")
+        # parser.add_argument("--embed_dim", default=10, type=int, help="Embedding size")
+        # parser.add_argument("--transform", default="bm", type=str)    
+        
+        # parser.add_argument("--train_triplets", default=None, type=str, required=True)
+        # parser.add_argument("--valid_triplets", default=None, type=str, required=True) 
+        # parser.add_argument("--subset", action="store_true")
         parser = TN.add_model_specific_args(parser)
         parser.add_argument("--MTL_hparam", action="store_true")
         parser.add_argument("--lamda", default=0.5, type=float)
-        parser.add_argument("--check_val_every_n_epoch", default = 5, type=int)
         return parser
 
 def main():

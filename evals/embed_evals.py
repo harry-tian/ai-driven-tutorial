@@ -71,6 +71,7 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
         score = knc.score(x_valid, y_valid)
     return score
 
+
 def class_1NN_idx(x_train, y_train, x_test, y_test):
     classes = np.unique(y_train)
     idx_by_class = {c: np.where(y_train==c) for c in classes}
@@ -79,10 +80,16 @@ def class_1NN_idx(x_train, y_train, x_test, y_test):
     examples = []
     for i in range(len(y_test)):
         cur_dist = dists[i]
+        assert(len(np.unique(cur_dist))==120)
         d2idx = {d:j for j,d in enumerate(cur_dist)}
-        examples.append([d2idx[min(cur_dist[idx_by_class[c]])] for c in classes])
+        example = []
+        for c in classes:
+            class_nn = min(cur_dist[idx_by_class[c]])
+            example.append(d2idx[class_nn])
+        examples.append(example)
 
     return np.array(examples)
+    
         
 def class_1NN_score(x_train, y_train, x_test, y_test):
     classes = np.unique(y_train)
@@ -119,7 +126,32 @@ def get_1nn(data, index):
     return np.argsort(dist[index])[1]
 
 
+def bm_eval_human(x_train, y_train, x_valid, y_valid):
+    assert(x_train.shape[0] == 160)
+    assert(x_valid.shape[0] == 40)
 
+    train_triplets = "data/bm_triplets/3c2_unique=182/train_triplets.pkl"
+    valid_triplets = "data/bm_triplets/3c2_unique=182/valid_triplets.pkl"
+    # val2train_triplets = "data/bm_lpips_triplets/val2train_triplets.pkl"
+    train_triplets = pickle.load(open(train_triplets, "rb"))
+    valid_triplets = pickle.load(open(valid_triplets, "rb"))
+    # val2train_triplets = pickle.load(open(val2train_triplets,"rb"))
+
+    train_triplet_acc = get_triplet_acc(x_train, train_triplets)
+    valid_triplet_acc = get_triplet_acc(x_valid, valid_triplets)
+    # val2train_triplet_acc = get_val2train_triplet_acc(x_train, x_valid, val2train_triplets)
+    knn_acc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="")
+    knn_auc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="auc")
+
+    print("=" * 60)
+    print("human triplet evals:")
+    print(f"train_triplet_acc: {train_triplet_acc}")
+    print(f"valid_triplet_acc: {valid_triplet_acc}")
+    # print(f"val2train_triplet_acc: {val2train_triplet_acc}")
+    print(f"knn_acc: {knn_acc}")
+    print(f"knn_auc: {knn_auc}")
+
+    return train_triplet_acc, valid_triplet_acc, knn_acc, knn_auc #,val2train_triplet_acc
 
 
 
