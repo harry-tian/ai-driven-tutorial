@@ -5,14 +5,17 @@ from itertools import combinations
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.metrics.pairwise import euclidean_distances
+import pandas as pd
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
-bm_triplets_train = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
-bm_triplets_valid = np.array(pickle.load(open("data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
+bm_triplets_train = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
+bm_triplets_valid = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
 # bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
 # bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
-
+wv_y_train = np.array([0]*60+[1]*60)
+wv_y_valid = np.array([0]*20+[1]*20)
+wv_y_valid = np.array([0]*20+[1]*20)
 
 
 def wv_eval_human(x_train, x_valid, x_test, y_train, y_valid, y_test, wv_triplets_train_path, wv_triplets_valid_path, wv_triplets_test_path):
@@ -80,7 +83,6 @@ def class_1NN_idx(x_train, y_train, x_test, y_test):
     examples = []
     for i in range(len(y_test)):
         cur_dist = dists[i]
-        assert(len(np.unique(cur_dist))==120)
         d2idx = {d:j for j,d in enumerate(cur_dist)}
         example = []
         for c in classes:
@@ -91,35 +93,78 @@ def class_1NN_idx(x_train, y_train, x_test, y_test):
     return np.array(examples)
     
         
-def class_1NN_score(x_train, y_train, x_test, y_test):
-    classes = np.unique(y_train)
-    idx_by_class = {c: np.where(y_train==c) for c in classes}
-    dists = euclidean_distances(x_test, x_train)
+def weightedL2(a, b, visual_weights):
+    q = a-b
+    return np.sqrt((visual_weights*q*q).sum())
 
+def decision_support(x_train, y_train, x_test, y_test, examples, dist_f=weightedL2, weights=[2.73027025, 1]):
     correct = 0
-    total = len(y_test)
-    for i in range(len(y_test)):
-        cur_dist = dists[i]
-        d2idx = {d:j for j,d in enumerate(cur_dist)}
-        examples = [d2idx[min(cur_dist[idx_by_class[c]])] for c in classes]
+    for test_idx, examples_idx in enumerate(examples):
+        ref = x_test[test_idx]
+        dists = [dist_f(ref, x_train[cand_idx], weights) for cand_idx in examples_idx]
+        y_pred = y_train[examples_idx[np.argmin(dists)]]
+        if y_pred == y_test[test_idx]: correct += 1
 
-        correct += get_knn_score(bm_train_embs[examples], y_train[examples], [bm_valid_embs[i]], [y_test[i]])
+    return correct/len(y_test)
 
-    return correct/total
+def get_wv_df():
+    wee_ves_dir = '/net/scratch/hanliu-shared/data/image-data/output/one-class_syn2_size-color-diff-2D'
+    tsv_file = os.path.join(wee_ves_dir,'images-config.tsv')
+    df = pd.read_table(tsv_file,delim_whitespace=True,header=None)
+    df = df.rename(columns={0: "label", 
+                    1: "name",
+                    2: "index",
+                    4: "bodyheadszratio",
+                    5: "bodyheadcolordiff",
+                    6: "bodysz",
+                    7: "bodycolor",
+                    8: "bodycolorlighter"
+                    })
+    features =  ["bodyheadszratio",
+                "bodyheadcolordiff",
+                "bodysz",
+                "bodycolor",
+                "bodycolorlighter"]
+    def extract_feature(x):
+        x_new= x.split('=')[1]
+        return x_new
+        
+    for feature in features:
+        df[feature] = df.apply(lambda row : extract_feature(row[feature]), axis = 1)
+    for fea in features:
+        df[fea] = df[fea].astype('float')
 
-def human_1NN_align(x_train, x_valid):
-    embeds = np.concatenate((np.array(x_train),np.array(x_valid)))
-    human_embs = np.concatenate((bm_train_embs,bm_valid_embs))
-    assert(len(embeds) == len(human_embs))
+    return df
 
-    correct = 0
-    total = 0
-    for i in range(len(human_embs)):
-        total += 1
-        if get_1nn(human_embs, i) == get_1nn(embeds, i):
-            correct += 1
+# def class_1NN_score(x_train, y_train, x_test, y_test):
+#     classes = np.unique(y_train)
+#     idx_by_class = {c: np.where(y_train==c) for c in classes}
+#     dists = euclidean_distances(x_test, x_train)
+
+#     correct = 0
+#     total = len(y_test)
+#     for i in range(len(y_test)):
+#         cur_dist = dists[i]
+#         d2idx = {d:j for j,d in enumerate(cur_dist)}
+#         examples = [d2idx[min(cur_dist[idx_by_class[c]])] for c in classes]
+
+#         correct += get_knn_score(bm_train_embs[examples], y_train[examples], [bm_valid_embs[i]], [y_test[i]])
+
+#     return correct/total
+
+# def human_1NN_align(x_train, x_valid):
+#     embeds = np.concatenate((np.array(x_train),np.array(x_valid)))
+#     human_embs = np.concatenate((bm_train_embs,bm_valid_embs))
+#     assert(len(embeds) == len(human_embs))
+
+#     correct = 0
+#     total = 0
+#     for i in range(len(human_embs)):
+#         total += 1
+#         if get_1nn(human_embs, i) == get_1nn(embeds, i):
+#             correct += 1
     
-    return correct/total
+#     return correct/total
 
 def get_1nn(data, index):
     dist = euclidean_distances(data)

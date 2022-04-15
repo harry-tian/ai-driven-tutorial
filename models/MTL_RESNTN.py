@@ -13,6 +13,9 @@ from torchvision import  models
 warnings.filterwarnings("ignore")
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
+import sys
+sys.path.insert(0, '..')
+import evals.embed_evals as evals
 
 from TN import TN
 import utils
@@ -92,6 +95,20 @@ class MTL_RESNTN(TN):
         self.log('test_triplet_loss', triplet_loss, sync_dist=True)
         self.log('test_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('test_total_loss', total_loss, sync_dist=True)
+
+        train_x = self(self.train_input).cpu().detach().numpy()
+        train_y = self.train_label.cpu().detach().numpy()
+        test_x = self(self.test_input).cpu().detach().numpy()
+        test_y = self.test_label.cpu().detach().numpy()
+        knn_acc = evals.get_knn_score(train_x, train_y, test_x, test_y)
+        self.log('test_1nn_acc', knn_acc, sync_dist=True)
+        
+        if self.hparams.syn:
+            syn_x_train, syn_y_train = pickle.load(open(self.hparams.train_synthetic,"rb"))
+            syn_x_test, syn_y_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
+            examples = evals.class_1NN_idx(train_x, train_y, test_x, test_y)
+            ds_acc = evals.decision_support(syn_x_train, syn_y_train, syn_x_test, syn_y_test, examples)
+            self.log('decision support', ds_acc, sync_dist=True)    
 
     @staticmethod
     def add_model_specific_args(parser):

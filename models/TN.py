@@ -15,26 +15,25 @@ from resn_args import RESN
 import utils
 from torch import nn
 
+import sys
+sys.path.insert(0, '..')
+import evals.embed_evals as evals
+
 class TN(RESN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feature_extractor = models.resnet18(pretrained=False)
         self.triplet_loss = nn.TripletMarginLoss()
-        self.pdist = nn.PairwiseDistance()
 
         self.setup_data()
         self.summarize()
+    
+    def get_loss_acc(self, triplet_idx, input, knn_acc=False):
+        embeds = self(input)
 
-    def forward(self, triplet_idx, input, batch_idx):
-        embeds = self.embed(input)
-            
         triplet_idx = triplet_idx.long()
         x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
-        return triplets
-    
-    def get_loss_acc(self, triplet_idx, input, batch_idx):
-        triplets = self(triplet_idx, input, batch_idx)
         
         triplet_loss = self.triplet_loss(*triplets)
         with torch.no_grad():
@@ -63,59 +62,37 @@ class TN(RESN):
         input = self.test_input
         triplet_loss, triplet_acc = self.get_loss_acc(batch[0], input, batch_idx)
 
-        self.log('test_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
+        self.log('test_triplet_acc', triplet_acc, sync_dist=True)
         self.log('test_triplet_loss', triplet_loss, sync_dist=True)
 
-    def setup_data(self):
-        train_transform = utils.get_transform(self.hparams.transform, aug=True)
-        valid_transform = utils.get_transform(self.hparams.transform, aug=False)
-        train_dataset = torchvision.datasets.ImageFolder(self.hparams.train_dir, transform=train_transform)
-        valid_dataset = torchvision.datasets.ImageFolder(self.hparams.valid_dir, transform=valid_transform)
-        test_dataset = torchvision.datasets.ImageFolder(self.hparams.test_dir, transform=valid_transform)
-        self.train_input = torch.tensor(np.array([data[0].numpy() for data in train_dataset])).cuda()
-        self.valid_input = torch.tensor(np.array([data[0].numpy() for data in valid_dataset])).cuda()
-        self.test_input = torch.tensor(np.array([data[0].numpy() for data in test_dataset])).cuda()
-        self.train_label = torch.tensor(np.array([data[1] for data in train_dataset])).cuda()
-        self.valid_label = torch.tensor(np.array([data[1] for data in valid_dataset])).cuda()
-        self.test_label = torch.tensor(np.array([data[1] for data in test_dataset])).cuda()
-
-        self.train_triplets = pickle.load(open(self.hparams.train_triplets, "rb"))
-        self.valid_triplets = pickle.load(open(self.hparams.valid_triplets, "rb"))
-        self.test_triplets = pickle.load(open(self.hparams.test_triplets, "rb"))
-        # self.test_triplets = self.valid_triplets
-
-        if self.hparams.subset:
-            subset_idx = np.random.choice(len(self.train_triplets), len(self.train_triplets)//20, replace=False)
-            self.train_triplets = self.train_triplets[subset_idx]
-    
-        self.train_dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))
-        self.valid_dataset = torch.utils.data.TensorDataset(torch.tensor(self.valid_triplets))
-        self.test_dataset = torch.utils.data.TensorDataset(torch.tensor(self.test_triplets))
+        train_x = self(self.train_input).cpu().detach().numpy()
+        train_y = self.train_label.cpu().detach().numpy()
+        test_x = self(self.test_input).cpu().detach().numpy()
+        test_y = self.test_label.cpu().detach().numpy()
+        knn_acc = evals.get_knn_score(train_x, train_y, test_x, test_y)
+        self.log('test_1nn_acc', knn_acc, sync_dist=True)
+        
+        if self.hparams.syn:
+            syn_x_train, syn_y_train = pickle.load(open(self.hparams.train_synthetic,"rb"))
+            syn_x_test, syn_y_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
+            examples = evals.class_1NN_idx(train_x, train_y, test_x, test_y)
+            ds_acc = evals.decision_support(syn_x_train, syn_y_train, syn_x_test, syn_y_test, examples)
+            self.log('decision support', ds_acc, sync_dist=True)    
 
     def train_dataloader(self):
-        dataset = self.train_dataset
+        dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))
         print(f"\nlen_train:{len(dataset)}")
         return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
 
     def val_dataloader(self):
-        dataset = self.valid_dataset
+        dataset = torch.utils.data.TensorDataset(torch.tensor(self.valid_triplets))
         print(f"\nlen_valid:{len(dataset)}")
         return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
 
     def test_dataloader(self):
-        dataset = self.test_dataset
+        dataset = torch.utils.data.TensorDataset(torch.tensor(self.test_triplets))
         print(f"\nlen_test:{len(dataset)}")
         return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
-
-    @staticmethod
-    def add_model_specific_args(parser):   
-        parser = RESN.add_model_specific_args(parser)   
-
-        parser.add_argument("--train_triplets", default=None, type=str, required=True)
-        parser.add_argument("--valid_triplets", default=None, type=str, required=True) 
-        parser.add_argument("--test_triplets", default=None, type=str, required=False) 
-        parser.add_argument("--subset", action="store_true")
-        return parser
 
 def main():
     parser = utils.add_generic_args()
