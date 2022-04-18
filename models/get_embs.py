@@ -60,7 +60,7 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     print(f"dumped to {embed_path}")
 
 
-# model_path = "resn_args.RESN"
+# model_path = "RESN.RESN"
 
 
 # <<<<<<< HEAD
@@ -80,9 +80,9 @@ ckpt = 'synthetic_MTL/11hwl4ch' #synthetic_MTL/3sk1rynk' #'chacha-syn-htriplets/
 model_path_dict ={
     'TN': "TN.TN",
     'MTL': "MTL_RESNTN.MTL_RESNTN",
-    'RESN': "resn_args.RESN"
+    'RESN': "RESN.RESN"
 }
-model_path = model_path_dict[model_name]#"MTL_RESNTN.MTL_RESNTN" #"resn_args.RESN"
+model_path = model_path_dict[model_name]#"MTL_RESNTN.MTL_RESNTN" #"RESN.RESN"
 
 # dataset = chest_xray
 # subdir = "chest_xray"

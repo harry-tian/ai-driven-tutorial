@@ -26,7 +26,7 @@ class RESN(pl.LightningModule):
         self.save_hyperparameters()
         self.setup_data()
 
-        self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
+        self.feature_extractor = models.resnet18(pretrained=True)
         num_features = 1000
 
         if self.hparams.num_class > 2:
@@ -91,11 +91,13 @@ class RESN(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         loss, m = self.get_loss_metrics(x, y, triplets=self.test_triplets)
-
         self.log('test_loss', loss, sync_dist=True)
         self.log('test_acc', m['acc'], sync_dist=True)
         if m["triplet_acc"] > -1: self.log('test_triplet_acc', m['triplet_acc'], sync_dist=True)
 
+        self.test_evals()
+
+    def test_evals(self):
         train_x = self(self.train_input).cpu().detach().numpy()
         train_y = self.train_label.cpu().detach().numpy()
         test_x = self(self.test_input).cpu().detach().numpy()
@@ -107,8 +109,9 @@ class RESN(pl.LightningModule):
             syn_x_train, syn_y_train = pickle.load(open(self.hparams.train_synthetic,"rb"))
             syn_x_test, syn_y_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
             examples = evals.class_1NN_idx(train_x, train_y, test_x, test_y)
-            ds_acc = evals.decision_support(syn_x_train, syn_y_train, syn_x_test, syn_y_test, examples)
-            self.log('decision support', ds_acc, sync_dist=True)    
+            ds_acc = evals.decision_support(syn_x_train, syn_y_train, syn_x_test, syn_y_test, examples, 
+            [float(self.hparams.w1), float(self.hparams.w2)])
+            self.log('decision support', ds_acc, sync_dist=True)  
 
     def get_triplet_acc(self, embeds, triplet_idx):
         triplet_idx = torch.tensor(triplet_idx).long()
@@ -138,10 +141,9 @@ class RESN(pl.LightningModule):
         self.valid_label = torch.tensor(np.array([data[1] for data in self.valid_dataset])).cuda()
         self.test_label = torch.tensor(np.array([data[1] for data in self.test_dataset])).cuda()
 
-        self.train_triplets = pickle.load(open(self.hparams.train_triplets, "rb"))
-        self.valid_triplets = pickle.load(open(self.hparams.valid_triplets, "rb"))
-        self.test_triplets = pickle.load(open(self.hparams.test_triplets, "rb"))
-
+        self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
+        self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
+        self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
 
     def train_dataloader(self):
         dataset = self.train_dataset
@@ -162,16 +164,6 @@ class RESN(pl.LightningModule):
     def add_model_specific_args(parser):
         parser.add_argument("--pretrained", action="store_true")
         parser.add_argument("--embed_dim", default=10, type=int, help="Embedding size")
-        parser.add_argument("--transform", default="bm", type=str)
-
-        parser.add_argument("--train_triplets", default=None, type=str, required=False)
-        parser.add_argument("--valid_triplets", default=None, type=str, required=False) 
-        parser.add_argument("--test_triplets", default=None, type=str, required=False) \
-
-        parser.add_argument("--train_synthetic", default=None, type=str, required=False) 
-        parser.add_argument("--test_synthetic", default=None, type=str, required=False) 
-
-        parser.add_argument("--syn", action="store_true") 
         return parser
 
 def main():

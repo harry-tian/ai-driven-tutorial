@@ -12,39 +12,28 @@ import warnings
 from torchvision import  models
 warnings.filterwarnings("ignore")
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from TN import TN
+import utils
 
 import sys
 sys.path.insert(0, '..')
 import evals.embed_evals as evals
 
-from TN import TN
-import utils
 
 class MTL_RESNTN(TN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs) 
         self.feature_extractor = models.resnet18(pretrained=True)
 
-    def forward(self, triplet_idx, clf_idx, input, batch_idx):
-        embeds = self.embed(input)
+    def get_loss_acc(self, batch, input, labels):
+        triplet_idx = batch[0]
 
-        if self.hparams.MTL_hparam:
-            clf_data = embeds[clf_idx]
-        else:
-            clf_data = embeds
-        
-        logits = self.classifier(clf_data)
+        embeds = self(input)        
+        logits = self.classifier(embeds)
         
         triplet_idx = triplet_idx.long()
         x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
-        
-        return logits, triplets
-
-    def get_loss_acc(self, batch, input, labels, batch_idx):
-        triplet_idx = batch[0]
-        clf_idx = torch.unique(torch.flatten(triplet_idx))
-        logits, triplets = self(triplet_idx, clf_idx, input, batch_idx)
 
         probs = torch.sigmoid(logits)
 
@@ -63,7 +52,7 @@ class MTL_RESNTN(TN):
     def training_step(self, batch, batch_idx):
         input = self.train_input
         labels = self.train_label
-        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels, batch_idx)
+        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels)
 
         self.log('train_clf_loss', clf_loss, sync_dist=True)
         self.log('train_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -75,7 +64,7 @@ class MTL_RESNTN(TN):
     def validation_step(self, batch, batch_idx):
         input = self.valid_input
         labels = self.valid_label
-        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels, batch_idx)
+        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels)
 
         self.log('valid_clf_loss', clf_loss, sync_dist=True)
         self.log('valid_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -87,7 +76,7 @@ class MTL_RESNTN(TN):
     def test_step(self, batch, batch_idx):
         input = self.test_input
         labels = self.test_label
-        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels, batch_idx)
+        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels)
 
         self.log('test_clf_loss', clf_loss, sync_dist=True)
         self.log('test_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -95,25 +84,12 @@ class MTL_RESNTN(TN):
         self.log('test_triplet_loss', triplet_loss, sync_dist=True)
         self.log('test_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('test_total_loss', total_loss, sync_dist=True)
-
-        train_x = self(self.train_input).cpu().detach().numpy()
-        train_y = self.train_label.cpu().detach().numpy()
-        test_x = self(self.test_input).cpu().detach().numpy()
-        test_y = self.test_label.cpu().detach().numpy()
-        knn_acc = evals.get_knn_score(train_x, train_y, test_x, test_y)
-        self.log('test_1nn_acc', knn_acc, sync_dist=True)
         
-        if self.hparams.syn:
-            syn_x_train, syn_y_train = pickle.load(open(self.hparams.train_synthetic,"rb"))
-            syn_x_test, syn_y_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
-            examples = evals.class_1NN_idx(train_x, train_y, test_x, test_y)
-            ds_acc = evals.decision_support(syn_x_train, syn_y_train, syn_x_test, syn_y_test, examples)
-            self.log('decision support', ds_acc, sync_dist=True)    
+        self.test_evals()
 
     @staticmethod
     def add_model_specific_args(parser):
         parser = TN.add_model_specific_args(parser)
-        parser.add_argument("--MTL_hparam", action="store_true")
         parser.add_argument("--lamda", default=0.5, type=float)
         parser.add_argument("--check_val_every_n_epoch", default = 1, type=int)
         parser.add_argument("--early_stop_patience", default = 10, type=int)

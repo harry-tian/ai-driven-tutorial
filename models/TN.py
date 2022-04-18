@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from dataclasses import replace
+from email.headerregistry import UniqueSingleAddressHeader
 import os, pickle
 import argparse
 
@@ -11,30 +12,30 @@ import warnings
 from torchvision import  models
 warnings.filterwarnings("ignore")
 
-from resn_args import RESN
+from RESN import RESN
 import utils
 from torch import nn
-
-import sys
-sys.path.insert(0, '..')
-import evals.embed_evals as evals
 
 class TN(RESN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feature_extractor = models.resnet18(pretrained=False)
         self.triplet_loss = nn.TripletMarginLoss()
-
-        self.setup_data()
+        self.train_embeds = None
         self.summarize()
     
-    def get_loss_acc(self, triplet_idx, input, knn_acc=False):
-        embeds = self(input)
-
+    def get_loss_acc(self, triplet_idx, input):
+        uniques = np.unique(triplet_idx.cpu().detach().numpy().flatten())
+        val2idx = {val:i for i,val in enumerate(uniques)}
+        for i, triplet in enumerate(triplet_idx):
+            for j, val in enumerate(triplet):
+                triplet_idx[i][j] = val2idx[int(val)]
         triplet_idx = triplet_idx.long()
+
+        embeds = self(input[uniques])
         x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
-        
+
         triplet_loss = self.triplet_loss(*triplets)
         with torch.no_grad():
             d_ap = self.pdist(triplets[0], triplets[1])
@@ -43,41 +44,63 @@ class TN(RESN):
 
         return triplet_loss, triplet_acc
 
+    def train_triplets_step(self, triplet_idx, input):
+        self.train_embeds = self(self.train_input)
+        x1, x2, x3 = self.train_embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
+        triplets = (x1, x2, x3)
+        return self.triplet_loss_acc(triplets)
+
+    def mixed_triplets_step(self, triplet_idx, input):
+        if self.train_embeds is None: self.train_embeds = self(self.train_input)
+        
+        embeds = self(input)
+        x1, x2, x3 = embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
+        triplets = (x1, x2, x3)
+        return self.triplet_loss_acc(triplets)
+
+    def triplet_loss_acc(self, triplets):
+        triplet_loss = self.triplet_loss(*triplets)
+        d_ap = self.pdist(triplets[0], triplets[1])
+        d_an = self.pdist(triplets[0], triplets[2])
+        triplet_acc = (d_ap < d_an).float().mean()
+        return triplet_loss, triplet_acc
+
     def training_step(self, batch, batch_idx):
         input = self.train_input
-        triplet_loss, triplet_acc = self.get_loss_acc(batch[0], input, batch_idx)
+        triplet_idx = batch[0]
+        triplet_loss, triplet_acc = self.train_triplets_step(triplet_idx, input)
+        # uniques = np.unique(triplet_idx.cpu().detach().numpy().flatten())
+        # val2idx = {val:i for i,val in enumerate(uniques)}
+        # for i, triplet in enumerate(triplet_idx):
+        #     for j, val in enumerate(triplet):
+        #         triplet_idx[i][j] = val2idx[int(val)]
+        # triplet_idx = triplet_idx.long()
+        # embeds = self(input[uniques])
+        # x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
+        # triplets = (x1, x2, x3)
 
+        # triplet_loss, triplet_acc = self.triplet_loss_acc(triplets)
         self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('train_triplet_loss', triplet_loss, sync_dist=True)
         return triplet_loss
 
     def validation_step(self, batch, batch_idx):
         input = self.valid_input
-        triplet_loss, triplet_acc = self.get_loss_acc(batch[0], input, batch_idx)
+        triplet_idx = batch[0]
 
+        triplet_loss, triplet_acc = self.mixed_triplets_step(triplet_idx, input)
         self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('valid_triplet_loss', triplet_loss, sync_dist=True)
 
     def test_step(self, batch, batch_idx):
         input = self.test_input
-        triplet_loss, triplet_acc = self.get_loss_acc(batch[0], input, batch_idx)
+        triplet_idx = batch[0]
+        triplet_loss, triplet_acc = self.mixed_triplets_step(triplet_idx, input)
 
         self.log('test_triplet_acc', triplet_acc, sync_dist=True)
         self.log('test_triplet_loss', triplet_loss, sync_dist=True)
 
-        train_x = self(self.train_input).cpu().detach().numpy()
-        train_y = self.train_label.cpu().detach().numpy()
-        test_x = self(self.test_input).cpu().detach().numpy()
-        test_y = self.test_label.cpu().detach().numpy()
-        knn_acc = evals.get_knn_score(train_x, train_y, test_x, test_y)
-        self.log('test_1nn_acc', knn_acc, sync_dist=True)
-        
-        if self.hparams.syn:
-            syn_x_train, syn_y_train = pickle.load(open(self.hparams.train_synthetic,"rb"))
-            syn_x_test, syn_y_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
-            examples = evals.class_1NN_idx(train_x, train_y, test_x, test_y)
-            ds_acc = evals.decision_support(syn_x_train, syn_y_train, syn_x_test, syn_y_test, examples)
-            self.log('decision support', ds_acc, sync_dist=True)    
+        self.test_evals()
 
     def train_dataloader(self):
         dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))
@@ -93,6 +116,11 @@ class TN(RESN):
         dataset = torch.utils.data.TensorDataset(torch.tensor(self.test_triplets))
         print(f"\nlen_test:{len(dataset)}")
         return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
+
+    @staticmethod
+    def add_model_specific_args(parser):
+        parser = RESN.add_model_specific_args(parser)
+        return parser
 
 def main():
     parser = utils.add_generic_args()

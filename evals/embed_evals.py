@@ -9,8 +9,8 @@ import pandas as pd
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
-bm_triplets_train = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
-bm_triplets_valid = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
+# bm_triplets_train = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
+# bm_triplets_valid = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
 # bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
 # bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
 wv_y_train = np.array([0]*60+[1]*60)
@@ -97,7 +97,7 @@ def weightedL2(a, b, visual_weights):
     q = a-b
     return np.sqrt((visual_weights*q*q).sum())
 
-def decision_support(x_train, y_train, x_test, y_test, examples, dist_f=weightedL2, weights=[2.73027025, 1]):
+def decision_support(x_train, y_train, x_test, y_test, examples, weights,  dist_f=weightedL2):
     correct = 0
     for test_idx, examples_idx in enumerate(examples):
         ref = x_test[test_idx]

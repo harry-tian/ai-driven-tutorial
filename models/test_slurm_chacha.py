@@ -67,7 +67,7 @@ command = f"""
     whoami
     conda activate teaching
     cd /net/scratch/chacha/explain_teach/models
-    srun python resn_args.py \
+    srun python RESN.py \
     --embed_dim=10 \
     --wandb_mode=online \
     --wandb_group=resn-emb2 \
