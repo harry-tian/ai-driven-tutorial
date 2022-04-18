@@ -21,7 +21,7 @@ sys.path.insert(0, '..')
 import evals.embed_evals as evals
 
 
-class MTL_RESNTN(TN):
+class MTL(TN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs) 
         self.feature_extractor = models.resnet18(pretrained=True)
@@ -160,14 +160,14 @@ class MTL_RESNTN(TN):
 
 def main():
     parser = utils.add_generic_args()
-    MTL_RESNTN.add_model_specific_args(parser)
+    MTL.add_model_specific_args(parser)
     args = parser.parse_args()
     print(args)
 
     pl.seed_everything(args.seed)
     
     dict_args = vars(args)
-    model = MTL_RESNTN(**dict_args)
+    model = MTL(**dict_args)
 
     monitor = "valid_total_loss"
     print(args.early_stop_patience, args.check_val_every_n_epoch)

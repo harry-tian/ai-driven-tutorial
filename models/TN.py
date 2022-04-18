@@ -23,28 +23,8 @@ class TN(RESN):
         self.triplet_loss = nn.TripletMarginLoss()
         self.train_embeds = None
         self.summarize()
-    
-    def get_loss_acc(self, triplet_idx, input):
-        uniques = np.unique(triplet_idx.cpu().detach().numpy().flatten())
-        val2idx = {val:i for i,val in enumerate(uniques)}
-        for i, triplet in enumerate(triplet_idx):
-            for j, val in enumerate(triplet):
-                triplet_idx[i][j] = val2idx[int(val)]
-        triplet_idx = triplet_idx.long()
 
-        embeds = self(input[uniques])
-        x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
-        triplets = (x1, x2, x3)
-
-        triplet_loss = self.triplet_loss(*triplets)
-        with torch.no_grad():
-            d_ap = self.pdist(triplets[0], triplets[1])
-            d_an = self.pdist(triplets[0], triplets[2])
-            triplet_acc = (d_ap < d_an).float().mean()
-
-        return triplet_loss, triplet_acc
-
-    def train_triplets_step(self, triplet_idx, input):
+    def train_triplets_step(self, triplet_idx):
         self.train_embeds = self(self.train_input)
         x1, x2, x3 = self.train_embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
@@ -66,20 +46,9 @@ class TN(RESN):
         return triplet_loss, triplet_acc
 
     def training_step(self, batch, batch_idx):
-        input = self.train_input
         triplet_idx = batch[0]
-        triplet_loss, triplet_acc = self.train_triplets_step(triplet_idx, input)
-        # uniques = np.unique(triplet_idx.cpu().detach().numpy().flatten())
-        # val2idx = {val:i for i,val in enumerate(uniques)}
-        # for i, triplet in enumerate(triplet_idx):
-        #     for j, val in enumerate(triplet):
-        #         triplet_idx[i][j] = val2idx[int(val)]
-        # triplet_idx = triplet_idx.long()
-        # embeds = self(input[uniques])
-        # x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
-        # triplets = (x1, x2, x3)
+        triplet_loss, triplet_acc = self.train_triplets_step(triplet_idx)
 
-        # triplet_loss, triplet_acc = self.triplet_loss_acc(triplets)
         self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('train_triplet_loss', triplet_loss, sync_dist=True)
         return triplet_loss
@@ -138,3 +107,25 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+    
+    # def get_loss_acc(self, triplet_idx, input):
+    #     uniques = np.unique(triplet_idx.cpu().detach().numpy().flatten())
+    #     val2idx = {val:i for i,val in enumerate(uniques)}
+    #     for i, triplet in enumerate(triplet_idx):
+    #         for j, val in enumerate(triplet):
+    #             triplet_idx[i][j] = val2idx[int(val)]
+    #     triplet_idx = triplet_idx.long()
+
+    #     embeds = self(input[uniques])
+    #     x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
+    #     triplets = (x1, x2, x3)
+
+    #     triplet_loss = self.triplet_loss(*triplets)
+    #     with torch.no_grad():
+    #         d_ap = self.pdist(triplets[0], triplets[1])
+    #         d_an = self.pdist(triplets[0], triplets[2])
+    #         triplet_acc = (d_ap < d_an).float().mean()
+
+    #     return triplet_loss, triplet_acc

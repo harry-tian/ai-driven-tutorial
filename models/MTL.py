@@ -20,39 +20,68 @@ sys.path.insert(0, '..')
 import evals.embed_evals as evals
 
 
-class MTL_RESNTN(TN):
+class MTL(TN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs) 
         self.feature_extractor = models.resnet18(pretrained=True)
 
-    def get_loss_acc(self, batch, input, labels):
-        triplet_idx = batch[0]
+    # def get_loss_acc(self, batch, input, labels):
+    #     triplet_idx = batch[0]
 
-        embeds = self(input)        
-        logits = self.classifier(embeds)
+    #     embeds = self(input)        
+    #     logits = self.classifier(embeds)
         
-        triplet_idx = triplet_idx.long()
-        x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
+    #     triplet_idx = triplet_idx.long()
+    #     x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
+    #     triplets = (x1, x2, x3)
+
+    #     probs = torch.sigmoid(logits)
+
+    #     clf_loss = self.criterion(logits, labels.type_as(logits).unsqueeze(1))
+    #     triplet_loss = self.triplet_loss(*triplets)
+    #     with torch.no_grad():
+    #         m = utils.metrics(probs, labels.unsqueeze(1))
+    #         d_ap = self.pdist(triplets[0], triplets[1])
+    #         d_an = self.pdist(triplets[0], triplets[2])
+    #         triplet_acc = (d_ap < d_an).float().mean()
+
+    #     total_loss = self.hparams.lamda * clf_loss + (1-self.hparams.lamda) * triplet_loss
+
+    #     return clf_loss, m, triplet_loss, triplet_acc, total_loss
+
+    def train_triplets_step(self, triplet_idx, labels):
+        self.train_embeds = self(self.train_input)
+        x1, x2, x3 = self.train_embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
 
+        triplet_loss, triplet_acc = self.triplet_loss_acc(triplets)
+        clf_loss, m = self.clf_loss_acc(self.train_embeds, labels)
+        total_loss = self.hparams.lamda * clf_loss + (1-self.hparams.lamda) * triplet_loss
+        return clf_loss, m, triplet_loss, triplet_acc, total_loss
+
+    def mixed_triplets_step(self, triplet_idx, input, labels):
+        if self.train_embeds is None: self.train_embeds = self(self.train_input)
+        embeds = self(input)
+        x1, x2, x3 = embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
+        triplets = (x1, x2, x3)
+
+        triplet_loss, triplet_acc = self.triplet_loss_acc(triplets)
+        clf_loss, m = self.clf_loss_acc(embeds, labels)
+        total_loss = self.hparams.lamda * clf_loss + (1-self.hparams.lamda) * triplet_loss
+        return clf_loss, m, triplet_loss, triplet_acc, total_loss
+        
+    def clf_loss_acc(self, embeds, labels):
+        logits = self.classifier(embeds)
         probs = torch.sigmoid(logits)
 
         clf_loss = self.criterion(logits, labels.type_as(logits).unsqueeze(1))
-        triplet_loss = self.triplet_loss(*triplets)
-        with torch.no_grad():
-            m = utils.metrics(probs, labels.unsqueeze(1))
-            d_ap = self.pdist(triplets[0], triplets[1])
-            d_an = self.pdist(triplets[0], triplets[2])
-            triplet_acc = (d_ap < d_an).float().mean()
-
-        total_loss = self.hparams.lamda * clf_loss + (1-self.hparams.lamda) * triplet_loss
-
-        return clf_loss, m, triplet_loss, triplet_acc, total_loss
+        m = utils.metrics(probs, labels.unsqueeze(1))
+        return clf_loss, m
 
     def training_step(self, batch, batch_idx):
-        input = self.train_input
         labels = self.train_label
-        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels)
+        triplet_idx = batch[0]
+        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.train_triplets_step(triplet_idx, labels)
 
         self.log('train_clf_loss', clf_loss, sync_dist=True)
         self.log('train_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -64,7 +93,8 @@ class MTL_RESNTN(TN):
     def validation_step(self, batch, batch_idx):
         input = self.valid_input
         labels = self.valid_label
-        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels)
+        triplet_idx = batch[0]
+        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.mixed_triplets_step(triplet_idx, input, labels)
 
         self.log('valid_clf_loss', clf_loss, sync_dist=True)
         self.log('valid_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -76,7 +106,8 @@ class MTL_RESNTN(TN):
     def test_step(self, batch, batch_idx):
         input = self.test_input
         labels = self.test_label
-        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, input, labels)
+        triplet_idx = batch[0]
+        clf_loss, m, triplet_loss, triplet_acc, total_loss = self.mixed_triplets_step(triplet_idx, input, labels)
 
         self.log('test_clf_loss', clf_loss, sync_dist=True)
         self.log('test_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
@@ -97,14 +128,14 @@ class MTL_RESNTN(TN):
 
 def main():
     parser = utils.add_generic_args()
-    MTL_RESNTN.add_model_specific_args(parser)
+    MTL.add_model_specific_args(parser)
     args = parser.parse_args()
     print(args)
 
     pl.seed_everything(args.seed)
     
     dict_args = vars(args)
-    model = MTL_RESNTN(**dict_args)
+    model = MTL(**dict_args)
 
     monitor = "valid_total_loss"
     print(args.early_stop_patience, args.check_val_every_n_epoch)

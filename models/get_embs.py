@@ -79,10 +79,10 @@ ckpt = 'synthetic_MTL/11hwl4ch' #synthetic_MTL/3sk1rynk' #'chacha-syn-htriplets/
 
 model_path_dict ={
     'TN': "TN.TN",
-    'MTL': "MTL_RESNTN.MTL_RESNTN",
+    'MTL': "MTL.MTL",
     'RESN': "RESN.RESN"
 }
-model_path = model_path_dict[model_name]#"MTL_RESNTN.MTL_RESNTN" #"RESN.RESN"
+model_path = model_path_dict[model_name]#"MTL.MTL" #"RESN.RESN"
 
 # dataset = chest_xray
 # subdir = "chest_xray"
