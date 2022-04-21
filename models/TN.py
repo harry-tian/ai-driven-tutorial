@@ -12,6 +12,7 @@ import warnings
 from torchvision import  models
 warnings.filterwarnings("ignore")
 
+from omegaconf import OmegaConf as oc
 from RESN import RESN
 import utils
 from torch import nn
@@ -19,8 +20,6 @@ from torch import nn
 class TN(RESN):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.feature_extractor = models.resnet18(pretrained=False)
-        self.triplet_loss = nn.TripletMarginLoss()
         self.train_embeds = None
         self.summarize()
 
@@ -37,13 +36,6 @@ class TN(RESN):
         x1, x2, x3 = embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
         return self.triplet_loss_acc(triplets)
-
-    def triplet_loss_acc(self, triplets):
-        triplet_loss = self.triplet_loss(*triplets)
-        d_ap = self.pdist(triplets[0], triplets[1])
-        d_an = self.pdist(triplets[0], triplets[2])
-        triplet_acc = (d_ap < d_an).float().mean()
-        return triplet_loss, triplet_acc
 
     def training_step(self, batch, batch_idx):
         triplet_idx = batch[0]
@@ -86,24 +78,19 @@ class TN(RESN):
         print(f"\nlen_test:{len(dataset)}")
         return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 
-    @staticmethod
-    def add_model_specific_args(parser):
-        parser = RESN.add_model_specific_args(parser)
-        return parser
-
 def main():
-    parser = utils.add_generic_args()
-    TN.add_model_specific_args(parser)
-    args = parser.parse_args()
-    print(args)
+    parser = utils.config_parser()
+    config_files = parser.parse_args()
+    configs = utils.load_configs(config_files)
 
-    pl.seed_everything(args.seed)
-    
-    dict_args = vars(args)
-    model = TN(**dict_args)
+    wandb_name = "TN_pretrained" if configs["pretrained"] else "TN"
+    wandb_name = oc.create({"wandb_name": wandb_name}) 
+    configs = oc.merge(configs, wandb_name)
 
+    pl.seed_everything(configs["seed"])
+    model = TN(**configs)
     monitor = "valid_triplet_loss"
-    trainer = utils.generic_train(model, args, monitor)
+    trainer = utils.generic_train(model, configs, monitor)
 
 if __name__ == "__main__":
     main()

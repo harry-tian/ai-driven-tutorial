@@ -12,21 +12,25 @@
 #SBATCH --mem=20000
 #SBATCH --nodelist=aa002
 
-python MTL_RESNTN.py \
+python MTL.py \
   --wandb_mode=online \
-  --wandb_project=bm-htriplets \
-  --wandb_group=unpretrained \
+  --wandb_project=tests \
+  --wandb_group=bm \
   --wandb_name=MTL \
-  --train_dir=/net/scratch/hanliu-shared/data/bm/train \
-  --valid_dir=/net/scratch/hanliu-shared/data/bm/valid \
-  --test_dir=/net/scratch/hanliu-shared/data/bm/valid \
-  --train_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets.pkl \
-  --valid_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/valid_triplets.pkl \
+  --train_dir=/net/scratch/tianh-shared/bm/train \
+  --valid_dir=/net/scratch/tianh-shared/bm/test \
+  --test_dir=/net/scratch/tianh-shared/bm/valid \
+  --train_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets_120.pkl \
+  --valid_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/test_triplets.pkl \
+  --test_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/fake_valid_triplets.pkl \
   --num_class=2 \
   --embed_dim=10 \
-  --max_epochs=200 \
+  --max_epochs=50 \
   --learning_rate=1e-4 \
-  --train_batch_size=160 \
-  --lamda=0.2 \
+  --train_batch_size=127 \
+  --lamda=0.5 \
   --transform=bm \
   --do_train 
+
+  # --triplet_train_bs=120 \
+  # --clf_train_bs=120 \

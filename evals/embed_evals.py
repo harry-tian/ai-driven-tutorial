@@ -93,11 +93,24 @@ def class_1NN_idx(x_train, y_train, x_test, y_test):
     return np.array(examples)
     
         
-def weightedL2(a, b, visual_weights):
+def weightedPdist(a, b, visual_weights,p=2):
     q = a-b
-    return np.sqrt((visual_weights*q*q).sum())
+    return np.sqrt((visual_weights*q**p).sum())
 
-def decision_support(x_train, y_train, x_test, y_test, examples, weights,  dist_f=weightedL2):
+def distorted_dist(a, b, visual_weights, powers):
+    q = a-b
+    return np.sqrt((visual_weights*(q**powers)).sum())
+
+def distorted_1nn(x_train, y_train, x_test, y_test, visual_weights, p=2):
+    correct = 0
+    for x,y in zip(x_test,y_test):
+        dists = [weightedPdist(x, x_, visual_weights, p) for x_ in x_train]
+        nn = np.argmin(dists)
+        if y_train[nn] == y: correct += 1
+        
+    return correct/len(y_test)
+
+def decision_support(x_train, y_train, x_test, y_test, examples, weights,  dist_f=weightedPdist):
     correct = 0
     for test_idx, examples_idx in enumerate(examples):
         ref = x_test[test_idx]
@@ -106,6 +119,7 @@ def decision_support(x_train, y_train, x_test, y_test, examples, weights,  dist_
         if y_pred == y_test[test_idx]: correct += 1
 
     return correct/len(y_test)
+
 
 def get_wv_df():
     wee_ves_dir = '/net/scratch/hanliu-shared/data/image-data/output/one-class_syn2_size-color-diff-2D'

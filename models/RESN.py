@@ -13,20 +13,21 @@ import utils, pickle
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 import sys
-sys.path.insert(0, '..')
-import evals.embed_evals as evals
+from omegaconf import OmegaConf as oc
 
 import warnings
 warnings.filterwarnings("ignore")
 
 
+sys.path.insert(0, '..')
+import evals.embed_evals as evals
 class RESN(pl.LightningModule):
     def __init__(self, **config_kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.setup_data()
 
-        self.feature_extractor = models.resnet18(pretrained=True)
+        self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
         num_features = 1000
 
         if self.hparams.num_class > 2:
@@ -48,6 +49,7 @@ class RESN(pl.LightningModule):
         )
 
         self.pdist = nn.PairwiseDistance()
+        self.triplet_loss = nn.TripletMarginLoss()
 
         self.summarize()
 
@@ -57,43 +59,55 @@ class RESN(pl.LightningModule):
             embeds = layer(embeds)
         return embeds
 
-    def get_loss_metrics(self, input, target, triplets=None):
-        embeds = self(input)
-
+    def clf_loss_acc(self, embeds, labels):
         logits = self.classifier(embeds)
-        prob = self.nonlinear(logits)
+        probs = self.nonlinear(logits)
         if self.hparams.num_class < 3:
-            target = target.type_as(logits).unsqueeze(1)
-        loss = self.criterion(logits, target)
-        with torch.no_grad():
-            m = utils.metrics(prob, target, num_class=self.hparams.num_class)
+            labels = labels.type_as(logits).unsqueeze(1)
 
-        if triplets is not None: m["triplet_acc"] = self.get_triplet_acc(embeds, triplets)
-        else: m["triplet_acc"] = -1
+        clf_loss = self.criterion(logits, labels)
+        m = utils.metrics(probs, labels, num_class=self.hparams.num_class)
+        return clf_loss, m
+        
+    def triplet_loss_acc(self, triplets):
+        triplet_loss = self.triplet_loss(*triplets)
+        d_ap = self.pdist(triplets[0], triplets[1])
+        d_an = self.pdist(triplets[0], triplets[2])
+        triplet_acc = (d_ap < d_an).float().mean()
+        return triplet_loss, triplet_acc
 
-        return loss, m
+    def test_mixed_triplets(self):
+        triplet_idx = torch.tensor(self.test_triplets).long()
+        train_embeds, test_embeds = self(self.train_input), self(self.test_input)
+        x1, x2, x3 = test_embeds[triplet_idx[:,0]], train_embeds[triplet_idx[:,1]], train_embeds[triplet_idx[:,2]]
+        triplets = (x1, x2, x3)
+        return self.triplet_loss_acc(triplets)[1]
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        loss, m = self.get_loss_metrics(x, y)
-        self.log('train_loss', loss, sync_dist=True)
-        self.log('train_acc', m['acc'], prog_bar=True, sync_dist=True)
+        embeds = self(x)
+        loss, m = self.clf_loss_acc(embeds, y)
+        self.log('train_loss', loss)
+        self.log('train_acc', m['acc'], prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        loss, m = self.get_loss_metrics(x, y, triplets=self.valid_triplets)
+        embeds = self(x)
+        loss, m = self.clf_loss_acc(embeds, y)
         self.log('valid_loss', loss, sync_dist=True)
         self.log('valid_acc', m['acc'], prog_bar=True, sync_dist=True)
         if self.hparams.num_class < 3: self.log('valid_auc', m['auc'], sync_dist=True)
-        if m["triplet_acc"] > -1: self.log('valid_triplet_acc', m['triplet_acc'], sync_dist=True)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        loss, m = self.get_loss_metrics(x, y, triplets=self.test_triplets)
+        embeds = self(x)
+        loss, m = self.clf_loss_acc(embeds, y)
         self.log('test_loss', loss, sync_dist=True)
         self.log('test_acc', m['acc'], sync_dist=True)
-        if m["triplet_acc"] > -1: self.log('test_triplet_acc', m['triplet_acc'], sync_dist=True)
+
+        triplet_acc = self.test_mixed_triplets()
+        self.log('test_triplet_acc', triplet_acc, sync_dist=True)
 
         self.test_evals()
 
@@ -106,22 +120,13 @@ class RESN(pl.LightningModule):
         self.log('test_1nn_acc', knn_acc, sync_dist=True)
         
         if self.hparams.syn:
-            syn_x_train, syn_y_train = pickle.load(open(self.hparams.train_synthetic,"rb"))
-            syn_x_test, syn_y_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
+            syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))
+            syn_y_train = np.array([0]*60+[1]*60)
+            syn_x_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
+            syn_y_test = np.array([0]*20+[1]*20)
             examples = evals.class_1NN_idx(train_x, train_y, test_x, test_y)
-            ds_acc = evals.decision_support(syn_x_train, syn_y_train, syn_x_test, syn_y_test, examples, 
-            [float(self.hparams.w1), float(self.hparams.w2)])
+            ds_acc = evals.decision_support(syn_x_train, syn_y_train, syn_x_test, syn_y_test, examples, self.hparams.weights)
             self.log('decision support', ds_acc, sync_dist=True)  
-
-    def get_triplet_acc(self, embeds, triplet_idx):
-        triplet_idx = torch.tensor(triplet_idx).long()
-        x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
-        triplets = (x1, x2, x3)
-        
-        d_ap = self.pdist(triplets[0], triplets[1])
-        d_an = self.pdist(triplets[0], triplets[2])
-        triplet_acc = (d_ap < d_an).float().mean()
-        return triplet_acc
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -160,25 +165,18 @@ class RESN(pl.LightningModule):
         print(f"\n test:{len(dataset)}")
         return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 
-    @staticmethod
-    def add_model_specific_args(parser):
-        parser.add_argument("--pretrained", action="store_true")
-        parser.add_argument("--embed_dim", default=10, type=int, help="Embedding size")
-        return parser
-
 def main():
-    parser = utils.add_generic_args()
-    RESN.add_model_specific_args(parser)
-    args = parser.parse_args()
-    print(args)
+    parser = utils.config_parser()
+    config_files = parser.parse_args()
+    configs = utils.load_configs(config_files)
 
-    pl.seed_everything(args.seed)
-    
-    dict_args = vars(args)
+    wandb_name = "RESN_pretrained" if configs["pretrained"] else "RESN"
+    wandb_name = oc.create({"wandb_name": wandb_name}) 
+    configs = oc.merge(configs, wandb_name)
 
-    model = RESN(**dict_args)
-
-    trainer = utils.generic_train(model, args, "valid_loss")
+    pl.seed_everything(configs["seed"])
+    model = RESN(**configs)
+    trainer = utils.generic_train(model, configs, "valid_loss")
 
 if __name__ == "__main__":
     main()

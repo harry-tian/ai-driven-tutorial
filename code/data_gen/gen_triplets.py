@@ -1,7 +1,5 @@
 from itertools import combinations
 import random
-SEED = 448
-random.seed(SEED)
 import numpy as np
 
 def sample_triplets(indexs, num_triplets, visual_weights, embeds):
@@ -34,8 +32,8 @@ def calc_triplets(triplet, visual_weights, embeds):
     point1 = embeds[a]
     point2 = embeds[p]
     point3 = embeds[n]
-    d_ap = weightedL2(point1,point2,visual_weights)
-    d_an = weightedL2(point1,point3,visual_weights)
+    d_ap = weightedPdist(point1,point2,visual_weights)
+    d_an = weightedPdist(point1,point3,visual_weights)
     if d_ap > d_an: return [a,n,p]
     else: return [a,p,n]
 
@@ -44,15 +42,15 @@ def calc_triplets2(triplet, visual_weights, embed1, embed2):
     point1 = embed1[a]
     point2 = embed2[p]
     point3 = embed2[n]
-    d_ap = weightedL2(point1,point2,visual_weights)
-    d_an = weightedL2(point1,point3,visual_weights)
+    d_ap = weightedPdist(point1,point2,visual_weights)
+    d_an = weightedPdist(point1,point3,visual_weights)
     if d_ap > d_an: return [a,n,p]
     else: return [a,p,n]
 
-
-def weightedL2(a, b, visual_weights):
+        
+def weightedPdist(a, b, visual_weights,p=2):
     q = a-b
-    return np.sqrt((visual_weights*q*q).sum())
+    return np.sqrt((visual_weights*q**p).sum())
     
 # def calc_triplets(triplet, df, selected_features, visual_weights):
 #     a,p,n  = triplet
