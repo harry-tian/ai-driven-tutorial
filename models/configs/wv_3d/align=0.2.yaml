@@ -1,6 +1,6 @@
 ### Wandb args
 
-wandb_group : w1=2.7303
+wandb_group : align=0.2
 
 ### triplet data
 train_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/align=1/train_triplets_10000.pkl

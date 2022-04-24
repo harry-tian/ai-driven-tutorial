@@ -97,9 +97,9 @@ def weightedPdist(a, b, visual_weights,p=2):
     q = a-b
     return np.sqrt((visual_weights*q**p).sum())
 
-def distorted_dist(a, b, visual_weights, powers):
-    q = a-b
-    return np.sqrt((visual_weights*(q**powers)).sum())
+# def distorted_dist(a, b, visual_weights, powers):
+#     q = a-b
+#     return np.sqrt((visual_weights*(q**powers)).sum())
 
 def distorted_1nn(x_train, y_train, x_test, y_test, visual_weights, p=2):
     correct = 0

@@ -1,19 +1,12 @@
 # -*- coding: utf-8 -*-
-import os
-import time
-import argparse
-from sklearn import multiclass
 import torch
 import torchvision
 from torch import nn
 from torchvision import  models
 import pytorch_lightning as pl
-import wandb
-import utils, pickle
+import utils, pickle, transforms
 import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
 import sys
-from omegaconf import OmegaConf as oc
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -106,10 +99,10 @@ class RESN(pl.LightningModule):
         self.log('test_loss', loss, sync_dist=True)
         self.log('test_acc', m['acc'], sync_dist=True)
 
-        triplet_acc = self.test_mixed_triplets()
-        self.log('test_triplet_acc', triplet_acc, sync_dist=True)
+        # triplet_acc = self.test_mixed_triplets()
+        # self.log('test_triplet_acc', triplet_acc, sync_dist=True)
 
-        self.test_evals()
+        # self.test_evals()
 
     def test_evals(self):
         train_x = self(self.train_input).cpu().detach().numpy()
@@ -134,8 +127,8 @@ class RESN(pl.LightningModule):
         return optimizer
 
     def setup_data(self):
-        train_transform = utils.get_transform(self.hparams.transform, aug=True)
-        valid_transform = utils.get_transform(self.hparams.transform, aug=False)
+        train_transform = transforms.get_transform(self.hparams.transform, aug=True)
+        valid_transform = transforms.get_transform(self.hparams.transform, aug=False)
         self.train_dataset = torchvision.datasets.ImageFolder(self.hparams.train_dir, transform=train_transform)
         self.valid_dataset = torchvision.datasets.ImageFolder(self.hparams.valid_dir, transform=valid_transform)
         self.test_dataset = torchvision.datasets.ImageFolder(self.hparams.test_dir, transform=valid_transform)
@@ -146,9 +139,9 @@ class RESN(pl.LightningModule):
         self.valid_label = torch.tensor(np.array([data[1] for data in self.valid_dataset])).cuda()
         self.test_label = torch.tensor(np.array([data[1] for data in self.test_dataset])).cuda()
 
-        self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
-        self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
-        self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
+        # self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
+        # self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
+        # self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
 
     def train_dataloader(self):
         dataset = self.train_dataset
@@ -169,10 +162,7 @@ def main():
     parser = utils.config_parser()
     config_files = parser.parse_args()
     configs = utils.load_configs(config_files)
-
-    wandb_name = "RESN_pretrained" if configs["pretrained"] else "RESN"
-    wandb_name = oc.create({"wandb_name": wandb_name}) 
-    configs = oc.merge(configs, wandb_name)
+    print(configs)
 
     pl.seed_everything(configs["seed"])
     model = RESN(**configs)

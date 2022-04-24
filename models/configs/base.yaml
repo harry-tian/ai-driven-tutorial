@@ -1,5 +1,5 @@
 ### Training args
-dataloader_num_workers: 4
+dataloader_num_workers: 16
 gpus: 1
 seed: 42
 do_train : True

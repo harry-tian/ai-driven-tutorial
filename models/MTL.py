@@ -95,10 +95,7 @@ def main():
     parser = utils.config_parser()
     config_files = parser.parse_args()
     configs = utils.load_configs(config_files)
-
-    wandb_name = "MTL_pretrained" if configs["pretrained"] else "MTL"
-    wandb_name = oc.create({"wandb_name": wandb_name}) 
-    configs = oc.merge(configs, wandb_name)
+    print(configs)
 
     pl.seed_everything(configs["seed"])
     model = MTL(**configs)

@@ -2,12 +2,12 @@ from re import sub
 from telnetlib import SB
 
 from sklearn import datasets
-import utils
 import argparse, pickle
 from pydoc import locate
 import numpy as np
 import torchvision, torch, os
 from sklearn.metrics.pairwise import euclidean_distances
+import transforms
 
 bm = {"data_dir":"/net/scratch/tianh-shared/bm",
             "transform": "bm"}
@@ -15,9 +15,8 @@ bm = {"data_dir":"/net/scratch/tianh-shared/bm",
 bird = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "bird"}
 
-# chest_xray = {"data_ddir":"/net/scratch/tianh-shared/chest_xray",
-#             "data_dir":"/net/scratch/tianh-shared/NIH/4classes/auto_split",
-#             "transform": "xray"}
+chest_xray = {"data_dir":"/net/scratch/tianh-shared/PC/3classes",
+            "transform": "resn"}
 
 prostatex = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "xray"}
@@ -36,13 +35,13 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     dataset = torchvision.datasets.ImageFolder(data_dir, transform=transform)
     if len(dataset) <= 128:
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset), num_workers=4)
-        embeds = model.embed(list(iter(dataloader))[0][0].cuda())
+        embeds = model(list(iter(dataloader))[0][0].cuda())
         embeds = embeds.cpu().detach().numpy()
     else:
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=128, num_workers=4)
         i = 0
         for x, _ in dataloader:
-            z = model.embed(x.cuda())
+            z = model(x.cuda())
             pickle.dump(z.cpu().detach().numpy(),open(embed_path.replace(".pkl",f"_{i}.pkl"),"wb"))
             i += 1
 
@@ -59,52 +58,27 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     pickle.dump(embeds, open(embed_path, "wb"))
     print(f"dumped to {embed_path}")
 
-
-# model_path = "RESN.RESN"
-
-
-# <<<<<<< HEAD
-# # ckpt = 'baselines/5i3qt0bw'
-# ckpt = 'baselines/21tiniqd'
-
-
-# # dataset = bird
-# dataset = wv
-
-# # subdir = "bird"
-# subdir = "wv"
-# ckpt = 'resn/u9as2wx6'
 model_name = "RESN"
-ckpt = 'synthetic_MTL/11hwl4ch' #synthetic_MTL/3sk1rynk' #'chacha-syn-htriplets/2ul5cslk'
+ckpt = 'chest_xray/2jv3r4j3' 
 
 model_path_dict ={
     'TN': "TN.TN",
     'MTL': "MTL.MTL",
     'RESN': "RESN.RESN"
 }
-model_path = model_path_dict[model_name]#"MTL.MTL" #"RESN.RESN"
+model_path = model_path_dict[model_name]
 
-# dataset = chest_xray
-# subdir = "chest_xray"
-dataset = wv
-subdir = "wv"
+dataset = chest_xray
+subdir = "chest_xray"
 splits = ["train","test","valid"]
 
-
-# model_ckpt = '/net/scratch/chacha/explain_teach/models/results/synthetic_MTL/3sk1rynk/checkpoints/best_model.ckpt.'
 
 
 
 args = argparse.Namespace(embed_dim=10)
-# <<<<<<< HEAD
-# ckpt = f"/net/scratch/chacha/explain_teach/models/results/{ckpt}/checkpoints/best_model.ckpt" 
-# get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path=embed_path)
-# =======
 ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt" 
 for split in splits:
-    # name = name.replace("split",split)
     name = f"{model_name}_{split}_emb10"
-    embed_path = f"../embeds/{subdir}/{name}_lambda_1.pkl"
+    embed_path = f"../embeds/{subdir}/{name}.pkl"
 
     get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
-# >>>>>>> 03f67bcb1ecf5f92198e5eb45357b8e23d90d7fa

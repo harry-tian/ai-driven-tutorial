@@ -1,5 +1,3 @@
-
-from torchvision import transforms
 from zmq import device
 from torchmetrics.functional.classification import auroc, stat_scores, average_precision, precision_recall_curve, auc
 
@@ -141,8 +139,8 @@ def config_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_config", default='/net/scratch/tianh/explain_teach/models/configs/base.yaml', type=str, required=False)
     parser.add_argument("--model_config", default=None, type=str, required=True)
-    parser.add_argument("--dataset_config", default=None, type=str, required=True)
-    parser.add_argument("--triplet_config", default=None, type=str, required=True)
+    parser.add_argument("--dataset_config", default=None, type=str, required=False)
+    parser.add_argument("--triplet_config", default=None, type=str, required=False)
     return parser
 
 def test_configs(configs):
@@ -152,7 +150,7 @@ def test_configs(configs):
     "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
     "do_train", "do_test",
     "train_triplets", "valid_triplets", "test_triplets",
-    "pretrained", "lamda"]
+    "pretrained", "lamda", "syn"]
     syn_args = ["syn", "train_synthetic", "test_synthetic", "weights"]
     
     if "syn" in configs:
@@ -173,7 +171,7 @@ def load_configs(config_files):
     dataset_config = oc.load(config_files.dataset_config)
     triplet_config = oc.load(config_files.triplet_config)
     # if list(set(model_config) & set(dataset_config)): print("\n WARNING: model configs and dataset configs should not overlap")
-    configs = oc.merge(base_config, model_config, dataset_config, triplet_config)
+    configs = oc.merge(base_config, dataset_config,  model_config, triplet_config)
     test_configs(configs)
     return configs
 
@@ -256,7 +254,7 @@ def get_dataloader(dataset, batch_size, split, num_workers):
     drop_last = True if split == "train" else False
     shuffle = True if split == "train" else False
     batch_size = min(len(dataset), batch_size)
-    batch_size = min(512,batch_size)
+    batch_size = min(128,batch_size)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
         num_workers=num_workers, drop_last=drop_last, shuffle=shuffle)
     return dataloader
@@ -301,87 +299,6 @@ def metrics(probs, target, threshold=0.5, num_class=2):
 #     total = len(target)
 
 #     return correct/total
-
-######### transforms ############################
-
-def get_transform(dataset, aug=True):
-    if dataset == "bm":
-        return bm_transform_aug() if aug else bm_transform()
-    elif dataset == "wv":
-        return no_transform()
-    elif dataset == "xray":
-        return xray_transform_aug() if aug else xray_transform()
-    elif dataset == "bird":
-        return bird_transform_aug() if aug else bird_transform()
-
-def bm_transform_aug(hparams=None):
-    affine = {}
-    affine["degrees"] = 30 #hparams.rotate
-    # if hparams.translate > 0: 
-    #     translate = hparams.translate
-    #     affine["translate"] = (translate, translate)
-    if 0.2 > 0: 
-        scale = 0.2
-        affine["scale"] = (1 - scale, 1 + scale)
-    # if hparams.shear > 0:
-    #     shear = hparams.shear
-    #     affine["shear"] = (-shear, shear, -shear, shear)
-    transform = transforms.Compose([
-        transforms.RandomResizedCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        transforms.RandomHorizontalFlip(0),
-        transforms.RandomVerticalFlip(0.5),
-        transforms.RandomAffine(**affine)
-    ])
-    return transform
-
-def bm_transform():
-    return transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-def no_transform():
-    return transforms.Compose([
-        # transforms.Resize(256),
-        # transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-def bird_transform_aug():
-    return transforms.Compose([
-    transforms.Resize((224,224)),
-    transforms.RandomRotation(20),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
-
-def bird_transform():
-    return transforms.Compose([
-    transforms.Resize((224,224)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
-
-def xray_transform_aug():
-    return transforms.Compose([
-        transforms.Resize((2500,2500)),
-        transforms.RandomRotation(20),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-    ])
-
-def xray_transform():
-    return transforms.Compose([
-        transforms.Resize((2500,2500)),
-        transforms.ToTensor(),
-    ])
-
 
 ######## misc ##################################
 

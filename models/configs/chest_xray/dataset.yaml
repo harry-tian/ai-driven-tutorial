@@ -1,0 +1,10 @@
+### classification data
+train_dir : /net/scratch/tianh-shared/PC/3classes/train
+valid_dir : /net/scratch/tianh-shared/PC/3classes/valid
+test_dir : /net/scratch/tianh-shared/PC/3classes/test
+num_class : 3
+transform : resn
+train_batch_size : 120
+
+### synthetic data
+syn: False

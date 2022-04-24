@@ -1,0 +1,10 @@
+### classification data
+train_dir : /net/scratch/tianh-shared/bird/train
+valid_dir : /net/scratch/tianh-shared/bird/valid
+test_dir : /net/scratch/tianh-shared/bird/test
+num_class : 3
+transform : bird
+train_batch_size : 32
+
+### synthetic data
+syn: False

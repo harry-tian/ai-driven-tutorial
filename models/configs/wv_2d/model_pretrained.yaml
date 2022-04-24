@@ -1,6 +1,6 @@
 ### Wandb args
 wandb_mode : online
-wandb_project : wv
+
 wandb_group : test
 wandb_name : RESN
 
