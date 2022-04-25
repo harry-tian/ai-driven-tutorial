@@ -7,53 +7,53 @@
 #SBATCH --job-name=triplets
 #SBATCH --partition=general
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
 #SBATCH --nodelist=c001
 
+# python TN.py --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
+  
 python TN.py \
-  --wandb_mode=online \
-  --wandb_project=tests \
-  --wandb_group=wv \
-  --wandb_name=TN \
-  --train_dir=/net/scratch/chacha-shared/weevil_vespula/train \
-  --valid_dir=/net/scratch/chacha-shared/weevil_vespula/valid \
-  --test_dir=/net/scratch/chacha-shared/weevil_vespula/test \
-  --train_triplets=/net/scratch/chacha-shared/weevil_vespula/train_triplet.pkl \
-  --valid_triplets=/net/scratch/chacha-shared/weevil_vespula/valid_triplet.pkl \
-  --test_triplets=/net/scratch/chacha-shared/weevil_vespula/test_triplet.pkl \
-  --num_class=2 \
-  --embed_dim=10 \
-  --max_epochs=50 \
-  --learning_rate=1e-4 \
-  --train_batch_size=120 \
-  --syn \
-  --train_synthetic=/net/scratch/tianh/explain_teach/embeds/wv/train.pkl \
-  --test_synthetic=/net/scratch/tianh/explain_teach/embeds/wv/test.pkl \
-  --w1=2.73027025 \
-  --w2=1 \
-  --transform=wv \
-  --do_train \
-  --do_test
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=1.0.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
 
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.9.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
 
-# python TN_test.py \
-#   --wandb_mode=online \
-#   --wandb_project=tests \
-#   --wandb_group=bm \
-#   --wandb_name=TN \
-#   --train_dir=/net/scratch/tianh-shared/bm/train \
-#   --valid_dir=/net/scratch/tianh-shared/bm/test \
-#   --test_dir=/net/scratch/tianh-shared/bm/valid \
-#   --train_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets_120.pkl \
-#   --valid_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/test_triplets.pkl \
-#   --test_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/fake_valid_triplets.pkl \
-#   --num_class=2 \
-#   --embed_dim=10 \
-#   --max_epochs=50 \
-#   --learning_rate=1e-4 \
-#   --train_batch_size=120 \
-#   --transform=bm \
-#   --do_train \
-#   --do_test
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.8.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
+
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.7.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
+
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.6.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
+
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.5.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
+
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.4.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
+
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.3.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
+
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.2.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
+
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.1.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 
+
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.0.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/TN.yaml 

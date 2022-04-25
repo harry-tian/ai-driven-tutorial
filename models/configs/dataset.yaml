@@ -1,14 +1,14 @@
 ### classification data
-train_dir : /net/scratch/tianh-shared/wv-3d/pseudo_label/auto_split/train
-valid_dir : /net/scratch/tianh-shared/wv-3d/pseudo_label/auto_split/valid
-test_dir : /net/scratch/tianh-shared/wv-3d/pseudo_label/auto_split/test
+train_dir : /net/scratch/tianh-shared/wv/pseudo_label/auto_split/train
+valid_dir : /net/scratch/tianh-shared/wv/pseudo_label/auto_split/valid
+test_dir : /net/scratch/tianh-shared/wv/pseudo_label/auto_split/test
 num_class : 2
 transform : wv
 
 ### triplet data
 train_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/w1=10000_w2=1/train_triplets_10000.pkl
 valid_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/w1=10000_w2=1/valid_triplets_10000.pkl
-test_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/w1=10000_w2=1/test_triplets_10k.pkl
+test_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/w1=10000_w2=1/test_triplets_10000.pkl
 
 ### synthetic data
 syn: True

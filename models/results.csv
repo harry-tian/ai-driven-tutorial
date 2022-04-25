@@ -1,0 +1,2 @@
+wandb_group,wandb_name,test_clf_acc,test_clf_loss,test_1nn_acc,test_triplet_acc,decision_support
+0,0,0,0,0,0,0

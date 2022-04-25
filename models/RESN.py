@@ -8,7 +8,9 @@ import utils, pickle, transforms
 import numpy as np
 import sys
 
+from omegaconf import OmegaConf as oc
 import warnings
+import pandas as pd
 warnings.filterwarnings("ignore")
 
 
@@ -80,29 +82,34 @@ class RESN(pl.LightningModule):
         x, y = batch
         embeds = self(x)
         loss, m = self.clf_loss_acc(embeds, y)
-        self.log('train_loss', loss)
-        self.log('train_acc', m['acc'], prog_bar=True)
+        self.log('train_clf_loss', loss)
+        self.log('train_clf_acc', m['acc'], prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         embeds = self(x)
         loss, m = self.clf_loss_acc(embeds, y)
-        self.log('valid_loss', loss, sync_dist=True)
-        self.log('valid_acc', m['acc'], prog_bar=True, sync_dist=True)
+        self.log('valid_clf_loss', loss, sync_dist=True)
+        self.log('valid_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
         if self.hparams.num_class < 3: self.log('valid_auc', m['auc'], sync_dist=True)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         embeds = self(x)
         loss, m = self.clf_loss_acc(embeds, y)
-        self.log('test_loss', loss, sync_dist=True)
-        self.log('test_acc', m['acc'], sync_dist=True)
+        self.log('test_clf_loss', loss, sync_dist=True)
+        self.log('test_clf_acc', m['acc'], sync_dist=True)
 
-        # triplet_acc = self.test_mixed_triplets()
-        # self.log('test_triplet_acc', triplet_acc, sync_dist=True)
+        triplet_acc = self.test_mixed_triplets()
+        self.log('test_triplet_acc', triplet_acc, sync_dist=True)
 
-        # self.test_evals()
+        knn_acc, ds_acc = self.test_evals()
+
+        df = pd.read_csv("results.csv")
+        df = pd.concat([df, pd.DataFrame({"wandb_group": [self.hparams.wandb_group], "wandb_name": [self.hparams.wandb_name],
+            "test_clf_acc": [m['acc'].item()], "test_clf_loss": [loss.item()], "test_1nn_acc": [knn_acc], "test_triplet_acc":[triplet_acc.item()], "decision_support": [ds_acc]})], sort=False)
+        df.to_csv("results.csv", index=False)
 
     def test_evals(self):
         train_x = self(self.train_input).cpu().detach().numpy()
@@ -114,12 +121,12 @@ class RESN(pl.LightningModule):
         
         if self.hparams.syn:
             syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))
-            syn_y_train = np.array([0]*60+[1]*60)
             syn_x_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
-            syn_y_test = np.array([0]*20+[1]*20)
             examples = evals.class_1NN_idx(train_x, train_y, test_x, test_y)
-            ds_acc = evals.decision_support(syn_x_train, syn_y_train, syn_x_test, syn_y_test, examples, self.hparams.weights)
+            ds_acc = evals.decision_support(syn_x_train, train_y, syn_x_test, test_y, examples, self.hparams.weights, self.hparams.powers)
             self.log('decision support', ds_acc, sync_dist=True)  
+
+        return knn_acc, ds_acc
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -139,9 +146,9 @@ class RESN(pl.LightningModule):
         self.valid_label = torch.tensor(np.array([data[1] for data in self.valid_dataset])).cuda()
         self.test_label = torch.tensor(np.array([data[1] for data in self.test_dataset])).cuda()
 
-        # self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
-        # self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
-        # self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
+        self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
+        self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
+        self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
 
     def train_dataloader(self):
         dataset = self.train_dataset
@@ -162,6 +169,10 @@ def main():
     parser = utils.config_parser()
     config_files = parser.parse_args()
     configs = utils.load_configs(config_files)
+
+    # wandb_name = "RESN_pretrained" if configs["pretrained"] else "RESN"
+    # wandb_name = oc.create({"wandb_name": wandb_name}) 
+    # configs = oc.merge(configs, wandb_name)
     print(configs)
 
     pl.seed_everything(configs["seed"])

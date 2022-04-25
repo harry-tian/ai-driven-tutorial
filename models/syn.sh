@@ -11,7 +11,6 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
 
-
 python RESN.py --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=1.0.yaml 
 
 python RESN.py --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.9.yaml 

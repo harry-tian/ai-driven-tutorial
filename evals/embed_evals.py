@@ -13,9 +13,6 @@ def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y
 # bm_triplets_valid = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
 # bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
 # bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
-wv_y_train = np.array([0]*60+[1]*60)
-wv_y_valid = np.array([0]*20+[1]*20)
-wv_y_valid = np.array([0]*20+[1]*20)
 
 
 def wv_eval_human(x_train, x_valid, x_test, y_train, y_valid, y_test, wv_triplets_train_path, wv_triplets_valid_path, wv_triplets_test_path):
@@ -93,28 +90,24 @@ def class_1NN_idx(x_train, y_train, x_test, y_test):
     return np.array(examples)
     
         
-def weightedPdist(a, b, visual_weights,p=2):
+def weightedPdist(a, b, weights,powers):
     q = a-b
-    return np.sqrt((visual_weights*q**p).sum())
+    return np.sqrt((weights*q**powers).sum())
 
-# def distorted_dist(a, b, visual_weights, powers):
-#     q = a-b
-#     return np.sqrt((visual_weights*(q**powers)).sum())
-
-def distorted_1nn(x_train, y_train, x_test, y_test, visual_weights, p=2):
+def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers):
     correct = 0
     for x,y in zip(x_test,y_test):
-        dists = [weightedPdist(x, x_, visual_weights, p) for x_ in x_train]
+        dists = [weightedPdist(x, x_, weights, powers) for x_ in x_train]
         nn = np.argmin(dists)
         if y_train[nn] == y: correct += 1
         
     return correct/len(y_test)
 
-def decision_support(x_train, y_train, x_test, y_test, examples, weights,  dist_f=weightedPdist):
+def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers):
     correct = 0
     for test_idx, examples_idx in enumerate(examples):
         ref = x_test[test_idx]
-        dists = [dist_f(ref, x_train[cand_idx], weights) for cand_idx in examples_idx]
+        dists = [weightedPdist(ref, x_train[cand_idx], weights, powers) for cand_idx in examples_idx]
         y_pred = y_train[examples_idx[np.argmin(dists)]]
         if y_pred == y_test[test_idx]: correct += 1
 

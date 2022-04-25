@@ -16,7 +16,7 @@ from TN import TN
 import utils
 from omegaconf import OmegaConf as oc
 
-import sys
+import pandas as pd
 
 
 class MTL(TN):
@@ -82,7 +82,12 @@ class MTL(TN):
         self.log('test_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
         self.log('test_total_loss', total_loss, sync_dist=True)
         
-        self.test_evals()
+        knn_acc, ds_acc = self.test_evals()
+
+        df = pd.read_csv("results.csv")
+        df = pd.concat([df, pd.DataFrame({"wandb_group": [self.hparams.wandb_group], "wandb_name": [self.hparams.wandb_name],
+            "test_clf_acc": [m['acc'].item()], "test_clf_loss": [clf_loss.item()], "test_1nn_acc": [knn_acc], "test_triplet_acc":[triplet_acc.item()], "decision_support": [ds_acc]})], sort=False)
+        df.to_csv("results.csv", index=False)
 
     @staticmethod
     def add_model_specific_args(parser):
@@ -95,6 +100,10 @@ def main():
     parser = utils.config_parser()
     config_files = parser.parse_args()
     configs = utils.load_configs(config_files)
+
+    # wandb_name = "MTL_pretrained" if configs["pretrained"] else "MTL"
+    # wandb_name = oc.create({"wandb_name": wandb_name}) 
+    # configs = oc.merge(configs, wandb_name)
     print(configs)
 
     pl.seed_everything(configs["seed"])

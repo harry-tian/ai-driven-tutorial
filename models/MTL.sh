@@ -7,30 +7,53 @@
 #SBATCH --job-name=triplets
 #SBATCH --partition=general
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --mem=20000
-#SBATCH --nodelist=aa002
+#SBATCH --mem=10G
+#SBATCH --nodelist=c001
+
+# python MTL.py --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
+  
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=1.0.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
 
 python MTL.py \
-  --wandb_mode=online \
-  --wandb_project=tests \
-  --wandb_group=bm \
-  --wandb_name=MTL \
-  --train_dir=/net/scratch/tianh-shared/bm/train \
-  --valid_dir=/net/scratch/tianh-shared/bm/test \
-  --test_dir=/net/scratch/tianh-shared/bm/valid \
-  --train_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/train_triplets_120.pkl \
-  --valid_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/test_triplets.pkl \
-  --test_triplets=/net/scratch/tianh/explain_teach/data/bm_triplets/3c2_unique=182/fake_valid_triplets.pkl \
-  --num_class=2 \
-  --embed_dim=10 \
-  --max_epochs=50 \
-  --learning_rate=1e-4 \
-  --train_batch_size=127 \
-  --lamda=0.5 \
-  --transform=bm \
-  --do_train 
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.9.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
 
-  # --triplet_train_bs=120 \
-  # --clf_train_bs=120 \
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.8.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
+
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.7.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
+
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.6.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
+
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.5.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
+
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.4.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
+
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.3.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
+
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.2.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
+
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.1.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 
+
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.0.yaml 
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL.yaml 

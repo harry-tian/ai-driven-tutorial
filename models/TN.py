@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 from omegaconf import OmegaConf as oc
 from RESN import RESN
 import utils
-from torch import nn
+import pandas as pd
 
 class TN(RESN):
     def __init__(self, *args, **kwargs):
@@ -61,7 +61,12 @@ class TN(RESN):
         self.log('test_triplet_acc', triplet_acc, sync_dist=True)
         self.log('test_triplet_loss', triplet_loss, sync_dist=True)
 
-        self.test_evals()
+        knn_acc, ds_acc = self.test_evals()
+
+        df = pd.read_csv("results.csv")
+        df = pd.concat([df, pd.DataFrame({"wandb_group": [self.hparams.wandb_group], "wandb_name": [self.hparams.wandb_name],
+            "test_clf_acc": [-1], "test_clf_loss": [-1], "test_1nn_acc": [knn_acc], "test_triplet_acc":[triplet_acc.item()], "decision_support": [ds_acc]})], sort=False)
+        df.to_csv("results.csv", index=False)
 
     def train_dataloader(self):
         dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))
@@ -82,6 +87,10 @@ def main():
     parser = utils.config_parser()
     config_files = parser.parse_args()
     configs = utils.load_configs(config_files)
+
+    # wandb_name = "MTL_pretrained" if configs["pretrained"] else "MTL"
+    # wandb_name = oc.create({"wandb_name": wandb_name}) 
+    # configs = oc.merge(configs, wandb_name)
     print(configs)
 
     pl.seed_everything(configs["seed"])

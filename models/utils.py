@@ -151,7 +151,7 @@ def test_configs(configs):
     "do_train", "do_test",
     "train_triplets", "valid_triplets", "test_triplets",
     "pretrained", "lamda", "syn"]
-    syn_args = ["syn", "train_synthetic", "test_synthetic", "weights"]
+    syn_args = ["syn", "train_synthetic", "test_synthetic", "weights", "powers"]
     
     if "syn" in configs:
         if configs["syn"]: 
@@ -168,9 +168,8 @@ def test_configs(configs):
 def load_configs(config_files):
     base_config = oc.load(config_files.base_config)
     model_config = oc.load(config_files.model_config)
-    dataset_config = oc.load(config_files.dataset_config)
-    triplet_config = oc.load(config_files.triplet_config)
-    # if list(set(model_config) & set(dataset_config)): print("\n WARNING: model configs and dataset configs should not overlap")
+    dataset_config = oc.load(config_files.dataset_config) if config_files.dataset_config else {}
+    triplet_config = oc.load(config_files.triplet_config) if config_files.triplet_config else {}
     configs = oc.merge(base_config, dataset_config,  model_config, triplet_config)
     test_configs(configs)
     return configs
@@ -218,28 +217,34 @@ def generic_train(model, args, monitor,
         print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
         shutil.copy(checkpoint_callback.best_model_path, target_path)
 
+        ckpts = [f for f in listdir(ckpt_path)]
+        for ckpt in ckpts:
+            if ckpt != "best_model.ckpt":
+                os.remove(os.path.join(ckpt_path, ckpt))
+
     if args["do_test"]:
         trainer.test(model, ckpt_path='best')
 
     return trainer
 
 def do_test(model, args, ckpt_path):
-    wandb_name = f"{time.strftime('%m/%d_%H:%M')}" if not args.wandb_name else args.wandb_name
+    wandb_name = f"{time.strftime('%m/%d_%H:%M')}" if not args["wandb_name"] else args["wandb_name"]
     experiment = wandb.init(
-        entity=args.wandb_entity,
-        project=args.wandb_project,
-        mode=args.wandb_mode, 
-        group=args.wandb_group,
+        entity=args["wandb_entity"],
+        project=args["wandb_project"],
+        mode=args["wandb_mode"], 
+        group=args["wandb_group"],
         name=wandb_name)
 
     logger = WandbLogger(experiment=experiment)
 
-    train_params = {"max_epochs": args.max_epochs}
-    if args.gpus == -1 or args.gpus > 1:
+    train_params = {}
+    train_params["max_epochs"] = args["max_epochs"]
+    if args["gpus"] == -1 or args["gpus"] > 1:
         train_params["distributed_backend"] = "ddp"
 
-    trainer = pl.Trainer.from_argparse_args(
-        args,
+    trainer = pl.Trainer(
+        gpus=args["gpus"],
         auto_select_gpus=True, ## true
         weights_summary=None,
         logger=logger,
@@ -254,7 +259,7 @@ def get_dataloader(dataset, batch_size, split, num_workers):
     drop_last = True if split == "train" else False
     shuffle = True if split == "train" else False
     batch_size = min(len(dataset), batch_size)
-    batch_size = min(128,batch_size)
+    # batch_size = min(128,batch_size)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
         num_workers=num_workers, drop_last=drop_last, shuffle=shuffle)
     return dataloader

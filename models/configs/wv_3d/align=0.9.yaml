@@ -1,11 +1,37 @@
-### Wandb args
-
-wandb_group : align=0.9
-
-### triplet data
-train_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/align=1/train_triplets_10000.pkl
-valid_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/align=1/valid_triplets_10000.pkl
-test_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/align=1/test_triplets_10k.pkl
-weights: 
-  - 2.7303
-  - 1 
+dataloader_num_workers: 16
+gpus: 1
+seed: 42
+do_train: true
+do_test: true
+wandb_mode: online
+wandb_entity: ai-driven-tutorial
+wandb_name: align=0.9
+wandb_project: wv
+wandb_group: RESN
+embed_dim: 10
+max_epochs: 50
+learning_rate: 0.0001
+train_batch_size: 64
+lamda: 0.5
+pretrained: False
+train_dir: /net/scratch/tianh-shared/wv/pseudo_label/auto_split/train
+valid_dir: /net/scratch/tianh-shared/wv/pseudo_label/auto_split/valid
+test_dir: /net/scratch/tianh-shared/wv/pseudo_label/auto_split/test
+num_class: 2
+transform: wv
+syn: true
+train_synthetic: /net/scratch/tianh-shared/wv/pseudo_label/auto_split/train.pkl
+test_synthetic: /net/scratch/tianh-shared/wv/pseudo_label/auto_split/test.pkl
+train_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.9/train_triplets_10000.pkl
+valid_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.9/valid_triplets_10000.pkl
+test_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.9/test_triplets_10000.pkl
+weights:
+- 695
+- 395
+- -443
+- -514
+powers:
+- -2
+- 2
+- -1
+- -1
