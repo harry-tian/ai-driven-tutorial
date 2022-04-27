@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from TN import TN
-import utils
+import trainer
 from pytorch_lightning.trainer.supporters import CombinedLoader
 import sys
 sys.path.insert(0, '..')
@@ -46,7 +46,7 @@ class MTL(TN):
         triplet_loss = self.triplet_loss(*triplets)
 
         with torch.no_grad():
-            m = utils.metrics(probs, labels.unsqueeze(1))
+            m = trainer.metrics(probs, labels.unsqueeze(1))
             d_ap = self.pdist(triplets[0], triplets[1])
             d_an = self.pdist(triplets[0], triplets[2])
             triplet_acc = (d_ap < d_an).float().mean()
@@ -115,8 +115,8 @@ class MTL(TN):
         triplet_dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))
         clf_dataset = self.train_dataset
         print(f"\nlen_triplet_train:{len(triplet_dataset)}")
-        triplet_loader = utils.get_dataloader(triplet_dataset, self.hparams.triplet_train_bs, "train", self.hparams.dataloader_num_workers)
-        clf_loader = utils.get_dataloader(clf_dataset, self.hparams.clf_train_bs, "train", self.hparams.dataloader_num_workers)
+        triplet_loader = trainer.get_dataloader(triplet_dataset, self.hparams.triplet_train_bs, "train", self.hparams.dataloader_num_workers)
+        clf_loader = trainer.get_dataloader(clf_dataset, self.hparams.clf_train_bs, "train", self.hparams.dataloader_num_workers)
 
         return CombinedLoader({"triplet": triplet_loader, "clf": clf_loader}, mode="max_size_cycle")
 
@@ -124,9 +124,9 @@ class MTL(TN):
         triplet_dataset = torch.utils.data.TensorDataset(torch.tensor(self.valid_triplets))
         clf_dataset = self.valid_dataset
         print(f"\nlen_triplet_valid:{len(triplet_dataset)}")
-        triplet_loader = utils.get_dataloader(triplet_dataset, min(len(triplet_dataset),self.hparams.triplet_valid_bs),
+        triplet_loader = trainer.get_dataloader(triplet_dataset, min(len(triplet_dataset),self.hparams.triplet_valid_bs),
                 "valid", self.hparams.dataloader_num_workers)
-        clf_loader = utils.get_dataloader(clf_dataset, min(len(clf_dataset),self.hparams.clf_valid_bs), 
+        clf_loader = trainer.get_dataloader(clf_dataset, min(len(clf_dataset),self.hparams.clf_valid_bs), 
                 "valid", self.hparams.dataloader_num_workers)
 
         return CombinedLoader({"triplet": triplet_loader, "clf": clf_loader}, mode="max_size_cycle")
@@ -135,9 +135,9 @@ class MTL(TN):
         triplet_dataset = torch.utils.data.TensorDataset(torch.tensor(self.test_triplets))
         clf_dataset = self.test_dataset
         print(f"\nlen_triplet_test:{len(triplet_dataset)}")
-        triplet_loader = utils.get_dataloader(triplet_dataset, min(len(triplet_dataset),self.hparams.triplet_test_bs),
+        triplet_loader = trainer.get_dataloader(triplet_dataset, min(len(triplet_dataset),self.hparams.triplet_test_bs),
                 "test", self.hparams.dataloader_num_workers)
-        clf_loader = utils.get_dataloader(clf_dataset, min(len(clf_dataset),self.hparams.clf_test_bs), 
+        clf_loader = trainer.get_dataloader(clf_dataset, min(len(clf_dataset),self.hparams.clf_test_bs), 
                 "test", self.hparams.dataloader_num_workers)
 
         return CombinedLoader({"triplet": triplet_loader, "clf": clf_loader}, mode="max_size_cycle")
@@ -159,7 +159,7 @@ class MTL(TN):
         return parser
 
 def main():
-    parser = utils.add_generic_args()
+    parser = trainer.add_generic_args()
     MTL.add_model_specific_args(parser)
     args = parser.parse_args()
     print(args)
@@ -173,7 +173,7 @@ def main():
     print(args.early_stop_patience, args.check_val_every_n_epoch)
     early_stop_callback = EarlyStopping(monitor="valid_total_loss", min_delta=0.00, patience=args.early_stop_patience, verbose=True, mode="min")
     # trainer = Trainer(callbacks=[early_stop_callback])
-    trainer = utils.generic_train(model, args, monitor, callbacks = [early_stop_callback], check_val_every_n_epoch = args.check_val_every_n_epoch)
+    trainer = trainer.generic_train(model, args, monitor, callbacks = [early_stop_callback], check_val_every_n_epoch = args.check_val_every_n_epoch)
 
 if __name__ == "__main__":
     main()

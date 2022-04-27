@@ -24,6 +24,12 @@ prostatex = {"data_dir":"/net/scratch/tianh-shared/bird",
 wv = {"data_dir":"/net/scratch/chacha/data/weevil_vespula",
             "transform": "wv"}
 
+model_path_dict ={
+    'TN': "TN.TN",
+    'MTL': "MTL.MTL",
+    'RESN': "RESN.RESN"
+}
+
 def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     model = locate(model_path)
     model = model.load_from_checkpoint(ckpt, **vars(args)).to("cuda")
@@ -58,18 +64,13 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     pickle.dump(embeds, open(embed_path, "wb"))
     print(f"dumped to {embed_path}")
 
-model_name = "RESN"
-ckpt = 'chest_xray/2jv3r4j3' 
+model_name = "TN"
+ckpt = 'bm_prolific/36vv1csc' 
 
-model_path_dict ={
-    'TN': "TN.TN",
-    'MTL': "MTL.MTL",
-    'RESN': "RESN.RESN"
-}
 model_path = model_path_dict[model_name]
 
-dataset = chest_xray
-subdir = "chest_xray"
+dataset = bm
+subdir = "bm/prolific"
 splits = ["train","test","valid"]
 
 
@@ -77,6 +78,7 @@ splits = ["train","test","valid"]
 
 args = argparse.Namespace(embed_dim=10)
 ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt" 
+# ckpt = "/net/scratch/tianh/explain_teach/models/results/bm_prolific/zxkgmdyj/checkpoints/epoch=241-valid_loss=0.00.ckpt"
 for split in splits:
     name = f"{model_name}_{split}_emb10"
     embed_path = f"../embeds/{subdir}/{name}.pkl"

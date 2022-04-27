@@ -4,7 +4,7 @@ import torchvision
 from torch import nn
 from torchvision import  models
 import pytorch_lightning as pl
-import utils, pickle, transforms
+import trainer, pickle, transforms
 import numpy as np
 import sys
 
@@ -16,6 +16,7 @@ warnings.filterwarnings("ignore")
 
 sys.path.insert(0, '..')
 import evals.embed_evals as evals
+
 class RESN(pl.LightningModule):
     def __init__(self, **config_kwargs):
         super().__init__()
@@ -23,7 +24,10 @@ class RESN(pl.LightningModule):
         self.setup_data()
 
         self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
-        num_features = 1000
+        # num_features = 1000
+
+        self.pdist = nn.PairwiseDistance()
+        self.triplet_loss = nn.TripletMarginLoss()
 
         if self.hparams.num_class > 2:
             self.criterion = nn.CrossEntropyLoss()
@@ -35,33 +39,41 @@ class RESN(pl.LightningModule):
             self.out_dim = 1
 
         self.embed_dim = self.hparams.embed_dim
-        self.fc = nn.ModuleList([nn.Sequential(
-            nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, 256), 
-            nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(), nn.Linear(256, self.embed_dim)
-        )])
-        self.classifier = nn.Sequential(
-            nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, self.out_dim)
-        )
 
-        self.pdist = nn.PairwiseDistance()
-        self.triplet_loss = nn.TripletMarginLoss()
+    ###### old architectur: final linear layer, d=embed_dim
+        # self.fc = nn.ModuleList([nn.Sequential(
+        #     nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, 256), 
+        #     nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(), nn.Linear(256, self.embed_dim)
+        # )])
+        # self.classifier = nn.Sequential(
+        #     nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, self.out_dim)
+        # )
+
+    ###### new architectur: no linear layer, d=512
+        self.feature_extractor.fc = nn.Identity()
+        num_features = 512
+        # self.fc = nn.ModuleList([nn.Sequential(nn.Dropout(), nn.Linear(512,512))])
+        self.fc = nn.ModuleList([nn.Sequential(nn.Dropout())])
+        self.dropout = nn.Dropout()
+        self.classifier = nn.Sequential(nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, self.out_dim))
+
 
         self.summarize()
 
     def forward(self, x):
         embeds = self.feature_extractor(x)
-        for layer in self.fc:
-            embeds = layer(embeds)
+        for layer in self.fc: embeds = layer(embeds)
         return embeds
 
     def clf_loss_acc(self, embeds, labels):
+        # embeds = self.dropout(embeds)
         logits = self.classifier(embeds)
         probs = self.nonlinear(logits)
         if self.hparams.num_class < 3:
             labels = labels.type_as(logits).unsqueeze(1)
 
         clf_loss = self.criterion(logits, labels)
-        m = utils.metrics(probs, labels, num_class=self.hparams.num_class)
+        m = trainer.metrics(probs, labels, num_class=self.hparams.num_class)
         return clf_loss, m
         
     def triplet_loss_acc(self, triplets):
@@ -100,6 +112,7 @@ class RESN(pl.LightningModule):
         loss, m = self.clf_loss_acc(embeds, y)
         self.log('test_clf_loss', loss, sync_dist=True)
         self.log('test_clf_acc', m['acc'], sync_dist=True)
+        # return
 
         triplet_acc = self.test_mixed_triplets()
         self.log('test_triplet_acc', triplet_acc, sync_dist=True)
@@ -125,6 +138,7 @@ class RESN(pl.LightningModule):
             examples = evals.class_1NN_idx(train_x, train_y, test_x, test_y)
             ds_acc = evals.decision_support(syn_x_train, train_y, syn_x_test, test_y, examples, self.hparams.weights, self.hparams.powers)
             self.log('decision support', ds_acc, sync_dist=True)  
+        else: ds_acc = 0
 
         return knn_acc, ds_acc
 
@@ -153,22 +167,22 @@ class RESN(pl.LightningModule):
     def train_dataloader(self):
         dataset = self.train_dataset
         print(f"\n train:{len(dataset)}")
-        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
 
     def val_dataloader(self):
         dataset = self.valid_dataset
         print(f"\n valid:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
 
     def test_dataloader(self):
         dataset = self.test_dataset
         print(f"\n test:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 
 def main():
-    parser = utils.config_parser()
+    parser = trainer.config_parser()
     config_files = parser.parse_args()
-    configs = utils.load_configs(config_files)
+    configs = trainer.load_configs(config_files)
 
     # wandb_name = "RESN_pretrained" if configs["pretrained"] else "RESN"
     # wandb_name = oc.create({"wandb_name": wandb_name}) 
@@ -177,7 +191,8 @@ def main():
 
     pl.seed_everything(configs["seed"])
     model = RESN(**configs)
-    trainer = utils.generic_train(model, configs, "valid_loss")
+    monitor = "valid_clf_loss"
+    trainer.generic_train(model, configs, monitor)
 
 if __name__ == "__main__":
     main()

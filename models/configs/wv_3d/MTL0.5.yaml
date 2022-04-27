@@ -1,7 +1,8 @@
 wandb_entity: ai-driven-tutorial
 wandb_project: wv
-wandb_group: TN_new
-# wandb_name: TN_nolinear
+wandb_group: MTL0.5_new
+# embed_dim: 10
 max_epochs: 50
 learning_rate: 0.0001
 train_batch_size: 100
+lamda: 0.5

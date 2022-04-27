@@ -40,10 +40,16 @@ def plot_data(x_train, y_train, title, legend, prototype_idx=None, save=False, s
 def plot_data_multiplot(all_data, legend, sharey=True, title=None, subtitles=None, save=False, save_dir=None):
     n = len(all_data)
     fig, ax = plt.subplots(1, n, figsize=(8*n, 6), sharey=sharey)
-    for k, data in enumerate(all_data):
-        x, y = data
+    x_all = [x[0] for x in all_data]
+    y_all = [y[0] for y in all_data]
+    # if x_all[0].shape[1] != 2: 
+    #     indexs = [np.arange(len(x)) for x in x_all]
+    #     x_all_2 = tsne2(np.concatenate(x_all))
+    #     x_all = x_all_2[] for i,x in enumerate(x_all)
 
-        if x.shape[1] != 2: x = tsne2(x)
+    for k, (x,y) in enumerate(zip(x_all, y_all)):
+        # x, y = data
+
         classes = np.unique(y)
 
         for c in classes:

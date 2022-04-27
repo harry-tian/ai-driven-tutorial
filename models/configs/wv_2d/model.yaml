@@ -1,7 +1,7 @@
 ### Wandb args
 wandb_mode : online
-
-wandb_group : test
+wandb_project: baselines
+wandb_group : wv_2d
 wandb_name : RESN
 
 ### Training args
@@ -12,6 +12,6 @@ do_test: True
 embed_dim : 10
 max_epochs : 50
 learning_rate : 1e-4
-train_batch_size : 120
+train_batch_size : 32
 lamda : 0.5
 pretrained: False

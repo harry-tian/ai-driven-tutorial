@@ -13,7 +13,7 @@ from torchvision import  models
 warnings.filterwarnings("ignore")
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from TN import TN
-import utils
+import trainer
 from omegaconf import OmegaConf as oc
 
 import pandas as pd
@@ -97,9 +97,9 @@ class MTL(TN):
         return parser
 
 def main():
-    parser = utils.config_parser()
+    parser = trainer.config_parser()
     config_files = parser.parse_args()
-    configs = utils.load_configs(config_files)
+    configs = trainer.load_configs(config_files)
 
     # wandb_name = "MTL_pretrained" if configs["pretrained"] else "MTL"
     # wandb_name = oc.create({"wandb_name": wandb_name}) 
@@ -109,12 +109,12 @@ def main():
     pl.seed_everything(configs["seed"])
     model = MTL(**configs)
     monitor = "valid_total_loss"
-    trainer = utils.generic_train(model, configs, monitor)
+    trainer.generic_train(model, configs, monitor)
 
     # print(configs.early_stop_patience, configs.check_val_every_n_epoch)
     # early_stop_callback = EarlyStopping(monitor="valid_total_loss", min_delta=0.00, patience=args.early_stop_patience, verbose=True, mode="min")
     # trainer = Trainer(callbacks=[early_stop_callback])
-    # trainer = utils.generic_train(model, configs, monitor, callbacks = [early_stop_callback], check_val_every_n_epoch = args.check_val_every_n_epoch)
+    # trainer = trainer.generic_train(model, configs, monitor, callbacks = [early_stop_callback], check_val_every_n_epoch = args.check_val_every_n_epoch)
 
 if __name__ == "__main__":
     main()
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     #     clf_loss = self.criterion(logits, labels.type_as(logits).unsqueeze(1))
     #     triplet_loss = self.triplet_loss(*triplets)
     #     with torch.no_grad():
-    #         m = utils.metrics(probs, labels.unsqueeze(1))
+    #         m = trainer.metrics(probs, labels.unsqueeze(1))
     #         d_ap = self.pdist(triplets[0], triplets[1])
     #         d_an = self.pdist(triplets[0], triplets[2])
     #         triplet_acc = (d_ap < d_an).float().mean()

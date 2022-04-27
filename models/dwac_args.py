@@ -15,7 +15,7 @@ import pytorch_lightning as pl
 from torchmetrics.functional.classification import auroc, stat_scores, average_precision, precision_recall_curve, auc
 from pytorch_lightning.loggers import WandbLogger
 import wandb
-import utils
+import trainer
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -140,7 +140,7 @@ class DWAC(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         output_dict = self(x, y)
-        m = utils.metrics(output_dict['probs'][:, 1].exp(), y)
+        m = trainer.metrics(output_dict['probs'][:, 1].exp(), y)
         self.log('train_loss', output_dict['loss'], sync_dist=True)
         self.log('train_acc', m['acc'], prog_bar=True, sync_dist=True)
         return output_dict['loss']
@@ -174,7 +174,7 @@ class DWAC(pl.LightningModule):
         probs = class_dists.div(class_dists.sum(dim=1, keepdim=True)).log()
         total_loss = self.criterion(probs, y)
         loss = total_loss.div(x.shape[0])
-        m = utils.metrics(probs[:, 1].exp(), y)
+        m = trainer.metrics(probs[:, 1].exp(), y)
         self.log('valid_loss', loss, sync_dist=True)
         self.log('valid_acc', m['acc'], prog_bar=True, sync_dist=True)
         self.log('valid_auc', m['auc'], prog_bar=True, sync_dist=True)
@@ -357,7 +357,7 @@ def main():
     
     dict_args = vars(args)
     model = DWAC(**dict_args)
-    trainer = utils.generic_train(model, args, monitor="valid_loss")
+    trainer = trainer.generic_train(model, args, monitor="valid_loss")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,10 @@
+### classification data
+train_dir : /net/scratch/tianh-shared/bm/train
+valid_dir : /net/scratch/tianh-shared/bm/valid
+test_dir : /net/scratch/tianh-shared/bm/test
+num_class : 2
+transform : bm
+train_batch_size : 60
+
+### synthetic data
+syn: False

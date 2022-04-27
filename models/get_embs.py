@@ -2,7 +2,7 @@ from re import sub
 from telnetlib import SB
 
 from sklearn import datasets
-import utils
+import trainer
 import argparse, pickle
 from pydoc import locate
 import numpy as np

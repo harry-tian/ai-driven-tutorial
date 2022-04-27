@@ -5,8 +5,3 @@ test_dir : /net/scratch/chacha-shared/weevil_vespula/test
 num_class : 2
 transform : wv
 train_batch_size : 196
-
-### synthetic data
-syn: True
-train_synthetic : /net/scratch/tianh/explain_teach/embeds/wv/train.pkl
-test_synthetic : /net/scratch/tianh/explain_teach/embeds/wv/test.pkl

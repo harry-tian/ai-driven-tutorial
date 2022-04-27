@@ -2,7 +2,7 @@
 wandb_mode : online
 wandb_project : chest_xray
 wandb_group : test
-wandb_name : RESN
+wandb_name : RESN_new
 
 ### Training args
 do_train : True
@@ -12,6 +12,6 @@ do_test: True
 embed_dim : 10
 max_epochs : 50
 learning_rate : 1e-4
-train_batch_size : 120
+train_batch_size : 64
 lamda : 0.5
 pretrained: False

@@ -7,8 +7,9 @@
 #SBATCH --job-name=triplets
 #SBATCH --partition=general
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
+#SBATCH --exclude=c001
   
 python RESN.py --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/RESN.yaml 

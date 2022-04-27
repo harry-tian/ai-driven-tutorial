@@ -9,7 +9,7 @@ from torch import nn
 from torchvision import  models
 import pytorch_lightning as pl
 import wandb
-import utils
+import trainer
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -23,14 +23,14 @@ class RESN_cv(RESN):
         self.train_idx, self.valid_idx = split
 
     def train_dataloader(self):
-        dataset = utils.sample_dataset(self.train_dataset, self.train_idx)
+        dataset = trainer.sample_dataset(self.train_dataset, self.train_idx)
         print(f"\n train:{len(dataset)}")
-        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
 
     def val_dataloader(self):
-        dataset = utils.sample_dataset(self.valid_dataset, self.valid_idx)
+        dataset = trainer.sample_dataset(self.valid_dataset, self.valid_idx)
         print(f"\n valid:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
 
     @staticmethod
     def add_model_specific_args(parser):
@@ -40,7 +40,7 @@ class RESN_cv(RESN):
         return parser
     
 def main():
-    parser = utils.add_generic_args()
+    parser = trainer.add_generic_args()
     RESN_cv.add_model_specific_args(parser)
     args = parser.parse_args()
     print(args)
@@ -53,7 +53,7 @@ def main():
     splits = pickle.load(open(dict_args["splits"],"rb"))
 
     model = RESN_cv(splits[dict_args["split_idx"]], **dict_args)
-    trainer = utils.generic_train(model, args, "valid_loss")
+    trainer = trainer.generic_train(model, args, "valid_loss")
 
 if __name__ == "__main__":
     main()

@@ -9,7 +9,7 @@ from torch import nn
 from torchvision import  models,transforms
 import pytorch_lightning as pl
 import wandb
-import utils
+import trainer
 import numpy as np
 
 import warnings
@@ -62,7 +62,7 @@ class RESN(pl.LightningModule):
             target = target.type_as(logits).unsqueeze(1)
         loss = self.criterion(logits, target)
         with torch.no_grad():
-            m = utils.metrics(prob, target, num_class=self.hparams.num_class)
+            m = trainer.metrics(prob, target, num_class=self.hparams.num_class)
         return loss, m
 
     def training_step(self, batch, batch_idx):
@@ -104,20 +104,20 @@ class RESN(pl.LightningModule):
         # transform=transforms.ToTensor()
         dataset = torchvision.datasets.DatasetFolder(self.hparams.train_dir, extensions='npy', loader=np.load, transform=transform)
         print(f"\n train:{len(dataset)}")
-        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
 
     def val_dataloader(self):
         transform = transforms.get_transform(self.hparams.transform, aug=False)
         dataset = torchvision.datasets.DatasetFolder(self.hparams.valid_dir, extensions='npy', loader=np.load, transform=transform)
         print(f"\n valid:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
 
 
     def test_dataloader(self):
         transform = transforms.get_transform(self.hparams.transform, aug=False)
         dataset = torchvision.datasets.DatasetFolder(self.hparams.test_dir, extensions='npy', loader=np.load, transform=transform)
         print(f"\n test:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 
 
     @staticmethod
@@ -128,7 +128,7 @@ class RESN(pl.LightningModule):
         return parser
 
 def main():
-    parser = utils.add_generic_args()
+    parser = trainer.add_generic_args()
     RESN.add_model_specific_args(parser)
     args = parser.parse_args()
     print(args)
@@ -139,7 +139,7 @@ def main():
 
     model = RESN(**dict_args)
 
-    trainer = utils.generic_train(model, args, "valid_loss")
+    trainer = trainer.generic_train(model, args, "valid_loss")
 
 if __name__ == "__main__":
     main()

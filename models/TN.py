@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 
 from omegaconf import OmegaConf as oc
 from RESN import RESN
-import utils
+import trainer
 import pandas as pd
 
 class TN(RESN):
@@ -23,14 +23,31 @@ class TN(RESN):
         self.train_embeds = None
         self.summarize()
 
+    # def train_triplets_step(self, triplet_idx):
+    #     self.train_embeds = self(self.train_input)
+    #     x1, x2, x3 = self.train_embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
+    #     triplets = (x1, x2, x3)
+    #     return self.triplet_loss_acc(triplets)
+
     def train_triplets_step(self, triplet_idx):
-        self.train_embeds = self(self.train_input)
-        x1, x2, x3 = self.train_embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
+        uniques = np.unique(triplet_idx.cpu().detach().numpy().flatten())
+        if len(uniques) < len(self.train_input):
+            val2idx = {val:i for i,val in enumerate(uniques)}
+            for i, triplet in enumerate(triplet_idx):
+                for j, val in enumerate(triplet):
+                    triplet_idx[i][j] = val2idx[int(val)]
+            triplet_idx = triplet_idx.long()
+            input = self.train_input[uniques]
+        else: input = self.train_input
+
+        embeds = self(input)
+        x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
+
         return self.triplet_loss_acc(triplets)
 
     def mixed_triplets_step(self, triplet_idx, input):
-        if self.train_embeds is None: self.train_embeds = self(self.train_input)
+        self.train_embeds = self(self.train_input)
         
         embeds = self(input)
         x1, x2, x3 = embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
@@ -71,54 +88,29 @@ class TN(RESN):
     def train_dataloader(self):
         dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))
         print(f"\nlen_train:{len(dataset)}")
-        return utils.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, self.hparams.train_batch_size, "train", self.hparams.dataloader_num_workers)
 
     def val_dataloader(self):
         dataset = torch.utils.data.TensorDataset(torch.tensor(self.valid_triplets))
         print(f"\nlen_valid:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
 
     def test_dataloader(self):
         dataset = torch.utils.data.TensorDataset(torch.tensor(self.test_triplets))
         print(f"\nlen_test:{len(dataset)}")
-        return utils.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
+        return trainer.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 
 def main():
-    parser = utils.config_parser()
+    parser = trainer.config_parser()
     config_files = parser.parse_args()
-    configs = utils.load_configs(config_files)
+    configs = trainer.load_configs(config_files)
 
-    # wandb_name = "MTL_pretrained" if configs["pretrained"] else "MTL"
-    # wandb_name = oc.create({"wandb_name": wandb_name}) 
-    # configs = oc.merge(configs, wandb_name)
     print(configs)
 
     pl.seed_everything(configs["seed"])
     model = TN(**configs)
     monitor = "valid_triplet_loss"
-    trainer = utils.generic_train(model, configs, monitor)
+    trainer.generic_train(model, configs, monitor)
 
 if __name__ == "__main__":
     main()
-
-
-    
-    # def get_loss_acc(self, triplet_idx, input):
-    #     uniques = np.unique(triplet_idx.cpu().detach().numpy().flatten())
-    #     val2idx = {val:i for i,val in enumerate(uniques)}
-    #     for i, triplet in enumerate(triplet_idx):
-    #         for j, val in enumerate(triplet):
-    #             triplet_idx[i][j] = val2idx[int(val)]
-    #     triplet_idx = triplet_idx.long()
-
-    #     embeds = self(input[uniques])
-    #     x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
-    #     triplets = (x1, x2, x3)
-
-    #     triplet_loss = self.triplet_loss(*triplets)
-    #     with torch.no_grad():
-    #         d_ap = self.pdist(triplets[0], triplets[1])
-    #         d_an = self.pdist(triplets[0], triplets[2])
-    #         triplet_acc = (d_ap < d_an).float().mean()
-
-    #     return triplet_loss, triplet_acc
