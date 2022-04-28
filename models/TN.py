@@ -39,7 +39,7 @@ class TN(RESN):
             triplet_idx = triplet_idx.long()
             input = self.train_input[uniques]
         else: input = self.train_input
-
+        # print(input.shape)
         embeds = self(input)
         x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)

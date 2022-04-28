@@ -37,11 +37,10 @@ def test_configs(configs):
             required_args += syn_args
             
     if set(configs) != set(required_args):
-        print("\n Missing args:")
+        print("\n WARNING: Missing args:")
         print(np.setdiff1d(required_args, configs))
-        print("Unrecognized args:")
+        print("WARNING: Unrecognized args:")
         print(np.setdiff1d(configs, required_args))
-        assert(False)
 
 def load_configs(config_files):
     base_config = oc.load(config_files.base_config)

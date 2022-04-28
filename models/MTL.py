@@ -24,8 +24,18 @@ class MTL(TN):
         super().__init__(*args, **kwargs) 
 
     def train_triplets_step(self, triplet_idx, labels):
-        self.train_embeds = self(self.train_input)
-        x1, x2, x3 = self.train_embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
+        uniques = np.unique(triplet_idx.cpu().detach().numpy().flatten())
+        if len(uniques) < len(self.train_input):
+            val2idx = {val:i for i,val in enumerate(uniques)}
+            for i, triplet in enumerate(triplet_idx):
+                for j, val in enumerate(triplet):
+                    triplet_idx[i][j] = val2idx[int(val)]
+            triplet_idx = triplet_idx.long()
+            input = self.train_input[uniques]
+        else: input = self.train_input
+        # print(input.shape)
+        embeds = self(input)
+        x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
 
         triplet_loss, triplet_acc = self.triplet_loss_acc(triplets)
@@ -34,7 +44,8 @@ class MTL(TN):
         return clf_loss, m, triplet_loss, triplet_acc, total_loss
 
     def mixed_triplets_step(self, triplet_idx, input, labels):
-        if self.train_embeds is None: self.train_embeds = self(self.train_input)
+        self.train_embeds = self(self.train_input)
+        
         embeds = self(input)
         x1, x2, x3 = embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)

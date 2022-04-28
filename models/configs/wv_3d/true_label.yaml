@@ -1,0 +1,37 @@
+dataloader_num_workers: 16
+gpus: 1
+seed: 42
+do_train: true
+do_test: true
+wandb_mode: online
+wandb_entity: ai-driven-tutorial
+wandb_project: wv
+wandb_group: true_labels
+wandb_name: RESN
+embed_dim: 10
+max_epochs: 50
+learning_rate: 0.0001
+train_batch_size: 32
+lamda: 0.5
+pretrained: False
+train_dir: /net/scratch/tianh-shared/wv/true_label/auto_split/train
+valid_dir: /net/scratch/tianh-shared/wv/true_label/auto_split/valid
+test_dir: /net/scratch/tianh-shared/wv/true_label/auto_split/test
+num_class: 2
+transform: wv
+syn: true
+train_synthetic: /net/scratch/tianh-shared/wv/pseudo_label/auto_split/train.pkl
+test_synthetic: /net/scratch/tianh-shared/wv/pseudo_label/auto_split/test.pkl
+train_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.5/train_triplets_10000.pkl
+valid_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.5/valid_triplets_10000.pkl
+test_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.5/test_triplets_10000.pkl
+weights:
+- 644
+- 492
+- -741
+- -2
+powers:
+- -1
+- 1
+- 1
+- -3

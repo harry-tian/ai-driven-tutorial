@@ -26,11 +26,11 @@ class RESN(pl.LightningModule):
         self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
         # num_features = 1000
 
-        # self.pdist = nn.PairwiseDistance()
-        # self.triplet_loss = nn.TripletMarginLoss()
+        self.pdist = nn.PairwiseDistance()
+        self.triplet_loss = nn.TripletMarginLoss()
 
-        self.pdist = lambda x, y: 1.0 - nn.functional.cosine_similarity(x, y) #nn.CosineSimilarity()
-        self.triplet_loss = nn.TripletMarginWithDistanceLoss(distance_function=self.pdist)
+        # self.pdist = lambda x, y: 1.0 - nn.functional.cosine_similarity(x, y) #nn.CosineSimilarity()
+        # self.triplet_loss = nn.TripletMarginWithDistanceLoss(distance_function=self.pdist)
 
         if self.hparams.num_class > 2:
             self.criterion = nn.CrossEntropyLoss()
