@@ -26,8 +26,11 @@ class RESN(pl.LightningModule):
         self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
         # num_features = 1000
 
-        self.pdist = nn.PairwiseDistance()
-        self.triplet_loss = nn.TripletMarginLoss()
+        # self.pdist = nn.PairwiseDistance()
+        # self.triplet_loss = nn.TripletMarginLoss()
+
+        self.pdist = lambda x, y: 1.0 - nn.functional.cosine_similarity(x, y) #nn.CosineSimilarity()
+        self.triplet_loss = nn.TripletMarginWithDistanceLoss(distance_function=self.pdist)
 
         if self.hparams.num_class > 2:
             self.criterion = nn.CrossEntropyLoss()
@@ -52,8 +55,8 @@ class RESN(pl.LightningModule):
     ###### new architectur: no linear layer, d=512
         self.feature_extractor.fc = nn.Identity()
         num_features = 512
-        # self.fc = nn.ModuleList([nn.Sequential(nn.Dropout(), nn.Linear(512,512))])
         self.fc = nn.ModuleList([nn.Sequential(nn.Dropout())])
+        # self.fc = nn.ModuleList([nn.Sequential(nn.Identity())])
         self.dropout = nn.Dropout()
         self.classifier = nn.Sequential(nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, self.out_dim))
 

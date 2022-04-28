@@ -1,7 +1,7 @@
 ### Wandb args
 wandb_project : bm_prolific
-wandb_group : test
-wandb_name : MTL
+wandb_group : TN_cosdropout
+wandb_name : bs=50
 
 ### triplet data
 train_triplets : /net/scratch/tianh/explain_teach/data/bm_triplets/train_triplets.pkl
@@ -9,7 +9,7 @@ valid_triplets : /net/scratch/tianh/explain_teach/data/bm_triplets/valid_triplet
 test_triplets : /net/scratch/tianh/explain_teach/data/bm_triplets/test_triplets.pkl
 
 
-train_batch_size : 100
+train_batch_size : 50
 lamda : 0.2
 max_epochs : 400
 pretrained: false
