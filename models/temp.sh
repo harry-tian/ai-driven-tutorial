@@ -14,7 +14,13 @@
 
 # python RESN.py --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/true_label.yaml 
 
-python RESN.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/model.yaml \
+python TN.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/TN.yaml \
     --dataset_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/dataset.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/w1=2.7303.yaml \
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/test/w1=1_w2=0.yaml \
+
+
+python MTl.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/MTl.yaml \
+    --dataset_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/dataset.yaml \
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/test/w1=1_w2=0.yaml \

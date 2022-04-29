@@ -1,8 +1,8 @@
 ### Wandb args
 wandb_mode : online
 wandb_project: wv_2d
-wandb_group : RESN_test
-wandb_name : w1=1_w2=0
+wandb_name : w1=0_w2=1
+train_batch_size : 128
 
 #### synthetic data
 syn: True
@@ -10,9 +10,9 @@ train_synthetic : /net/scratch/tianh/explain_teach/embeds/wv_old/train.pkl
 test_synthetic : /net/scratch/tianh/explain_teach/embeds/wv_old/test.pkl
 
 ### triplet data
-train_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets_old/align=0.0/train_triplets_10000.pkl
-valid_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets_old/align=0.0/valid_triplets_10000.pkl
-test_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets_old/align=0.0/test_triplets_10000.pkl
+train_triplets: /net/scratch/tianh/explain_teach/temp/train_triplets.pkl
+valid_triplets: /net/scratch/tianh/explain_teach/temp/valid_triplets.pkl
+test_triplets: /net/scratch/tianh/explain_teach/temp/test_triplets.pkl
 weights: 
   - 1
   - 0
