@@ -1,8 +1,7 @@
 ### Wandb args
-wandb_mode : online
-wandb_project : chest_xray
-wandb_group : test
-wandb_name : RESN
+wandb_project : bm_prolific
+wandb_group : TN
+wandb_name : lambda=0.2
 
 ### Training args
 do_train : True

@@ -1,8 +1,7 @@
 wandb_entity: ai-driven-tutorial
 wandb_project: wv
 wandb_group: MTL0.5_new
-# embed_dim: 10
 max_epochs: 50
 learning_rate: 0.0001
-train_batch_size: 100
+train_batch_size: 32
 lamda: 0.5

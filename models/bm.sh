@@ -10,8 +10,14 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --mem=8Gs
+#SBATCH --exclude=c001
 
 python TN.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/bm/model.yaml \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/bm/TN.yaml \
+    --dataset_config=/net/scratch/tianh/explain_teach/models/configs/bm/dataset.yaml \
+    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/bm/triplets.yaml \
+
+python MTL.py \
+    --model_config=/net/scratch/tianh/explain_teach/models/configs/bm/MTL.yaml \
     --dataset_config=/net/scratch/tianh/explain_teach/models/configs/bm/dataset.yaml \
     --triplet_config=/net/scratch/tianh/explain_teach/models/configs/bm/triplets.yaml \

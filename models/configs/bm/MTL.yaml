@@ -1,0 +1,16 @@
+### Wandb args
+wandb_project : bm_prolific
+wandb_group : MTL
+wandb_name : lambda=0.2
+
+### Training args
+do_train : True
+do_test: True
+
+### Hyperparameters
+embed_dim : 10
+max_epochs : 200
+learning_rate : 1e-4
+train_batch_size : 120
+lamda : 0.2
+pretrained: False

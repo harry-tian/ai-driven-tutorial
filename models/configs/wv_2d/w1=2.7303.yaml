@@ -3,15 +3,15 @@ syn: False
 
 ### synthetic data
 # syn: True
-# train_synthetic : /net/scratch/tianh/explain_teach/embeds/wv/train.pkl
-# test_synthetic : /net/scratch/tianh/explain_teach/embeds/wv/test.pkl
+# train_synthetic : /net/scratch/tianh/explain_teach/embeds/wv_3d/train.pkl
+# test_synthetic : /net/scratch/tianh/explain_teach/embeds/wv_3d/test.pkl
 ### triplet data
 train_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.0/train_triplets_10000.pkl
 valid_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.0/valid_triplets_10000.pkl
 test_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.0/test_triplets_10000.pkl
-# weights: 
-#   - 2.7303
-#   - 1 
-# powers:
-#   - 2
-#   - 2
+weights: 
+  - 2.7303
+  - 1 
+powers:
+  - 2
+  - 2

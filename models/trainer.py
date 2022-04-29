@@ -94,13 +94,14 @@ def generic_train(model, args, monitor,
         print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
         shutil.copy(checkpoint_callback.best_model_path, target_path)
 
-        ckpts = [f for f in os.listdir(ckpt_path)]
-        for ckpt in ckpts:
-            if ckpt != "best_model.ckpt":
-                os.remove(os.path.join(ckpt_path, ckpt))
 
     if args["do_test"]:
         trainer.test(model, ckpt_path='best')
+        
+    ckpts = [f for f in os.listdir(ckpt_path)]
+    for ckpt in ckpts:
+        if ckpt != "best_model.ckpt":
+            os.remove(os.path.join(ckpt_path, ckpt))
 
     return trainer
 

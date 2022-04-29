@@ -16,15 +16,15 @@ import trainer
 from RESN import RESN
 from omegaconf import OmegaConf as oc
 
-ckpt_path = "results/wv/2xdk4y7r/checkpoints/best_model.ckpt"
+ckpt_path = "results/baselines/25tfqtyf/checkpoints/best_model.ckpt"
 
 def main():
     parser = trainer.config_parser()
     config_files = parser.parse_args()
     configs = trainer.load_configs(config_files)
 
-    wandb_name = oc.create({"wandb_group": "RESN_test"}) 
-    configs = oc.merge(configs, wandb_name)
+    # wandb_name = oc.create({"wandb_group": "RESN_test"}) 
+    # configs = oc.merge(configs, wandb_name)
     print(configs)
 
 

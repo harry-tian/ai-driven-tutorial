@@ -1,7 +1,4 @@
 ### Wandb args
-wandb_project : bm_prolific
-wandb_group : TN
-wandb_name : lambda=0.2
 
 ### triplet data
 train_triplets : /net/scratch/tianh/explain_teach/data/bm_triplets/train_triplets.pkl
@@ -11,7 +8,7 @@ test_triplets : /net/scratch/tianh/explain_teach/data/bm_triplets/test_triplets.
 
 train_batch_size : 32
 lamda : 0.2
-max_epochs : 200
+max_epochs : 100
 pretrained: false
 
 transform : resn

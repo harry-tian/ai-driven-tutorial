@@ -105,12 +105,14 @@ def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers):
 
 def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers):
     correct = 0
+    err = []
     for test_idx, examples_idx in enumerate(examples):
         ref = x_test[test_idx]
         dists = [weightedPdist(ref, x_train[cand_idx], weights, powers) for cand_idx in examples_idx]
         y_pred = y_train[examples_idx[np.argmin(dists)]]
         if y_pred == y_test[test_idx]: correct += 1
-
+        else: err.append([test_idx, examples_idx[0], examples_idx[1]])
+    print(err)
     return correct/len(y_test)
 
 

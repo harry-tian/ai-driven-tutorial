@@ -1,7 +1,7 @@
 ### classification data
-train_dir : /net/scratch/tianh-shared/wv/pseudo_label/auto_split/train
-valid_dir : /net/scratch/tianh-shared/wv/pseudo_label/auto_split/valid
-test_dir : /net/scratch/tianh-shared/wv/pseudo_label/auto_split/test
+train_dir : /net/scratch/tianh-shared/wv_3d/pseudo_label/auto_split/train
+valid_dir : /net/scratch/tianh-shared/wv_3d/pseudo_label/auto_split/valid
+test_dir : /net/scratch/tianh-shared/wv_3d/pseudo_label/auto_split/test
 num_class : 2
 transform : wv
 
@@ -12,8 +12,8 @@ test_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/w1=10000_w2=1/
 
 ### synthetic data
 syn: True
-train_synthetic : /net/scratch/tianh/explain_teach/embeds/wv/train.pkl
-test_synthetic : /net/scratch/tianh/explain_teach/embeds/wv/test.pkl
+train_synthetic : /net/scratch/tianh/explain_teach/embeds/wv_3d/train.pkl
+test_synthetic : /net/scratch/tianh/explain_teach/embeds/wv_3d/test.pkl
 weights: 
   - 1000
   - 1 

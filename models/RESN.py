@@ -117,15 +117,15 @@ class RESN(pl.LightningModule):
         self.log('test_clf_acc', m['acc'], sync_dist=True)
         # return
 
-        triplet_acc = self.test_mixed_triplets()
-        self.log('test_triplet_acc', triplet_acc, sync_dist=True)
+        # triplet_acc = self.test_mixed_triplets()
+        # self.log('test_triplet_acc', triplet_acc, sync_dist=True)
 
         knn_acc, ds_acc = self.test_evals()
 
-        df = pd.read_csv("results.csv")
-        df = pd.concat([df, pd.DataFrame({"wandb_group": [self.hparams.wandb_group], "wandb_name": [self.hparams.wandb_name],
-            "test_clf_acc": [m['acc'].item()], "test_clf_loss": [loss.item()], "test_1nn_acc": [knn_acc], "test_triplet_acc":[triplet_acc.item()], "decision_support": [ds_acc]})], sort=False)
-        df.to_csv("results.csv", index=False)
+        # df = pd.read_csv("results.csv")
+        # df = pd.concat([df, pd.DataFrame({"wandb_group": [self.hparams.wandb_group], "wandb_name": [self.hparams.wandb_name],
+        #     "test_clf_acc": [m['acc'].item()], "test_clf_loss": [loss.item()], "test_1nn_acc": [knn_acc], "test_triplet_acc":[triplet_acc.item()], "decision_support": [ds_acc]})], sort=False)
+        # df.to_csv("results.csv", index=False)
 
     def test_evals(self):
         train_x = self(self.train_input).cpu().detach().numpy()
@@ -163,9 +163,9 @@ class RESN(pl.LightningModule):
         self.valid_label = torch.tensor(np.array([data[1] for data in self.valid_dataset])).cuda()
         self.test_label = torch.tensor(np.array([data[1] for data in self.test_dataset])).cuda()
 
-        self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
-        self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
-        self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
+        # self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
+        # self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
+        # self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
 
     def train_dataloader(self):
         dataset = self.train_dataset
