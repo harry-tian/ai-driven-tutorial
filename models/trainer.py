@@ -15,7 +15,7 @@ import shutil
 
 def config_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_config", default='/net/scratch/tianh/explain_teach/models/configs/base.yaml', type=str, required=False)
+    parser.add_argument("--base_config", default='configs/base.yaml', type=str, required=False)
     parser.add_argument("--model_config", default=None, type=str, required=True)
     parser.add_argument("--dataset_config", default=None, type=str, required=False)
     parser.add_argument("--triplet_config", default=None, type=str, required=False)
