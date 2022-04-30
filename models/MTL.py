@@ -14,6 +14,7 @@ warnings.filterwarnings("ignore")
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from TN import TN
 import trainer
+from pytorch_lightning.trainer.supporters import CombinedLoader
 from omegaconf import OmegaConf as oc
 
 import pandas as pd
