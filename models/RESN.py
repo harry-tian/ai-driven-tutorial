@@ -29,9 +29,6 @@ class RESN(pl.LightningModule):
         self.pdist = nn.PairwiseDistance()
         self.triplet_loss = nn.TripletMarginLoss()
 
-        # self.pdist = lambda x, y: 1.0 - nn.functional.cosine_similarity(x, y) #nn.CosineSimilarity()
-        # self.triplet_loss = nn.TripletMarginWithDistanceLoss(distance_function=self.pdist)
-
         if self.hparams.num_class > 2:
             self.criterion = nn.CrossEntropyLoss()
             self.nonlinear = nn.Softmax()
@@ -69,7 +66,6 @@ class RESN(pl.LightningModule):
         return embeds
 
     def clf_loss_acc(self, embeds, labels):
-        # embeds = self.dropout(embeds)
         logits = self.classifier(embeds)
         probs = self.nonlinear(logits)
         if self.hparams.num_class < 3:
@@ -90,6 +86,23 @@ class RESN(pl.LightningModule):
         triplet_idx = torch.tensor(self.test_triplets).long()
         train_embeds, test_embeds = self(self.train_input), self(self.test_input)
         x1, x2, x3 = test_embeds[triplet_idx[:,0]], train_embeds[triplet_idx[:,1]], train_embeds[triplet_idx[:,2]]
+        triplets = (x1, x2, x3)
+        return self.triplet_loss_acc(triplets)[1]
+
+    def valid_ds(self):
+        triplet_idx = self.valid_triplets
+        y_train = self.train_label.cpu().detach().numpy()
+        y_valid = self.valid_label.cpu().detach().numpy()
+        ds_triplets = []
+        for triplet in triplet_idx:
+            a, p, n = triplet[0], triplet[1], triplet[2]
+            if y_train[p] != y_train[n]:
+                temp = [a,p,n] if y_valid[a] == y_train[p] else [a,n,p]
+                ds_triplets.append(temp)
+
+        triplet_idx = torch.tensor(ds_triplets).long()
+        train_embeds, valid_embeds = self(self.train_input), self(self.valid_input)
+        x1, x2, x3 = valid_embeds[triplet_idx[:,0]], train_embeds[triplet_idx[:,1]], train_embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
         return self.triplet_loss_acc(triplets)[1]
 
@@ -115,7 +128,6 @@ class RESN(pl.LightningModule):
         loss, m = self.clf_loss_acc(embeds, y)
         self.log('test_clf_loss', loss, sync_dist=True)
         self.log('test_clf_acc', m['acc'], sync_dist=True)
-        # return
 
         triplet_acc = self.test_mixed_triplets()
         self.log('test_triplet_acc', triplet_acc, sync_dist=True)
@@ -134,6 +146,9 @@ class RESN(pl.LightningModule):
         test_y = self.test_label.cpu().detach().numpy()
         knn_acc = evals.get_knn_score(train_x, train_y, test_x, test_y)
         self.log('test_1nn_acc', knn_acc, sync_dist=True)
+
+        valid_ds = self.valid_ds()
+        self.log('valid_decision_support', valid_ds, sync_dist=True)
         
         if self.hparams.syn:
             syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))

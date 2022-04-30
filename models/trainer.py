@@ -196,47 +196,47 @@ def dataset_with_indices(cls):
 
 
 
-# def add_generic_args():
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--gpus", default=1, type=int)
-#     parser.add_argument("--seed", default=42, type=int)
+def add_generic_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gpus", default=1, type=int)
+    parser.add_argument("--seed", default=42, type=int)
 
-#     parser.add_argument("--max_epochs", default=200, type=int)
-#     parser.add_argument("--learning_rate", default=1e-4, type=float)
-#     parser.add_argument("--train_batch_size", default=16, type=int)
-#     parser.add_argument("--valid_batch_size", default=64, type=int)
-#     parser.add_argument("--test_batch_size", default=64, type=int)
-#     parser.add_argument("--dataloader_num_workers", default=4, type=int)
-#     parser.add_argument("--num_class", default=2, type=int)
+    parser.add_argument("--max_epochs", default=200, type=int)
+    parser.add_argument("--learning_rate", default=1e-4, type=float)
+    parser.add_argument("--train_batch_size", default=16, type=int)
+    parser.add_argument("--valid_batch_size", default=64, type=int)
+    parser.add_argument("--test_batch_size", default=64, type=int)
+    parser.add_argument("--dataloader_num_workers", default=4, type=int)
+    parser.add_argument("--num_class", default=2, type=int)
 
-#     parser.add_argument("--train_dir", default=None, type=str, required=True)
-#     parser.add_argument("--valid_dir", default=None, type=str, required=False)
-#     parser.add_argument("--test_dir", default=None, type=str, required=False)
+    parser.add_argument("--train_dir", default=None, type=str, required=True)
+    parser.add_argument("--valid_dir", default=None, type=str, required=False)
+    parser.add_argument("--test_dir", default=None, type=str, required=False)
 
-#     parser.add_argument("--wandb_group", default=None, type=str)
-#     parser.add_argument("--wandb_mode", default="offline", type=str)
-#     parser.add_argument("--wandb_project", default="?", type=str)
-#     parser.add_argument("--wandb_entity", default="ai-driven-tutorial", type=str)
-#     parser.add_argument("--wandb_name", default=None, type=str)
+    parser.add_argument("--wandb_group", default=None, type=str)
+    parser.add_argument("--wandb_mode", default="offline", type=str)
+    parser.add_argument("--wandb_project", default="?", type=str)
+    parser.add_argument("--wandb_entity", default="ai-driven-tutorial", type=str)
+    parser.add_argument("--wandb_name", default=None, type=str)
 
-#     parser.add_argument("--do_train", action="store_true")
-#     parser.add_argument("--do_test", action="store_true")
-#     parser.add_argument("--ckpt_path", default=None, type=str, required=False)
+    parser.add_argument("--do_train", action="store_true")
+    parser.add_argument("--do_test", action="store_true")
+    parser.add_argument("--ckpt_path", default=None, type=str, required=False)
     
-#     parser.add_argument("--transform", default="bm", type=str)
+    parser.add_argument("--transform", default="bm", type=str)
 
-#     parser.add_argument("--train_triplets", default=None, type=str, required=False)
-#     parser.add_argument("--valid_triplets", default=None, type=str, required=False) 
-#     parser.add_argument("--test_triplets", default=None, type=str, required=False) 
+    parser.add_argument("--train_triplets", default=None, type=str, required=False)
+    parser.add_argument("--valid_triplets", default=None, type=str, required=False) 
+    parser.add_argument("--test_triplets", default=None, type=str, required=False) 
 
-#     parser.add_argument("--train_synthetic", default=None, type=str, required=False) 
-#     parser.add_argument("--test_synthetic", default=None, type=str, required=False) 
+    parser.add_argument("--train_synthetic", default=None, type=str, required=False) 
+    parser.add_argument("--test_synthetic", default=None, type=str, required=False) 
 
-#     parser.add_argument("--syn", action="store_true") 
-#     parser.add_argument("--w1", default=1, type=float)
-#     parser.add_argument("--w2", default=1, type=float)
+    parser.add_argument("--syn", action="store_true") 
+    parser.add_argument("--w1", default=1, type=float)
+    parser.add_argument("--w2", default=1, type=float)
 
-#     return parser
+    return parser
 
 
 

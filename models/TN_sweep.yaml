@@ -1,0 +1,77 @@
+program: TN.py
+method: bayes
+metric:
+  name: valid_triplet_loss
+  goal: minimize
+parameters:
+  learning_rate:
+    min: 0.00001
+    max: 0.1
+  train_batch_size:
+    values: 
+    - 16
+    - 32
+    - 64
+    - 128
+    - 256
+  dataloader_num_workers:
+    value: 16
+  do_test:
+    value: True
+  do_train:
+    value: True
+  embed_dim:
+    value: 10
+  gpus:
+    value: 1
+  lamda:
+    value: 0.2
+  max_epochs:
+    value: 100
+  num_class:
+    value: 2
+  pretrained:
+    value: False
+  seed:
+    value: 42
+  syn:
+    value: False
+  train_dir:
+    value: /net/scratch/tianh-shared/bm/train
+  valid_dir:
+    value: /net/scratch/tianh-shared/bm/valid
+  test_dir:
+    value: /net/scratch/tianh-shared/bm/test
+  train_triplets:
+    value: /net/scratch/tianh/explain_teach/data/bm_triplets/train_triplets.pkl
+  valid_triplets:
+    value: /net/scratch/tianh/explain_teach/data/bm_triplets/valid_triplets.pkl
+  test_triplets:
+    value: /net/scratch/tianh/explain_teach/data/bm_triplets/test_triplets.pkl
+  transform:
+    value: resn
+  wandb_entity:
+    value: ai-driven-tutorial
+  wandb_group:
+    value: TN_sweep
+  wandb_mode:
+    value: online
+  wandb_project:
+    value: bm_prolific
+
+# ### Wandb args
+# wandb_project : bm_prolific
+# wandb_group : TN
+# wandb_name : bs=120
+
+# ### Training args
+# do_train : True
+# do_test: True
+
+# ### Hyperparameters
+# embed_dim : 10
+# max_epochs : 400
+# learning_rate : 1e-4
+# train_batch_size : 120
+# lamda : 0.2
+# pretrained: False

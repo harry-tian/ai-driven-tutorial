@@ -101,16 +101,28 @@ class TN(RESN):
         return trainer.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 
 def main():
-    parser = trainer.config_parser()
-    config_files = parser.parse_args()
-    configs = trainer.load_configs(config_files)
+    import wandb
+    # parser = trainer.config_parser()
+    # config_files = parser.parse_args()
+    # configs = trainer.load_configs(config_files)
 
-    print(configs)
+    # print(configs)
 
-    pl.seed_everything(configs["seed"])
-    model = TN(**configs)
+    # pl.seed_everything(configs["seed"])
+    # model = TN(**configs)
+    # monitor = "valid_triplet_loss"
+    # trainer.generic_train(model, configs, monitor)
+
+    parser = trainer.add_generic_args()
+    args = parser.parse_args()
+
+    wandb.init(config=args)
+    config = wandb.config
+    pl.seed_everything(config["seed"])
+    model = TN(**config)
     monitor = "valid_triplet_loss"
-    trainer.generic_train(model, configs, monitor)
+    trainer.generic_train(model, config, monitor)
+
 
 if __name__ == "__main__":
     main()

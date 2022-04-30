@@ -74,21 +74,51 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
 
 def class_1NN_idx(x_train, y_train, x_test, y_test):
     classes = np.unique(y_train)
-    idx_by_class = {c: np.where(y_train==c) for c in classes}
-    dists = euclidean_distances(x_test, x_train)
+    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
 
     examples = []
-    for i in range(len(y_test)):
-        cur_dist = dists[i]
-        d2idx = {d:j for j,d in enumerate(cur_dist)}
+    for x, y in zip(x_test, y_test):
         example = []
         for c in classes:
-            class_nn = min(cur_dist[idx_by_class[c]])
-            example.append(d2idx[class_nn])
+            in_class = x_train[idx_by_class[c]]
+            dists = np.array([euc_dist(x, x_) for x_ in in_class])
+            class_nn = np.argmin(dists)
+            class_nn = idx_by_class[c][class_nn]
+            example.append(class_nn)
         examples.append(example)
 
     return np.array(examples)
-    
+
+# def class_1NN_idx(x_train, y_train, x_test, y_test):
+#     classes = np.unique(y_train)
+#     idx_by_class = {c: np.where(y_train==c) for c in classes}
+#     dists = euclidean_distances(x_test, x_train)
+
+#     examples = []
+#     for i in range(len(y_test)):
+#         cur_dist = dists[i]
+#         d2idx = {d:j for j,d in enumerate(cur_dist)}
+#         example = []
+#         for c in classes:
+#             class_nn = min(cur_dist[idx_by_class[c]])
+#             example.append(d2idx[class_nn])
+#         examples.append(example)
+
+#     return np.array(examples)
+
+def nn_inclass(x_train, y_train, x_test, y_test):
+    classes = np.unique(y_train)
+    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
+
+    nns = []
+    for x, y in zip(x_test, y_test):
+        in_class = x_train[idx_by_class[y]]
+        dists = np.array([euc_dist(x, x_) for x_ in in_class])
+        nn = np.argmin(dists)
+        nn = idx_by_class[y][nn]
+        nns.append(nn)
+
+    return np.array(nns)
         
 def weightedPdist(a, b, weights,powers):
     q = a-b
