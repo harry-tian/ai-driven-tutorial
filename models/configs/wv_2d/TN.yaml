@@ -1,8 +1,8 @@
 ### Wandb args
 wandb_mode : online
-wandb_project: baselines
-wandb_group : wv_2d
-wandb_name : RESN
+wandb_project: wv_2d
+wandb_group : TN_test
+wandb_name : w1=0_w2=1
 
 ### Training args
 do_train : True
