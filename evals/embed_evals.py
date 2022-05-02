@@ -47,8 +47,8 @@ def wv_eval_human(x_train, x_valid, x_test, y_train, y_valid, y_test, wv_triplet
 
     return results
 
-"""Return triplet accuracy given ground-truth triplets."""
 def get_triplet_acc(embeds, triplets, dist_f=euc_dist):
+    ''' Return triplet accuracy given ground-truth triplets.''' 
     align = []
     for triplet in triplets:
         a, p, n = triplet
@@ -58,9 +58,9 @@ def get_triplet_acc(embeds, triplets, dist_f=euc_dist):
     acc = np.mean(align)
     return acc
 
-"""Return K=1NN accuracy"""
 def get_knn_score(x_train, y_train, x_valid, y_valid, 
                 k=1, metric="acc", weights="uniform"):
+    ''' Return K=1NN accuracy. ''' 
     knc = KNeighborsClassifier(n_neighbors=k, weights=weights)
     knc.fit(x_train, y_train)
     if metric == 'auc':
@@ -72,7 +72,8 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
     return score
 
 
-def class_1NN_idx(x_train, y_train, x_test, y_test):
+def nn_allclass(x_train, y_train, x_test, y_test):
+    ''' for each test example, return its in-class nearest neighbors in training set, for all classes '''
     classes = np.unique(y_train)
     idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
 
@@ -89,24 +90,8 @@ def class_1NN_idx(x_train, y_train, x_test, y_test):
 
     return np.array(examples)
 
-# def class_1NN_idx(x_train, y_train, x_test, y_test):
-#     classes = np.unique(y_train)
-#     idx_by_class = {c: np.where(y_train==c) for c in classes}
-#     dists = euclidean_distances(x_test, x_train)
-
-#     examples = []
-#     for i in range(len(y_test)):
-#         cur_dist = dists[i]
-#         d2idx = {d:j for j,d in enumerate(cur_dist)}
-#         example = []
-#         for c in classes:
-#             class_nn = min(cur_dist[idx_by_class[c]])
-#             example.append(d2idx[class_nn])
-#         examples.append(example)
-
-#     return np.array(examples)
-
-def nn_inclass(x_train, y_train, x_test, y_test):
+def nn_1class(x_train, y_train, x_test, y_test):
+    ''' for each test example, return its in-class nearest neighbors in training set'''
     classes = np.unique(y_train)
     idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
 
@@ -125,6 +110,7 @@ def weightedPdist(a, b, weights,powers):
     return np.sqrt((weights*q**powers).sum())
 
 def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers):
+    ''' 1nn acc given distored weight and power metrics '''
     correct = 0
     for x,y in zip(x_test,y_test):
         dists = [weightedPdist(x, x_, weights, powers) for x_ in x_train]

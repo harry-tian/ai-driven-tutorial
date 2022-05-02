@@ -1,25 +1,25 @@
 
 entity : ai-driven-tutorial
 project : bm_prolific
-group : TN_sweep
+group : MTL_sweep
 
-program: TN.py
+program: MTL_test.py
 method: bayes
 metric:
-  name: test_triplet_acc
-  goal: maximize
+  name: valid_total_loss
+  goal: minimize
 parameters:
   learning_rate:
     min: 0.000001
     max: 0.01
   train_batch_size:
     values:
-    - 32 
-    - 64
-    - 128
+    - 30 
+    - 60
+    - 120
   model_config:
     value:
-      /net/scratch/tianh/explain_teach/models/configs/bm/TN.yaml 
+      /net/scratch/tianh/explain_teach/models/configs/bm/MTL.yaml 
   dataset_config:
     value:
       /net/scratch/tianh/explain_teach/models/configs/bm/dataset.yaml 

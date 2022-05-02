@@ -1,7 +1,6 @@
 ### Wandb args
-wandb_mode : online
-wandb_project: wv_2d
-wandb_name : w1=0_w2=1
+wandb_group: MTL0.5_pretrained
+wandb_name : MTL_2loader
 train_batch_size : 128
 
 #### synthetic data

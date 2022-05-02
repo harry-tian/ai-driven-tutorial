@@ -6,11 +6,12 @@ import argparse, pickle
 from pydoc import locate
 import numpy as np
 import torchvision, torch, os
-from sklearn.metrics.pairwise import euclidean_distances
 import transforms
 
+######### global variables ###########
+
 bm = {"data_dir":"/net/scratch/tianh-shared/bm",
-            "transform": "bm"}
+            "transform": "resn"}
 
 bird = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "bird"}
@@ -30,7 +31,16 @@ model_path_dict ={
     'RESN': "RESN.RESN"
 }
 
+max_dataset = 30
 def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
+    """generates an embedding given a model, its checkpoint, and a dataset
+
+    Args:
+        model_path (str): the model to generate the embedding
+        args (dict): model args (placeholder)
+        ckpt (str): model checkpoint
+        split (str): \in {train, valid, test}
+    """
     model = locate(model_path)
     model = model.load_from_checkpoint(ckpt, **vars(args)).to("cuda")
     model.eval()
@@ -39,12 +49,12 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     print(split)
     data_dir = os.path.join(data_dir, split)
     dataset = torchvision.datasets.ImageFolder(data_dir, transform=transform)
-    if len(dataset) <= 128:
+    if len(dataset) <= max_dataset:
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset), num_workers=4)
         embeds = model(list(iter(dataloader))[0][0].cuda())
         embeds = embeds.cpu().detach().numpy()
     else:
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=128, num_workers=4)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=max_dataset, num_workers=4)
         i = 0
         for x, _ in dataloader:
             z = model(x.cuda())
@@ -64,8 +74,12 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
     pickle.dump(embeds, open(embed_path, "wb"))
     print(f"dumped to {embed_path}")
 
-model_name = "TN"
-ckpt = 'bm_prolific/36vv1csc' 
+
+####### Tune variables here #############
+
+
+model_name = "MTL"
+ckpt = 'bm_prolific/azjw6n56' 
 
 model_path = model_path_dict[model_name]
 
@@ -75,12 +89,15 @@ splits = ["train","test","valid"]
 
 
 
+def main():
+    args = argparse.Namespace(embed_dim=10)
+    ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt" 
+    # ckpt = "/net/scratch/tianh/explain_teach/models/results/bm_prolific/zxkgmdyj/checkpoints/epoch=241-valid_loss=0.00.ckpt"
+    for split in splits:
+        name = f"{model_name}_{split}_emb10"
+        embed_path = f"../embeds/{subdir}/{name}.pkl"
 
-args = argparse.Namespace(embed_dim=10)
-ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt" 
-# ckpt = "/net/scratch/tianh/explain_teach/models/results/bm_prolific/zxkgmdyj/checkpoints/epoch=241-valid_loss=0.00.ckpt"
-for split in splits:
-    name = f"{model_name}_{split}_emb10"
-    embed_path = f"../embeds/{subdir}/{name}.pkl"
+        get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
 
-    get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
+if __name__ == "__main__":
+    main()

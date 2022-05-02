@@ -1,3 +1,12 @@
+# how to use
+
+### configs
+configurate hyperparamters using `.yaml` in `configs/`. Read more about this in `trainer.py`.
+
+### embeddings
+generatre embeddings using `gen_embeds.py`
+
+
 # models
 
 ### dwac

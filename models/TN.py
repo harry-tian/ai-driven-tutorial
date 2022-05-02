@@ -23,23 +23,17 @@ class TN(RESN):
         self.train_embeds = None
         self.summarize()
 
-    # def train_triplets_step(self, triplet_idx):
-    #     self.train_embeds = self(self.train_input)
-    #     x1, x2, x3 = self.train_embeds[triplet_idx[:,0]], self.train_embeds[triplet_idx[:,1]], self.train_embeds[triplet_idx[:,2]]
-    #     triplets = (x1, x2, x3)
-    #     return self.triplet_loss_acc(triplets)
-
     def train_triplets_step(self, triplet_idx):
-        uniques = np.unique(triplet_idx.cpu().detach().numpy().flatten())
+        uniques = torch.unique(triplet_idx.flatten())
         if len(uniques) < len(self.train_input):
-            val2idx = {val:i for i,val in enumerate(uniques)}
+            val2idx = {val.item():i for i,val in enumerate(uniques)}
             for i, triplet in enumerate(triplet_idx):
                 for j, val in enumerate(triplet):
-                    triplet_idx[i][j] = val2idx[int(val)]
+                    triplet_idx[i][j] = val2idx[val.item()]
             triplet_idx = triplet_idx.long()
             input = self.train_input[uniques]
         else: input = self.train_input
-        # print(input.shape)
+        
         embeds = self(input)
         x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
         triplets = (x1, x2, x3)
@@ -101,28 +95,16 @@ class TN(RESN):
         return trainer.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
 
 def main():
-    import wandb
-    # parser = trainer.config_parser()
-    # config_files = parser.parse_args()
-    # configs = trainer.load_configs(config_files)
+    parser = trainer.config_parser()
+    config_files = parser.parse_args()
+    configs = trainer.load_configs(config_files)
 
-    # print(configs)
+    print(configs)
+    pl.seed_everything(configs["seed"])
 
-    # pl.seed_everything(configs["seed"])
-    # model = TN(**configs)
-    # monitor = "valid_triplet_loss"
-    # trainer.generic_train(model, configs, monitor)
-
-    parser = trainer.add_generic_args()
-    args = parser.parse_args()
-
-    wandb.init(config=args)
-    config = wandb.config
-    pl.seed_everything(config["seed"])
-    model = TN(**config)
+    model = TN(**configs)
     monitor = "valid_triplet_loss"
-    trainer.generic_train(model, config, monitor)
-
+    trainer.generic_train(model, configs, monitor)
 
 if __name__ == "__main__":
     main()

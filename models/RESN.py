@@ -153,7 +153,7 @@ class RESN(pl.LightningModule):
         if self.hparams.syn:
             syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))
             syn_x_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
-            examples = evals.class_1NN_idx(train_x, train_y, test_x, test_y)
+            examples = evals.nn_allclass(train_x, train_y, test_x, test_y)
             ds_acc = evals.decision_support(syn_x_train, train_y, syn_x_test, test_y, examples, self.hparams.weights, self.hparams.powers)
             self.log('decision support', ds_acc, sync_dist=True)  
         else: ds_acc = 0
@@ -174,9 +174,9 @@ class RESN(pl.LightningModule):
         self.train_input = torch.tensor(np.array([data[0].numpy() for data in self.train_dataset])).cuda()
         self.valid_input = torch.tensor(np.array([data[0].numpy() for data in self.valid_dataset])).cuda()
         self.test_input = torch.tensor(np.array([data[0].numpy() for data in self.test_dataset])).cuda()
-        self.train_label = torch.tensor(np.array([data[1] for data in self.train_dataset])).cuda()
-        self.valid_label = torch.tensor(np.array([data[1] for data in self.valid_dataset])).cuda()
-        self.test_label = torch.tensor(np.array([data[1] for data in self.test_dataset])).cuda()
+        self.train_label = torch.tensor(np.array([data[1] for data in self.train_dataset]))#.cuda()
+        self.valid_label = torch.tensor(np.array([data[1] for data in self.valid_dataset]))#.cuda()
+        self.test_label = torch.tensor(np.array([data[1] for data in self.test_dataset]))#.cuda()
 
         self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
         self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
@@ -202,9 +202,6 @@ def main():
     config_files = parser.parse_args()
     configs = trainer.load_configs(config_files)
 
-    # wandb_name = "RESN_pretrained" if configs["pretrained"] else "RESN"
-    # wandb_name = oc.create({"wandb_name": wandb_name}) 
-    # configs = oc.merge(configs, wandb_name)
     print(configs)
 
     pl.seed_everything(configs["seed"])

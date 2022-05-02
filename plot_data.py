@@ -19,15 +19,16 @@ marker_list = ['o','s','^','D','x','p','*','8']
 linestyle_list = ['solid','dashed','dashdot','dotted','solid','dashed','dashdot','dotted']
 lw=4
 
-def plot_data(x_train, y_train, title, legend, prototype_idx=None, save=False, save_dir=None):
-    if x_train.shape[1] != 2: x_train = tsne2(x_train)
+def plot_data(X, Y, title, legend, save=False, save_dir=None):
+    ''' plots an embedding '''
+    if X.shape[1] != 2: X = tsne2(X)
 
-    classes = np.unique(y_train)
+    classes = np.unique(Y)
     plt.figure(figsize=(8, 6))
 
     for c in classes:
-        c_idx = np.where(y_train==c)[0]
-        plt.scatter(x_train[c_idx][:,0], x_train[c_idx][:,1])
+        c_idx = np.where(Y==c)[0]
+        plt.scatter(X[c_idx][:,0], X[c_idx][:,1])
 
     plt.legend(legend)
     plt.title(title,fontsize=30)
@@ -35,17 +36,38 @@ def plot_data(x_train, y_train, title, legend, prototype_idx=None, save=False, s
         if not save_dir: save_dir = f"figs/out.pdf"
         plt.savefig(save_dir,format="pdf", bbox_inches="tight")
 
-    return x_train
+    return X
+
+def plot_all_embeds(x_train,x_valid,x_test,y_train,y_valid,y_test,title=None,subtitles=["all","train", "valid", "test"],legend=None,save=False,save_dir=None):
+    ''' plots embedding given a dataset with splits'''
+    fig, ax = plt.subplots(2,2, figsize=(8*2, 6*2), sharey=True)
+    x_all = tsne2(np.concatenate([x_train,x_valid,x_test]))
+    y_all = y_train + y_valid + y_test
+    x_train = x_all[np.arange(len(x_train))]
+    x_valid = x_all[np.arange(len(x_train),len(x_train)+len(x_valid))]
+    x_test = x_all[np.arange(len(x_train)+len(x_valid),len(x_train)+len(x_valid)+len(x_test))]
+    
+    for i, (x,y) in enumerate(zip([x_all,x_train,x_valid,x_test],[y_all, y_train,y_valid,y_test])):
+        classes = np.unique(y)
+
+        for c in classes:
+            c_idx = np.where(y==c)[0]
+            ax[i//2][i%2].scatter(x[c_idx][:,0], x[c_idx][:,1])
+
+        ax[i//2][i%2].set_title(subtitles[i])
+    
+    if legend: ax[i//2][i%2].legend(legend)
+    if title: fig.suptitle(title, fontsize=30)
+    if save:
+        if not save_dir: save_dir = f"{title}.pdf"
+        plt.savefig(save_dir, format="pdf", bbox_inches="tight")
+
 
 def plot_data_multiplot(all_data, legend, sharey=True, title=None, subtitles=None, save=False, save_dir=None):
     n = len(all_data)
     fig, ax = plt.subplots(1, n, figsize=(8*n, 6), sharey=sharey)
     x_all = [x[0] for x in all_data]
     y_all = [y[0] for y in all_data]
-    # if x_all[0].shape[1] != 2: 
-    #     indexs = [np.arange(len(x)) for x in x_all]
-    #     x_all_2 = tsne2(np.concatenate(x_all))
-    #     x_all = x_all_2[] for i,x in enumerate(x_all)
 
     for k, (x,y) in enumerate(zip(x_all, y_all)):
         # x, y = data

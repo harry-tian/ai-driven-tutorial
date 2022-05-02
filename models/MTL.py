@@ -39,10 +39,10 @@ class MTL(TN):
         else: input = self.train_input
         embeds = self(input)
         
-        x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
-        triplets = (x1, x2, x3)
+        # x1, x2, x3 = embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]
+        # triplets = (x1, x2, x3)
 
-        triplet_loss, triplet_acc = self.triplet_loss_acc(triplets)
+        triplet_loss, triplet_acc = self.triplet_loss_acc((embeds[triplet_idx[:,0]], embeds[triplet_idx[:,1]], embeds[triplet_idx[:,2]]))
         total_loss = self.hparams.lamda * clf_loss + (1-self.hparams.lamda) * triplet_loss
         return clf_loss, m, triplet_loss, triplet_acc, total_loss
 

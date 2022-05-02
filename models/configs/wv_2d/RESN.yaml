@@ -1,7 +1,8 @@
 ### Wandb args
 wandb_mode : online
 wandb_project: wv_2d
-wandb_group : MTL1_pretrained
+wandb_group : RESN_pretrained
+wandb_name : w1=1_w2=0
 
 ### Training args
 do_train : True
@@ -11,6 +12,6 @@ do_test: True
 embed_dim : 10
 max_epochs : 100
 learning_rate : 1e-4
-train_batch_size : 128
+train_batch_size : 32
 lamda : 0.5
-pretrained: true
+pretrained: True

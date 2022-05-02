@@ -13,7 +13,7 @@ def get_transform(dataset, aug=True):
         return resn_normalize()
         return resn_normalize_aug() if aug else resn_normalize()
 
-def bm_transform_aug(hparams=None):
+def bm_transform_aug():
     affine = {}
     affine["degrees"] = 30 #hparams.rotate
     # if hparams.translate > 0: 

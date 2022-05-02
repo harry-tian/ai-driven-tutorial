@@ -5,10 +5,30 @@ import numpy as np
 from sklearn.model_selection import KFold
 import shutil
 
-######## cross validation ####################
 def files_in_dir(mypath): return [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]
 
+def dataset_filenames(directory):
+    ''' returns a list of filenames with their class labels, in the order of torch.dataset'''
+    class_to_idx = find_classes(directory)
+    instances = []
+    for target_class in sorted(class_to_idx.keys()):
+        target_dir = os.path.join(directory, target_class)
+        if not os.path.isdir(target_dir):
+            continue
+        for root, _, fnames in sorted(os.walk(target_dir, followlinks=True)):
+            for fname in sorted(fnames):
+                path = os.path.join(root, fname)
+                if os.path.isfile(path):
+                    item = path, target_class
+                    instances.append(item)
+
+    return np.array(instances)
+
 def auto_split(src_dir, dst_dir):
+    ''' 
+        generates train, valid and test splits given a dataset path;
+        the dataset should be divided by class
+    '''
     instances = dataset_filenames(src_dir)
     classes = find_classes(src_dir).keys()
     train_dir = os.path.join(dst_dir, "train")
@@ -36,7 +56,10 @@ def auto_split(src_dir, dst_dir):
         c_test_dir = os.path.join(test_dir, c)
         if not os.path.isdir(c_test_dir): os.mkdir(c_test_dir)
         for f in instances[c_test,0]: shutil.copy(f,c_test_dir)
-        
+
+ 
+     
+######## not really used anymore ####################   
 
 def cross_val_multiclass(idxs, k=10):
     splits_by_class = [gen_cross_val(idx, k=k) for idx in idxs]
@@ -75,22 +98,6 @@ def find_classes(directory):
     class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
     return class_to_idx
     
-def dataset_filenames(directory):
-    class_to_idx = find_classes(directory)
-    instances = []
-    for target_class in sorted(class_to_idx.keys()):
-        target_dir = os.path.join(directory, target_class)
-        if not os.path.isdir(target_dir):
-            continue
-        for root, _, fnames in sorted(os.walk(target_dir, followlinks=True)):
-            for fname in sorted(fnames):
-                path = os.path.join(root, fname)
-                if os.path.isfile(path):
-                    item = path, target_class
-                    instances.append(item)
-
-    return np.array(instances)
-
 def cp_split(dst_dir, split, instances):
     train, valid, test = split
     for instance in instances[train]:

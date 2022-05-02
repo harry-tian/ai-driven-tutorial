@@ -5,7 +5,7 @@
 #SBATCH --output=/home/chacha/slurm/out/%j.%N.stdout
 #SBATCH --error=/home/chacha/slurm/stderr/%j.%N.stderr
 #SBATCH --job-name=MTL_syn_lambda_0.8
-#SBATCH --partition=cdac-own
+#SBATCH --partition=cdac-contrib
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
