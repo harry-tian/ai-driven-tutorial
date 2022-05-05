@@ -1,7 +1,7 @@
 ### Wandb args
 
 ### triplet data
-train_triplets : /net/scratch/tianh/explain_teach/data/bm_triplets/train_triplets.pkl
-valid_triplets : /net/scratch/tianh/explain_teach/data/bm_triplets/valid_triplets.pkl
-test_triplets : /net/scratch/tianh/explain_teach/data/bm_triplets/test_triplets.pkl
+train_triplets : ../data/bm_triplets/train_triplets.pkl
+valid_triplets : ../data/bm_triplets/valid_triplets.pkl
+test_triplets : ../data/bm_triplets/test_triplets.pkl
 dataloader_num_workers: 16
