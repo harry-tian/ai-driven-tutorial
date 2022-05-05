@@ -64,11 +64,23 @@ class MTLT(pl.LightningModule):
         self.criterion = nn.TripletMarginLoss()
 
     def setup_data(self):
-        train_transform = transforms.get_transform(self.hparams.transform, aug=False)
-        valid_transform = transforms.get_transform(self.hparams.transform, aug=False)
+        affine = {}
+        degree, translate, scale = 30, 0.1, 0.2
+        affine["degrees"] = degree
+        affine["translate"] = (translate, translate)
+        affine["scale"] = (1 - scale, 1 + scale)
+        train_transform = torchvision.transforms.Compose([
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
+            torchvision.transforms.RandomHorizontalFlip(0.5),
+            torchvision.transforms.RandomVerticalFlip(0.5),
+            torchvision.transforms.RandomAffine(**affine),
+        ])
+        valid_transform = torchvision.transforms.ToTensor()
         self.train_dataset = torchvision.datasets.ImageFolder(self.hparams.train_dir, transform=train_transform)
         self.valid_dataset = torchvision.datasets.ImageFolder(self.hparams.valid_dir, transform=valid_transform)
         self.test_dataset = torchvision.datasets.ImageFolder(self.hparams.test_dir, transform=valid_transform)
+        self.ref_dataset = torchvision.datasets.ImageFolder(self.hparams.train_dir, transform=valid_transform)
         self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
         self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
         self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
@@ -150,7 +162,7 @@ class MTLT(pl.LightningModule):
         train_batch_idx = torch.unique(train_idx, sorted=False)
         x_valid, y_valid = self.sample_xs_ys(valid_batch, self.valid_dataset)
         x_valid, y_valid = x_valid.to(self.device), y_valid.to(self.device)
-        x_train, y_train = self.sample_xs_ys(train_batch, self.train_dataset)
+        x_train, y_train = self.sample_xs_ys(train_batch, self.ref_dataset)
         x_train, y_train = x_train.to(self.device), y_train.to(self.device)
         clf_triplet_idx = self.sample_test_clf_trips(valid_batch_idx, train_batch_idx, y_valid, y_train, len(valid_idx))
         clf_triplet_idx = clf_triplet_idx.to(self.device)
@@ -163,7 +175,7 @@ class MTLT(pl.LightningModule):
         triplet_acc = self.trips_acc(ta, tp, tn)
         clf_triplet_acc = self.trips_acc(ca, cp, cn)
         knn_acc, ds_acc = self.eval_knn_ds(
-            self.valid_dataset, self.train_dataset, self.syn_x_train, self.syn_x_valid)
+            self.valid_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_valid)
         self.log('valid_clf_loss', clf_triplet_loss)
         self.log('valid_clf_triplet_acc', clf_triplet_acc, prog_bar=True)
         self.log('valid_triplet_loss', triplet_loss)
@@ -180,7 +192,7 @@ class MTLT(pl.LightningModule):
         train_batch_idx = torch.unique(train_idx, sorted=False)
         x_test, y_test = self.sample_xs_ys(test_batch, self.test_dataset)
         x_test, y_test = x_test.to(self.device), y_test.to(self.device)
-        x_train, y_train = self.sample_xs_ys(train_batch, self.train_dataset)
+        x_train, y_train = self.sample_xs_ys(train_batch, self.ref_dataset)
         x_train, y_train = x_train.to(self.device), y_train.to(self.device)
         clf_triplet_idx = self.sample_test_clf_trips(test_batch_idx, train_batch_idx, y_test, y_train, len(test_idx))
         clf_triplet_idx = clf_triplet_idx.to(self.device)
@@ -193,7 +205,7 @@ class MTLT(pl.LightningModule):
         triplet_acc = self.trips_acc(ta, tp, tn)
         clf_triplet_acc = self.trips_acc(ca, cp, cn)
         knn_acc, ds_acc = self.eval_knn_ds(
-            self.test_dataset, self.train_dataset, self.syn_x_train, self.syn_x_test)
+            self.test_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_test)
         self.log('test_clf_loss', clf_triplet_loss)
         self.log('test_clf_triplet_acc', clf_triplet_acc)
         self.log('test_triplet_loss', triplet_loss)
