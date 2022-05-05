@@ -83,12 +83,14 @@ def generic_train(model, args, monitor,
     ckpt_path = os.path.join(output_dir, logger.version, "checkpoints")
     if checkpoint_callback is None:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_path, filename="{epoch}-{valid_loss:.2f}", monitor=monitor, mode="min", save_last=True, save_top_k=3, verbose=True)
+            dirpath=ckpt_path, filename="{epoch}-{valid_total_loss:.2f}", monitor=monitor, mode="min", save_last=True, save_top_k=3, verbose=True)
 
     train_params = {}
     train_params["max_epochs"] = args["max_epochs"]
     if args["gpus"] == -1 or args["gpus"] > 1:
         train_params["distributed_backend"] = "ddp"
+    if "log_every_n_steps" in args:
+        train_params["log_every_n_steps"] = args["log_every_n_steps"]
 
     trainer = pl.Trainer(
         auto_select_gpus=True,

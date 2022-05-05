@@ -1,7 +1,7 @@
 ### classification data
-train_dir : /net/scratch/tianh-shared/bm/train
-valid_dir : /net/scratch/tianh-shared/bm/valid
-test_dir : /net/scratch/tianh-shared/bm/test
+train_dir : ../data/bm/train
+valid_dir : ../data/bm/valid
+test_dir : ../data/bm/test
 num_class : 2
 transform : bm
 train_batch_size : 60
