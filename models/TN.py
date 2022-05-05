@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
 from dataclasses import replace
 from email.headerregistry import UniqueSingleAddressHeader
-import os, pickle
-import argparse
 
-import numpy as np
 import torch
-import torchvision
 import pytorch_lightning as pl
 import warnings
-from torchvision import  models
 warnings.filterwarnings("ignore")
 
 from omegaconf import OmegaConf as oc
@@ -71,13 +66,6 @@ class TN(RESN):
 
         self.log('test_triplet_acc', triplet_acc, sync_dist=True)
         self.log('test_triplet_loss', triplet_loss, sync_dist=True)
-
-        knn_acc, ds_acc = self.test_evals()
-
-        df = pd.read_csv("results.csv")
-        df = pd.concat([df, pd.DataFrame({"wandb_group": [self.hparams.wandb_group], "wandb_name": [self.hparams.wandb_name],
-            "test_clf_acc": [-1], "test_clf_loss": [-1], "test_1nn_acc": [knn_acc], "test_triplet_acc":[triplet_acc.item()], "decision_support": [ds_acc]})], sort=False)
-        df.to_csv("results.csv", index=False)
 
     def train_dataloader(self):
         dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))

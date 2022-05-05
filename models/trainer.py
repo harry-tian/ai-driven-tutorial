@@ -29,7 +29,7 @@ def test_configs(configs):
     "num_class" ,"train_dir", "valid_dir", "test_dir", "transform", 
     "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
     "do_train", "do_test",
-    "train_triplets", "valid_triplets", "test_triplets",
+    "train_triplets", "valid_triplets", "test_triplets", "triplet_batch_size",
     "pretrained", "lamda", "syn"]
     syn_args = ["syn", "train_synthetic", "test_synthetic", "weights", "powers"]
     

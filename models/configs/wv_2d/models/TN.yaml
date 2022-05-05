@@ -1,0 +1,17 @@
+model: TN
+
+### Wandb args
+wandb_group : TN
+wandb_name : TN
+
+### Training args
+do_train : True
+do_test: True
+
+### Hyperparameters
+embed_dim : 50
+max_epochs : 200
+learning_rate : 1e-4
+train_batch_size : 200
+lamda : 0.5
+pretrained: true

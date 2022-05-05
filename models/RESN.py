@@ -10,9 +10,7 @@ import sys
 
 from omegaconf import OmegaConf as oc
 import warnings
-import pandas as pd
 warnings.filterwarnings("ignore")
-
 
 sys.path.insert(0, '..')
 import evals.embed_evals as evals
@@ -24,7 +22,7 @@ class RESN(pl.LightningModule):
         self.setup_data()
 
         self.feature_extractor = models.resnet18(pretrained=self.hparams.pretrained)
-        # num_features = 1000
+        num_features = 512
 
         self.pdist = nn.PairwiseDistance()
         self.triplet_loss = nn.TripletMarginLoss()
@@ -39,24 +37,21 @@ class RESN(pl.LightningModule):
             self.out_dim = 1
 
         self.embed_dim = self.hparams.embed_dim
+        self.feature_extractor.fc = nn.Identity()
 
     ###### old architectur: final linear layer, d=embed_dim
-        # self.fc = nn.ModuleList([nn.Sequential(
-        #     nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, 256), 
-        #     nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(), nn.Linear(256, self.embed_dim)
-        # )])
-        # self.classifier = nn.Sequential(
-        #     nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, self.out_dim)
-        # )
+        self.fc = nn.ModuleList([nn.Sequential(
+            nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, self.embed_dim), 
+            # nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(), nn.Linear(256, self.embed_dim)
+        )])
+        self.classifier = nn.Sequential(
+            nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, self.out_dim)
+        )
 
     ###### new architectur: no linear layer, d=512
-        self.feature_extractor.fc = nn.Identity()
-        num_features = 512
-        self.fc = nn.ModuleList([nn.Sequential(nn.Dropout())])
-        # self.fc = nn.ModuleList([nn.Sequential(nn.Identity())])
-        self.dropout = nn.Dropout()
-        self.classifier = nn.Sequential(nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, self.out_dim))
-
+        # num_features = 512
+        # self.fc = nn.ModuleList([nn.Sequential(nn.Dropout())])
+        # self.classifier = nn.Sequential(nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, self.out_dim))
 
         self.summarize()
 
@@ -132,33 +127,32 @@ class RESN(pl.LightningModule):
         triplet_acc = self.test_mixed_triplets()
         self.log('test_triplet_acc', triplet_acc, sync_dist=True)
 
-        knn_acc, ds_acc = self.test_evals()
+    def test_epoch_end(self, outputs):
+        z_train = self(self.train_input).cpu().detach().numpy()
+        y_train = self.train_label.detach().numpy()
+        z_test = self(self.test_input).cpu().detach().numpy()
+        y_test = self.test_label.detach().numpy()
 
+        knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
+        self.log('test_1nn_acc', knn_acc)
+
+        if self.hparams.syn: 
+            syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))
+            syn_x_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
+            results = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
+            self.hparams.weights, self.hparams.powers)
+
+            to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
+            to_print = ["NINO_ds_err","rNINO_ds_err","NIFO_ds_err","NIs"]
+            # to_print = ["NINO_ds_acc", "NIFO_ds_acc"]
+            for key in to_log: self.log(key, results[key])
+            for key in to_print: print(f"\n{key}: {results[key]}")
+
+        # knn_acc, ds_acc, ds_err = self.test_evals()
         # df = pd.read_csv("results.csv")
         # df = pd.concat([df, pd.DataFrame({"wandb_group": [self.hparams.wandb_group], "wandb_name": [self.hparams.wandb_name],
         #     "test_clf_acc": [m['acc'].item()], "test_clf_loss": [loss.item()], "test_1nn_acc": [knn_acc], "test_triplet_acc":[triplet_acc.item()], "decision_support": [ds_acc]})], sort=False)
         # df.to_csv("results.csv", index=False)
-
-    def test_evals(self):
-        train_x = self(self.train_input).cpu().detach().numpy()
-        train_y = self.train_label.cpu().detach().numpy()
-        test_x = self(self.test_input).cpu().detach().numpy()
-        test_y = self.test_label.cpu().detach().numpy()
-        knn_acc = evals.get_knn_score(train_x, train_y, test_x, test_y)
-        self.log('test_1nn_acc', knn_acc, sync_dist=True)
-
-        valid_ds = self.valid_ds()
-        self.log('valid_decision_support', valid_ds, sync_dist=True)
-        
-        if self.hparams.syn:
-            syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))
-            syn_x_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
-            examples = evals.nn_allclass(train_x, train_y, test_x, test_y)
-            ds_acc = evals.decision_support(syn_x_train, train_y, syn_x_test, test_y, examples, self.hparams.weights, self.hparams.powers)
-            self.log('decision support', ds_acc, sync_dist=True)  
-        else: ds_acc = 0
-
-        return knn_acc, ds_acc
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -181,6 +175,12 @@ class RESN(pl.LightningModule):
         self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
         self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
         self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
+
+        # train_idx = np.random.choice(len(self.train_triplets), 2400, replace=False)
+        # self.train_triplets = self.train_triplets[train_idx]
+        # valid_idx = np.random.choice(len(self.valid_triplets), 800, replace=False)
+        # self.test_triplets = self.test_triplets[valid_idx]
+        # self.valid_triplets = self.valid_triplets[valid_idx]
 
     def train_dataloader(self):
         dataset = self.train_dataset
@@ -211,3 +211,46 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+    # def test_evals(self):
+    #     z_train = self(self.train_input)
+    #     y_train = self.train_label
+    #     z_test = self(self.test_input)
+    #     y_test = self.test_label
+    #     # _, m = self.clf_loss_acc(z_train, y_train)
+    #     # train_preds = m["pred"].cpu().detach().numpy()
+    #     # _, m = self.clf_loss_acc(z_test, y_test)
+    #     # test_preds = m["pred"].cpu().detach().numpy()
+
+    #     z_train = z_train.cpu().detach().numpy()
+    #     y_train = y_train.detach().numpy()
+    #     z_test = z_test.cpu().detach().numpy()
+    #     y_test = y_test.detach().numpy()
+
+
+    #     # knn_acc = evals.get_knn_score(train_x, train_y, test_x, test_y)
+    #     # self.log('test_1nn_acc', knn_acc, sync_dist=True)
+
+    #     # # valid_ds = self.valid_ds()
+    #     # # self.log('valid_decision_support', valid_ds, sync_dist=True)
+        
+    #     # if self.hparams.syn:
+    #     #     syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))
+    #     #     syn_x_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
+
+    #     #     # examples = evals.NINO(train_x, train_y, test_x, test_y)
+    #     #     # ds_acc, ds_err = evals.decision_support(syn_x_train, train_y, syn_x_test, test_y, examples, self.hparams.weights, self.hparams.powers)
+    #     #     # self.log('decision support', ds_acc, sync_dist=True)  
+    #     #     # print(f"\ndecision support errors{ds_err}")
+    #     #     # print(examples)
+
+    #     #     examples = evals.NIFO(train_x, train_y, test_x, test_preds)
+    #     #     # print(examples)
+    #     #     ds_acc, ds_err = evals.decision_support(syn_x_train, train_y, syn_x_test, test_y, examples, self.hparams.weights, self.hparams.powers)
+    #     #     self.log('decision support', ds_acc, sync_dist=True)  
+    #     #     print(f"\ndecision support errors{ds_err}")
+    #     # else:  ds_acc, ds_err = 0, []
+
+    #     # print(f"\ntest_predictions{test_preds}")
+    #     return knn_acc, ds_acc, ds_err

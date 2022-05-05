@@ -12,7 +12,7 @@
 #SBATCH --mem=20000
 #SBATCH --nodelist=a008
 
-python MTL_test.py \
+python MTL.py \
   --wandb_mode=online \
   --wandb_project=tests \
   --wandb_group=bm \

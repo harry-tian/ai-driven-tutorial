@@ -1,37 +1,34 @@
 # -*- coding: utf-8 -*-
-from dataclasses import replace
-from email.headerregistry import UniqueSingleAddressHeader
-import os, pickle
-import argparse
-
-import numpy as np
-import torch
-import torchvision
+from pydoc import locate
 import pytorch_lightning as pl
 import warnings
-from torchvision import  models
 warnings.filterwarnings("ignore")
 
-import trainer
-from RESN import RESN
-from omegaconf import OmegaConf as oc
 
-ckpt_path = "results/baselines/25tfqtyf/checkpoints/best_model.ckpt"
-
-def main():
-    parser = trainer.config_parser()
-    config_files = parser.parse_args()
-    configs = trainer.load_configs(config_files)
-
-    # wandb_name = oc.create({"wandb_group": "RESN_test"}) 
-    # configs = oc.merge(configs, wandb_name)
-    print(configs)
+model_path_dict ={
+    'TN': "TN.TN",
+    'MTL': "MTL.MTL",
+    'RESN': "RESN.RESN"
+}
 
 
-    model = RESN.load_from_checkpoint(ckpt_path, **configs)
 
-    trainer.do_test(model, configs, ckpt_path)
+model = "RESN"
+ckpt_path = "results/wv_2d/2wql6bo5/checkpoints/best_model.ckpt"
 
-if __name__ == "__main__":
-    main()
+
+
+
+
+
+
+
+model_path = model_path_dict[model]
+model = locate(model_path)
+model = model.load_from_checkpoint(ckpt_path)
+
+model.eval()
+trainer = pl.Trainer(gpus=1)
+trainer.test(model, ckpt_path=ckpt_path)
+
 

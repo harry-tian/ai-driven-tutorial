@@ -22,7 +22,7 @@ chest_xray = {"data_dir":"/net/scratch/tianh-shared/PC/3classes",
 prostatex = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "xray"}
 
-wv = {"data_dir":"/net/scratch/chacha/data/weevil_vespula",
+wv = {"data_dir":"/net/scratch/chacha-shared/weevil_vespula",
             "transform": "wv"}
 
 model_path_dict ={
@@ -32,17 +32,16 @@ model_path_dict ={
 }
 
 max_dataset = 30
-def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
+def get_embeds(model_path, ckpt, split, data_dir, transform, embed_path):
     """generates an embedding given a model, its checkpoint, and a dataset
 
     Args:
         model_path (str): the model to generate the embedding
-        args (dict): model args (placeholder)
         ckpt (str): model checkpoint
         split (str): \in {train, valid, test}
     """
     model = locate(model_path)
-    model = model.load_from_checkpoint(ckpt, **vars(args)).to("cuda")
+    model = model.load_from_checkpoint(ckpt).to("cuda")
     model.eval()
 
     transform = transforms.get_transform(transform, aug=False)
@@ -78,26 +77,25 @@ def get_embeds(model_path, args, ckpt, split, data_dir, transform, embed_path):
 ####### Tune variables here #############
 
 
-model_name = "MTL"
-ckpt = 'bm_prolific/azjw6n56' 
+model_name = "RESN"
+ckpt_infix = 'wv_2d/2wql6bo5' 
+suffix = "_emb50"
 
-model_path = model_path_dict[model_name]
-
-dataset = bm
-subdir = "bm/prolific"
-splits = ["train","test","valid"]
+dataset = wv
+subdir = "wv_2d/pretrained"
 
 
 
 def main():
-    args = argparse.Namespace(embed_dim=10)
-    ckpt = f"results/{ckpt}/checkpoints/best_model.ckpt" 
-    # ckpt = "/net/scratch/tianh/explain_teach/models/results/bm_prolific/zxkgmdyj/checkpoints/epoch=241-valid_loss=0.00.ckpt"
+    splits = ["train","test","valid"]
+    model_path = model_path_dict[model_name]
+    ckpt = f"results/{ckpt_infix}/checkpoints/best_model.ckpt" 
+    # ckpt = "/net/scratch/hanliu-shared/ckpts/mtl.1gcr1clm.ckpt"
     for split in splits:
-        name = f"{model_name}_{split}_emb10"
+        name = f"{model_name}_{split}{suffix}"
         embed_path = f"../embeds/{subdir}/{name}.pkl"
 
-        get_embeds(model_path, args, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
+        get_embeds(model_path, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
 
 if __name__ == "__main__":
     main()

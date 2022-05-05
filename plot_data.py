@@ -19,7 +19,7 @@ marker_list = ['o','s','^','D','x','p','*','8']
 linestyle_list = ['solid','dashed','dashdot','dotted','solid','dashed','dashdot','dotted']
 lw=4
 
-def plot_data(X, Y, title, legend, save=False, save_dir=None):
+def plot_data(X, Y, title="", legend=None, save=False, save_dir=None):
     ''' plots an embedding '''
     if X.shape[1] != 2: X = tsne2(X)
 
@@ -30,7 +30,7 @@ def plot_data(X, Y, title, legend, save=False, save_dir=None):
         c_idx = np.where(Y==c)[0]
         plt.scatter(X[c_idx][:,0], X[c_idx][:,1])
 
-    plt.legend(legend)
+    if legend: plt.legend(legend)
     plt.title(title,fontsize=30)
     if save:
         if not save_dir: save_dir = f"figs/out.pdf"
@@ -38,9 +38,10 @@ def plot_data(X, Y, title, legend, save=False, save_dir=None):
 
     return X
 
-def plot_all_embeds(x_train,x_valid,x_test,y_train,y_valid,y_test,title=None,subtitles=["all","train", "valid", "test"],legend=None,save=False,save_dir=None):
+def plot_all_embeds(x_train,x_valid,x_test,y_train,y_valid,y_test,
+sharexy=True,title=None,subtitles=["all","train", "valid", "test"],legend=None,save=False,save_dir=None):
     ''' plots embedding given a dataset with splits'''
-    fig, ax = plt.subplots(2,2, figsize=(8*2, 6*2), sharey=True)
+    fig, ax = plt.subplots(2,2, figsize=(8*2, 6*2), sharey=sharexy, sharex=sharexy)
     x_all = tsne2(np.concatenate([x_train,x_valid,x_test]))
     y_all = y_train + y_valid + y_test
     x_train = x_all[np.arange(len(x_train))]
@@ -61,6 +62,8 @@ def plot_all_embeds(x_train,x_valid,x_test,y_train,y_valid,y_test,title=None,sub
     if save:
         if not save_dir: save_dir = f"{title}.pdf"
         plt.savefig(save_dir, format="pdf", bbox_inches="tight")
+
+    return x_train, x_valid, x_test
 
 
 def plot_data_multiplot(all_data, legend, sharey=True, title=None, subtitles=None, save=False, save_dir=None):
@@ -195,7 +198,7 @@ def show_decision_support(test, examples, test_dir=None, example_dir=None):
 
 def tsne2(embeds):
     print("TSNEing")
-    return TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(embeds)
+    return TSNE(n_components=2, learning_rate='auto', init='random', random_state=42).fit_transform(embeds)
 
 def normalize_xylim(ax):
     min_x0 = np.inf

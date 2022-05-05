@@ -9,43 +9,116 @@ import pandas as pd
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
-# bm_triplets_train = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
-# bm_triplets_valid = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
-# bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
-# bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
+def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers):
+    evals = {}
+    
+    NINO = get_NINO(z_train, y_train, z_test, y_test)
+    NINO_ds_acc, NINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NINO, weights, powers)
+    evals['NINO_ds_acc'], evals['NINO_ds_err'] = NINO_ds_acc, NINO_ds_err
+    
+    rNINO = get_rNINO(z_train, y_train, z_test, y_test)
+    rNINO_ds_acc, rNINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, rNINO, weights, powers)
+    evals['rNINO_ds_acc'], evals['rNINO_ds_err'] = rNINO_ds_acc, rNINO_ds_err
 
+    NIFO = get_NIFO(z_train, y_train, z_test, y_test)
+    NIFO_ds_acc, NIFO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NIFO, weights, powers)
+    evals['NIFO_ds_acc'], evals['NIFO_ds_err'] = NIFO_ds_acc, NIFO_ds_err
 
-def wv_eval_human(x_train, x_valid, x_test, y_train, y_valid, y_test, wv_triplets_train_path, wv_triplets_valid_path, wv_triplets_test_path):
-    # y_train = np.array([0]*80+[1]*80)
-    # y_valid = np.array([0]*20+[1]*20)
-    # assert(x_train.shape[0] == 160)
-    # assert(x_valid.shape[0] == 40)
+    NIs = get_NI(z_train, y_train, z_test, y_test)
+    evals['NIs'] = NIs
 
-    wv_triplets_train = np.array(pickle.load(open(wv_triplets_train_path, "rb")))
-    wv_triplets_valid = np.array(pickle.load(open(wv_triplets_valid_path, "rb")))
-    wv_triplets_test = np.array(pickle.load(open(wv_triplets_test_path, "rb")))
+    return evals
 
-    train_triplet_acc = get_triplet_acc(x_train, wv_triplets_train)
-    valid_triplet_acc = get_triplet_acc(x_valid, wv_triplets_valid)
-    test_triplet_acc = get_triplet_acc(x_test, wv_triplets_test)
-    knn_acc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="")
-    knn_auc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="auc")
-    # knn_auc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="auc")
-    # human_align = human_1NN_align(x_train, x_valid)
-    # class_1NN = class_1NN_score(x_train, y_train, x_valid, y_valid)
+def get_NINO(x_train, y_train, x_test, y_test):
+    ''' Neareast In-class & Nearest Out-of-class '''
+    NIs = get_NI(x_train, y_train, x_test, y_test)
 
-    results = {
-        "train_triplet_acc":train_triplet_acc,
-        "valid_triplet_acc":valid_triplet_acc,
-        "test_triplet_acc":test_triplet_acc,
-        "knn_acc":knn_acc,
-        "knn_auc":knn_auc,
-        # "human_1NN_align":human_align,
-        # "class_1NN":class_1NN,
-    }
-    print(results)
+    classes = np.unique(y_train)
+    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
 
-    return results
+    NINOs = []
+    for x, y, NI in zip(x_test, y_test, NIs):
+        NINO = [NI]
+        for c in classes:
+            if y == c: continue
+            class_idx = x_train[idx_by_class[c]]
+            dists = np.array([euc_dist(x, x_) for x_ in class_idx])
+            nn = np.argmin(dists)
+            class_nn = idx_by_class[c][nn]
+            NINO.append(class_nn)
+        NINOs.append(NINO)
+
+    return np.array(NINOs)
+
+def get_rNINO(x_train, y_train, x_test, y_test):
+    ''' NINO with NO no nearer than NI '''
+    NIs = get_NI(x_train, y_train, x_test, y_test)
+
+    classes = np.unique(y_train)
+    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
+
+    NINOs = []
+    for x, y, NI in zip(x_test, y_test, NIs):
+        NINO = [NI]
+        for c in classes:
+            if y == c: continue
+            class_idx = x_train[idx_by_class[c]]
+            dists = np.array([euc_dist(x, x_) for x_ in class_idx])
+            dists = dists[np.where(dists > euc_dist(x, x_train[NI]))[0]]
+            if len(dists) == 0: return []
+            nn = np.argmin(dists)
+            class_nn = idx_by_class[c][nn]
+            NINO.append(class_nn)
+        NINOs.append(NINO)
+
+    return np.array(NINOs)
+
+def get_NI(x_train, y_train, x_test, y_test):
+    ''' Neareast In-class '''
+    classes = np.unique(y_train)
+    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
+
+    NIs = []
+    for x, y in zip(x_test, y_test):
+        in_class = x_train[idx_by_class[y]]
+        dists = np.array([euc_dist(x, x_) for x_ in in_class])
+        NN = np.argmin(dists)
+        NI = idx_by_class[y][NN]
+        NIs.append(NI)
+
+    return np.array(NIs)
+        
+def get_NIFO(x_train, y_train, x_test, y_test):
+    ''' Neareast In-class & Furthest Out-of-class '''
+    NIs = get_NI(x_train, y_train, x_test, y_test)
+
+    classes = np.unique(y_train)
+    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
+
+    NINOs = []
+    for x, y, NI in zip(x_test, y_test, NIs):
+        NINO = [NI]
+        for c in classes:
+            if y == c: continue
+            class_idx = x_train[idx_by_class[c]]
+            dists = np.array([euc_dist(x, x_) for x_ in class_idx])
+            nn = np.argmax(dists)
+            class_nn = idx_by_class[c][nn]
+            NINO.append(class_nn)
+        NINOs.append(NINO)
+
+    return np.array(NINOs)
+
+def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers):
+    correct = 0
+    err = []
+    for test_idx, examples_idx in enumerate(examples):
+        ref = x_test[test_idx]
+        dists = [weightedPdist(ref, x_train[idx], weights, powers) for idx in examples_idx]
+        y_pred = y_train[examples_idx[np.argmin(dists)]]
+        if y_pred == y_test[test_idx]: correct += 1
+        else: err.append([test_idx, examples_idx[0], examples_idx[1]])
+    return correct/len(y_test), err
 
 def get_triplet_acc(embeds, triplets, dist_f=euc_dist):
     ''' Return triplet accuracy given ground-truth triplets.''' 
@@ -71,43 +144,8 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
         score = knc.score(x_valid, y_valid)
     return score
 
-
-def nn_allclass(x_train, y_train, x_test, y_test):
-    ''' for each test example, return its in-class nearest neighbors in training set, for all classes '''
-    classes = np.unique(y_train)
-    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
-
-    examples = []
-    for x, y in zip(x_test, y_test):
-        example = []
-        for c in classes:
-            in_class = x_train[idx_by_class[c]]
-            dists = np.array([euc_dist(x, x_) for x_ in in_class])
-            class_nn = np.argmin(dists)
-            class_nn = idx_by_class[c][class_nn]
-            example.append(class_nn)
-        examples.append(example)
-
-    return np.array(examples)
-
-def nn_1class(x_train, y_train, x_test, y_test):
-    ''' for each test example, return its in-class nearest neighbors in training set'''
-    classes = np.unique(y_train)
-    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
-
-    nns = []
-    for x, y in zip(x_test, y_test):
-        in_class = x_train[idx_by_class[y]]
-        dists = np.array([euc_dist(x, x_) for x_ in in_class])
-        nn = np.argmin(dists)
-        nn = idx_by_class[y][nn]
-        nns.append(nn)
-
-    return np.array(nns)
-        
-def weightedPdist(a, b, weights,powers):
-    q = a-b
-    return np.sqrt((weights*q**powers).sum())
+def weightedPdist(a, b, weights,powers=2):
+    return np.sqrt(np.sum((np.array(weights)*np.abs(a-b))**powers))
 
 def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers):
     ''' 1nn acc given distored weight and power metrics '''
@@ -118,19 +156,6 @@ def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers):
         if y_train[nn] == y: correct += 1
         
     return correct/len(y_test)
-
-def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers):
-    correct = 0
-    err = []
-    for test_idx, examples_idx in enumerate(examples):
-        ref = x_test[test_idx]
-        dists = [weightedPdist(ref, x_train[cand_idx], weights, powers) for cand_idx in examples_idx]
-        y_pred = y_train[examples_idx[np.argmin(dists)]]
-        if y_pred == y_test[test_idx]: correct += 1
-        else: err.append([test_idx, examples_idx[0], examples_idx[1]])
-    print(err)
-    return correct/len(y_test)
-
 
 def get_wv_df():
     wee_ves_dir = '/net/scratch/hanliu-shared/data/image-data/output/one-class_syn2_size-color-diff-2D'
@@ -160,6 +185,24 @@ def get_wv_df():
         df[fea] = df[fea].astype('float')
 
     return df
+
+# def NINO(x_train, y_train, x_test, y_test):
+#     ''' Neareast In-class & Nearest Out-of-class '''
+#     classes = np.unique(y_train)
+#     idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
+
+#     examples = []
+#     for x, y in zip(x_test, y_test):
+#         example = []
+#         for c in classes:
+#             class_idx = x_train[idx_by_class[c]]
+#             dists = np.array([euc_dist(x, x_) for x_ in class_idx])
+#             nn = np.argmin(dists)
+#             class_nn = idx_by_class[c][nn]
+#             example.append(class_nn)
+#         examples.append(example)
+
+#     return np.array(examples)
 
 # def class_1NN_score(x_train, y_train, x_test, y_test):
 #     classes = np.unique(y_train)
@@ -224,6 +267,44 @@ def bm_eval_human(x_train, y_train, x_valid, y_valid):
     return train_triplet_acc, valid_triplet_acc, knn_acc, knn_auc #,val2train_triplet_acc
 
 
+
+# bm_triplets_train = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
+# bm_triplets_valid = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
+# bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
+# bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
+
+
+def wv_eval_human(x_train, x_valid, x_test, y_train, y_valid, y_test, wv_triplets_train_path, wv_triplets_valid_path, wv_triplets_test_path):
+    # y_train = np.array([0]*80+[1]*80)
+    # y_valid = np.array([0]*20+[1]*20)
+    # assert(x_train.shape[0] == 160)
+    # assert(x_valid.shape[0] == 40)
+
+    wv_triplets_train = np.array(pickle.load(open(wv_triplets_train_path, "rb")))
+    wv_triplets_valid = np.array(pickle.load(open(wv_triplets_valid_path, "rb")))
+    wv_triplets_test = np.array(pickle.load(open(wv_triplets_test_path, "rb")))
+
+    train_triplet_acc = get_triplet_acc(x_train, wv_triplets_train)
+    valid_triplet_acc = get_triplet_acc(x_valid, wv_triplets_valid)
+    test_triplet_acc = get_triplet_acc(x_test, wv_triplets_test)
+    knn_acc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="")
+    knn_auc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="auc")
+    # knn_auc = get_knn_score(x_train, y_train, x_valid, y_valid, metric="auc")
+    # human_align = human_1NN_align(x_train, x_valid)
+    # class_1NN = class_1NN_score(x_train, y_train, x_valid, y_valid)
+
+    results = {
+        "train_triplet_acc":train_triplet_acc,
+        "valid_triplet_acc":valid_triplet_acc,
+        "test_triplet_acc":test_triplet_acc,
+        "knn_acc":knn_acc,
+        "knn_auc":knn_auc,
+        # "human_1NN_align":human_align,
+        # "class_1NN":class_1NN,
+    }
+    print(results)
+
+    return results
 
 
 
