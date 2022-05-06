@@ -18,9 +18,11 @@ def config_parser():
     parser.add_argument("--model_config", default=None, type=str, required=True)
     parser.add_argument("--dataset_config", default=None, type=str, required=False)
     parser.add_argument("--triplet_config", default=None, type=str, required=False)
-    parser.add_argument("--learning_rate", default=0, type=float)
-    parser.add_argument("--train_batch_size", default=0, type=int)
-    parser.add_argument("--seed", default=42, type=int)
+    parser.add_argument("--learning_rate", default=None, type=float)
+    parser.add_argument("--train_batch_size", default=None, type=int)
+    parser.add_argument("--seed", default=None, type=int)
+    parser.add_argument("--lamda", default=None, type=float)
+    parser.add_argument("--wandb_name", default=None, type=str)
     return parser
 
 def test_configs(configs):
@@ -32,7 +34,7 @@ def test_configs(configs):
     "do_train", "do_test",
     "train_triplets", "valid_triplets", "test_triplets", "triplet_batch_size",
     "pretrained", "lamda", "syn"]
-    syn_args = ["syn", "train_synthetic", "test_synthetic", "weights", "powers"]
+    syn_args = ["syn", "train_synthetic", "valid_synthetic", "test_synthetic", "weights", "powers"]
     
     if "syn" in configs:
         if configs["syn"]: 
@@ -53,17 +55,18 @@ def load_configs(args):
     triplet_config = oc.load(args.triplet_config) if args.triplet_config else {}
     configs = oc.merge(base_config, dataset_config,  model_config, triplet_config)
     test_configs(configs)
-    if args.learning_rate > 0:
-        lr = oc.create({"learning_rate": args.learning_rate}) 
-        configs = oc.merge(configs, lr)
-    if args.train_batch_size > 0:
-        bs = oc.create({"train_batch_size": args.train_batch_size}) 
-        configs = oc.merge(configs, bs)
-    seed = oc.create({"seed":args.seed})
-    configs = oc.merge(configs, seed)
+    args_override = {}
+    args = vars(args)
+    print(args)
+    for hp in args:
+        if args[hp] is not None:
+            print(hp)
+            args_override[hp] = args[hp]
+    args_override = oc.create(args_override)
+    configs = oc.merge(configs, args_override)
     return configs
 
-def generic_train(model, args, monitor, 
+def generic_train(model, args, monitor, profiler=None,
                     early_stopping_callback=False, extra_callbacks=[], checkpoint_callback=None, logging_callback=None,  **extra_train_kwargs):
     output_dir = os.path.join("results", model.hparams.wandb_project)
     odir = Path(output_dir)
@@ -93,6 +96,8 @@ def generic_train(model, args, monitor,
         train_params["distributed_backend"] = "ddp"
     if "log_every_n_steps" in args:
         train_params["log_every_n_steps"] = args["log_every_n_steps"]
+    if "deterministic" in args:
+        train_params["deterministic"] = args["deterministic"]
 
     trainer = pl.Trainer(
         auto_select_gpus=True,
@@ -101,7 +106,7 @@ def generic_train(model, args, monitor,
         callbacks=extra_callbacks + [checkpoint_callback],
         logger=logger,
         check_val_every_n_epoch=1,
-        deterministic=True,
+        profiler=profiler,
         **train_params)
 
     if args["do_train"]:
