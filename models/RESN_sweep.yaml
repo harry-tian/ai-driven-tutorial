@@ -19,11 +19,11 @@ parameters:
       - 0.01
   model_config:
     value:
-      /net/scratch/tianh/explain_teach/models/configs/bm/RESN.yaml 
+      configs/bm/RESN.yaml 
   dataset_config:
     value:
-      /net/scratch/tianh/explain_teach/models/configs/bm/dataset.yaml 
+      configs/bm/dataset.yaml 
   triplet_config:
     value:
-      /net/scratch/tianh/explain_teach/models/configs/bm/triplets.yaml 
+      configs/bm/triplets.yaml 
 

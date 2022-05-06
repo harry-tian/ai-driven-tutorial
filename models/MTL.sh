@@ -13,45 +13,45 @@
 #SBATCH --nodelist=c001
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=1.0.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=1.0.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.9.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.9.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.8.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.8.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.7.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.7.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.6.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.6.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.5.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.5.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.4.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.4.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.3.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.3.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.2.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.2.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.1.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.1.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/align=0.0.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/MTL0.8.yaml \
+    --model_config=configs/wv_3d/align=0.0.yaml \
+    --triplet_config=configs/wv_3d/MTL0.8.yaml \

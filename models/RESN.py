@@ -144,15 +144,9 @@ class RESN(pl.LightningModule):
 
             to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
             to_print = ["NINO_ds_err","rNINO_ds_err","NIFO_ds_err","NIs"]
-            # to_print = ["NINO_ds_acc", "NIFO_ds_acc"]
             for key in to_log: self.log(key, results[key])
             for key in to_print: print(f"\n{key}: {results[key]}")
 
-        # knn_acc, ds_acc, ds_err = self.test_evals()
-        # df = pd.read_csv("results.csv")
-        # df = pd.concat([df, pd.DataFrame({"wandb_group": [self.hparams.wandb_group], "wandb_name": [self.hparams.wandb_name],
-        #     "test_clf_acc": [m['acc'].item()], "test_clf_loss": [loss.item()], "test_1nn_acc": [knn_acc], "test_triplet_acc":[triplet_acc.item()], "decision_support": [ds_acc]})], sort=False)
-        # df.to_csv("results.csv", index=False)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)

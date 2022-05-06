@@ -19,11 +19,11 @@ parameters:
     - 128
   model_config:
     value:
-      /net/scratch/tianh/explain_teach/models/configs/bm/TN.yaml 
+      configs/bm/TN.yaml 
   dataset_config:
     value:
-      /net/scratch/tianh/explain_teach/models/configs/bm/dataset.yaml 
+      configs/bm/dataset.yaml 
   triplet_config:
     value:
-      /net/scratch/tianh/explain_teach/models/configs/bm/triplets.yaml 
+      configs/bm/triplets.yaml 
 

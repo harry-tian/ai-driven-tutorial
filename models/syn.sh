@@ -12,12 +12,12 @@
 #SBATCH --mem=10Gs
 
 python TN.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/bm/model.yaml \
-    --dataset_config=/net/scratch/tianh/explain_teach/models/configs/bm/dataset.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/bm/triplets.yaml \
+    --model_config=configs/bm/model.yaml \
+    --dataset_config=configs/bm/dataset.yaml \
+    --triplet_config=configs/bm/triplets.yaml \
 
 
 # python RESN.py \
-#     --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/model.yaml \
-#     --dataset_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/dataset.yaml \
-#     --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/w1=2.7303.yaml \
+#     --model_config=configs/wv_2d/model.yaml \
+#     --dataset_config=configs/wv_2d/dataset.yaml \
+#     --triplet_config=configs/wv_2d/w1=2.7303.yaml \

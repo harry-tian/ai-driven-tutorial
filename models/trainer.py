@@ -24,7 +24,7 @@ def config_parser():
 
 def test_configs(configs):
     ''' checks for expected hyperparameters'''
-    required_args = ["gpus", "seed", "dataloader_num_workers",
+    required_args = ["gpus", "seed", "dataloader_num_workers", "model",
     "max_epochs", "learning_rate", "train_batch_size", "embed_dim",
     "num_class" ,"train_dir", "valid_dir", "test_dir", "transform", 
     "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
@@ -99,9 +99,11 @@ def generic_train(model, args, monitor,
         callbacks=extra_callbacks + [checkpoint_callback],
         logger=logger,
         check_val_every_n_epoch=1,
+        deterministic=True,
         **train_params)
 
     if args["do_train"]:
+        model.train()
         trainer.fit(model)
         target_path = os.path.join(ckpt_path, 'best_model.ckpt')
         print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
@@ -109,6 +111,7 @@ def generic_train(model, args, monitor,
 
 
     if args["do_test"]:
+        model.eval()
         trainer.test(model, ckpt_path='best')
         
     ckpts = [f for f in os.listdir(ckpt_path)]

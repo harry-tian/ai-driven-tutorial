@@ -6,14 +6,14 @@ num_class : 2
 transform : wv
 
 ### triplet data
-train_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/w1=10000_w2=1/train_triplets_10000.pkl
-valid_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/w1=10000_w2=1/valid_triplets_10000.pkl
-test_triplets : /net/scratch/tianh/explain_teach/data/wv_triplets/w1=10000_w2=1/test_triplets_10000.pkl
+train_triplets : ../data/wv_triplets/w1=10000_w2=1/train_triplets_10000.pkl
+valid_triplets : ../data/wv_triplets/w1=10000_w2=1/valid_triplets_10000.pkl
+test_triplets : ../data/wv_triplets/w1=10000_w2=1/test_triplets_10000.pkl
 
 ### synthetic data
 syn: True
-train_synthetic : /net/scratch/tianh/explain_teach/embeds/wv_3d/train.pkl
-test_synthetic : /net/scratch/tianh/explain_teach/embeds/wv_3d/test.pkl
+train_synthetic : ../embeds/wv_3d/train.pkl
+test_synthetic : ../embeds/wv_3d/test.pkl
 weights: 
   - 1000
   - 1 

@@ -65,10 +65,12 @@ def get_rNINO(x_train, y_train, x_test, y_test):
             class_idx = x_train[idx_by_class[c]]
             dists = np.array([euc_dist(x, x_) for x_ in class_idx])
             dists = dists[np.where(dists > euc_dist(x, x_train[NI]))[0]]
-            if len(dists) == 0: return []
-            nn = np.argmin(dists)
-            class_nn = idx_by_class[c][nn]
-            NINO.append(class_nn)
+            if len(dists) == 0: ## signal of error in rNINO
+                NINO.append(NI)
+            else:
+                nn = np.argmin(dists)
+                class_nn = idx_by_class[c][nn]
+                NINO.append(class_nn)
         NINOs.append(NINO)
 
     return np.array(NINOs)
@@ -113,6 +115,9 @@ def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers
     correct = 0
     err = []
     for test_idx, examples_idx in enumerate(examples):
+        if len(np.unique(examples_idx)) < len(examples_idx): ## signal of error in rNINO
+            err.append([test_idx, examples_idx[0], examples_idx[1]])
+            continue
         ref = x_test[test_idx]
         dists = [weightedPdist(ref, x_train[idx], weights, powers) for idx in examples_idx]
         y_pred = y_train[examples_idx[np.argmin(dists)]]

@@ -29,8 +29,8 @@ python MTL.py \
   --learning_rate=1e-4 \
   --train_batch_size=120 \
   --syn \
-  --train_synthetic=/net/scratch/tianh/explain_teach/embeds/wv/train.pkl \
-  --test_synthetic=/net/scratch/tianh/explain_teach/embeds/wv/test.pkl \
+  --train_synthetic=../embeds/wv/train.pkl \
+  --test_synthetic=../embeds/wv/test.pkl \
   --w1=2.73027025 \
   --w2=1 \
   --lamda=0.5 \

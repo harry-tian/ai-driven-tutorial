@@ -22,9 +22,9 @@ transform: wv
 syn: true
 train_synthetic: /net/scratch/tianh-shared/wv_3d/2feats/auto_split/train.pkl
 test_synthetic: /net/scratch/tianh-shared/wv_3d/2feats/auto_split/test.pkl
-train_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.7/train_triplets_10000.pkl
-valid_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.7/valid_triplets_10000.pkl
-test_triplets: /net/scratch/tianh/explain_teach/data/wv_triplets/align=0.7/test_triplets_10000.pkl
+train_triplets: ../data/wv_triplets/align=0.7/train_triplets_10000.pkl
+valid_triplets: ../data/wv_triplets/align=0.7/valid_triplets_10000.pkl
+test_triplets: ../data/wv_triplets/align=0.7/test_triplets_10000.pkl
 weights:
 - 1
 - 0

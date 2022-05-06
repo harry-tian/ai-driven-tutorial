@@ -12,15 +12,15 @@
 #SBATCH --mem=8G
 
 
-# python RESN.py --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/true_label.yaml 
+# python RESN.py --model_config=configs/wv_3d/true_label.yaml 
 
 # python RESN.py \
-#     --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/RESN.yaml \
-#     --dataset_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/dataset.yaml \
-#     --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/w1=1_w2=0.yaml \
+#     --model_config=configs/wv_2d/RESN.yaml \
+#     --dataset_config=configs/wv_2d/dataset.yaml \
+#     --triplet_config=configs/wv_2d/w1=1_w2=0.yaml \
 
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/MTL.yaml \
-    --dataset_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/dataset.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/wv_2d/w1=1_w2=0.yaml \
+    --model_config=configs/wv_2d/MTL.yaml \
+    --dataset_config=configs/wv_2d/dataset.yaml \
+    --triplet_config=configs/wv_2d/w1=1_w2=0.yaml \

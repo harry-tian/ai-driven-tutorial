@@ -12,4 +12,4 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=c001
   
-python RESN.py --model_config=/net/scratch/tianh/explain_teach/models/configs/wv_3d/RESN.yaml 
+python RESN.py --model_config=configs/wv_3d/RESN.yaml 

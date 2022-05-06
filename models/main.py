@@ -22,7 +22,7 @@ def main():
 
     print(configs)
 
-    pl.seed_everything(configs["seed"])
+    pl.seed_everything(configs["seed"], workers=True)
     model_path = model_path_dict[configs["model"]]
     
     model = locate(model_path)

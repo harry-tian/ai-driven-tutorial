@@ -14,16 +14,16 @@
 
 
 # python RESN.py \
-#     --model_config=/net/scratch/tianh/explain_teach/models/configs/bm/RESN.yaml \
-#     --dataset_config=/net/scratch/tianh/explain_teach/models/configs/bm/dataset.yaml \
-#     --triplet_config=/net/scratch/tianh/explain_teach/models/configs/bm/triplets.yaml \
+#     --model_config=configs/bm/RESN.yaml \
+#     --dataset_config=configs/bm/dataset.yaml \
+#     --triplet_config=configs/bm/triplets.yaml \
 
 # python TN.py \
-#     --model_config=/net/scratch/tianh/explain_teach/models/configs/bm/TN.yaml \
-#     --dataset_config=/net/scratch/tianh/explain_teach/models/configs/bm/dataset.yaml \
-#     --triplet_config=/net/scratch/tianh/explain_teach/models/configs/bm/triplets.yaml \
+#     --model_config=configs/bm/TN.yaml \
+#     --dataset_config=configs/bm/dataset.yaml \
+#     --triplet_config=configs/bm/triplets.yaml \
 
 python MTL.py \
-    --model_config=/net/scratch/tianh/explain_teach/models/configs/bm/MTL.yaml \
-    --dataset_config=/net/scratch/tianh/explain_teach/models/configs/bm/dataset.yaml \
-    --triplet_config=/net/scratch/tianh/explain_teach/models/configs/bm/triplets.yaml \
+    --model_config=configs/bm/MTL.yaml \
+    --dataset_config=configs/bm/dataset.yaml \
+    --triplet_config=configs/bm/triplets.yaml \
