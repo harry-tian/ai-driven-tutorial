@@ -77,8 +77,8 @@ class TripletNet(pl.LightningModule):
             d_ap = self.pdist(triplets[0], triplets[1])
             d_an = self.pdist(triplets[0], triplets[2])
             triplet_acc = (d_ap < d_an).float().mean()
-        self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('train_triplet_loss', triplet_loss, sync_dist=True)
+        self.log('train_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('train_triplet_loss', triplet_loss)
         return triplet_loss
 
     def validation_step(self, batch, batch_idx):
@@ -90,8 +90,8 @@ class TripletNet(pl.LightningModule):
             d_ap = torch.nn.functional.pairwise_distance(triplets[0], triplets[1])
             d_an = torch.nn.functional.pairwise_distance(triplets[0], triplets[2])
             triplet_acc = (d_ap <= d_an).float().mean()
-        self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('valid_triplet_loss', triplet_loss, sync_dist=True)
+        self.log('valid_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('valid_triplet_loss', triplet_loss)
         return {'valid_triplet_loss': triplet_loss, 'valid_triplet_acc': triplet_acc}
 
     def configure_optimizers(self):

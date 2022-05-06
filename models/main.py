@@ -17,8 +17,8 @@ model_monitor_dict ={
 
 def main():
     parser = trainer.config_parser()
-    config_files = parser.parse_args()
-    configs = trainer.load_configs(config_files)
+    args = parser.parse_args()
+    configs = trainer.load_configs(args)
 
     print(configs)
 

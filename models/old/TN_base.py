@@ -47,21 +47,21 @@ class TripletNet(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         triplet_loss, triplet_acc = self.triplet_loss_acc(batch[0], batch_idx)
 
-        self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('train_triplet_loss', triplet_loss, sync_dist=True)
+        self.log('train_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('train_triplet_loss', triplet_loss)
         return triplet_loss
 
     def validation_step(self, batch, batch_idx):
         triplet_loss, triplet_acc = self.triplet_loss_acc(batch[0], batch_idx)
 
-        self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('valid_triplet_loss', triplet_loss, sync_dist=True)
+        self.log('valid_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('valid_triplet_loss', triplet_loss)
 
     def test_step(self, batch, batch_idx):
         triplet_loss, triplet_acc = self.triplet_loss_acc(batch[0], batch_idx)
 
-        self.log('test_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('test_triplet_loss', triplet_loss, sync_dist=True)
+        self.log('test_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('test_triplet_loss', triplet_loss)
 
     def configure_optimizers(self):
         # optimizer = SGD(model.parameters(), lr=self.hparams.learning_rate)

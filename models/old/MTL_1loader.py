@@ -61,11 +61,11 @@ class MTL(TN):
         triplet_idx = batch[0]
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.train_triplets_step(triplet_idx, labels)
 
-        self.log('train_clf_loss', clf_loss, sync_dist=True)
-        self.log('train_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('train_triplet_loss', triplet_loss, sync_dist=True)
-        self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('train_total_loss', total_loss, sync_dist=True)
+        self.log('train_clf_loss', clf_loss)
+        self.log('train_clf_acc', m['acc'], prog_bar=False)
+        self.log('train_triplet_loss', triplet_loss)
+        self.log('train_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('train_total_loss', total_loss)
         return total_loss
 
     def validation_step(self, batch, batch_idx):
@@ -74,12 +74,12 @@ class MTL(TN):
         triplet_idx = batch[0]
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.mixed_triplets_step(triplet_idx, input, labels)
 
-        self.log('valid_clf_loss', clf_loss, sync_dist=True)
-        self.log('valid_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('valid_auc', m['auc'], prog_bar=True, sync_dist=True)
-        self.log('valid_triplet_loss', triplet_loss, sync_dist=True)
-        self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('valid_total_loss', total_loss, sync_dist=True)
+        self.log('valid_clf_loss', clf_loss)
+        self.log('valid_clf_acc', m['acc'], prog_bar=False)
+        self.log('valid_auc', m['auc'], prog_bar=False)
+        self.log('valid_triplet_loss', triplet_loss)
+        self.log('valid_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('valid_total_loss', total_loss)
 
     def test_step(self, batch, batch_idx):
         input = self.test_input
@@ -87,12 +87,12 @@ class MTL(TN):
         triplet_idx = batch[0]
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.mixed_triplets_step(triplet_idx, input, labels)
 
-        self.log('test_clf_loss', clf_loss, sync_dist=True)
-        self.log('test_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('test_auc', m['auc'], prog_bar=True, sync_dist=True)
-        self.log('test_triplet_loss', triplet_loss, sync_dist=True)
-        self.log('test_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('test_total_loss', total_loss, sync_dist=True)
+        self.log('test_clf_loss', clf_loss)
+        self.log('test_clf_acc', m['acc'], prog_bar=False)
+        self.log('test_auc', m['auc'], prog_bar=False)
+        self.log('test_triplet_loss', triplet_loss)
+        self.log('test_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('test_total_loss', total_loss)
         
         knn_acc, ds_acc = self.test_evals()
 

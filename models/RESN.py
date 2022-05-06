@@ -106,26 +106,26 @@ class RESN(pl.LightningModule):
         embeds = self(x)
         loss, m = self.clf_loss_acc(embeds, y)
         self.log('train_clf_loss', loss)
-        self.log('train_clf_acc', m['acc'], prog_bar=True)
+        self.log('train_clf_acc', m['acc'], prog_bar=False)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         embeds = self(x)
         loss, m = self.clf_loss_acc(embeds, y)
-        self.log('valid_clf_loss', loss, sync_dist=True)
-        self.log('valid_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
-        if self.hparams.num_class < 3: self.log('valid_auc', m['auc'], sync_dist=True)
+        self.log('valid_clf_loss', loss)
+        self.log('valid_clf_acc', m['acc'], prog_bar=False)
+        if self.hparams.num_class < 3: self.log('valid_auc', m['auc'])
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         embeds = self(x)
         loss, m = self.clf_loss_acc(embeds, y)
-        self.log('test_clf_loss', loss, sync_dist=True)
-        self.log('test_clf_acc', m['acc'], sync_dist=True)
+        self.log('test_clf_loss', loss)
+        self.log('test_clf_acc', m['acc'])
 
         triplet_acc = self.test_mixed_triplets()
-        self.log('test_triplet_acc', triplet_acc, sync_dist=True)
+        self.log('test_triplet_acc', triplet_acc)
 
     def test_epoch_end(self, outputs):
         z_train = self(self.train_input).cpu().detach().numpy()
@@ -224,10 +224,10 @@ if __name__ == "__main__":
 
 
     #     # knn_acc = evals.get_knn_score(train_x, train_y, test_x, test_y)
-    #     # self.log('test_1nn_acc', knn_acc, sync_dist=True)
+    #     # self.log('test_1nn_acc', knn_acc)
 
     #     # # valid_ds = self.valid_ds()
-    #     # # self.log('valid_decision_support', valid_ds, sync_dist=True)
+    #     # # self.log('valid_decision_support', valid_ds)
         
     #     # if self.hparams.syn:
     #     #     syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))
@@ -235,14 +235,14 @@ if __name__ == "__main__":
 
     #     #     # examples = evals.NINO(train_x, train_y, test_x, test_y)
     #     #     # ds_acc, ds_err = evals.decision_support(syn_x_train, train_y, syn_x_test, test_y, examples, self.hparams.weights, self.hparams.powers)
-    #     #     # self.log('decision support', ds_acc, sync_dist=True)  
+    #     #     # self.log('decision support', ds_acc)  
     #     #     # print(f"\ndecision support errors{ds_err}")
     #     #     # print(examples)
 
     #     #     examples = evals.NIFO(train_x, train_y, test_x, test_preds)
     #     #     # print(examples)
     #     #     ds_acc, ds_err = evals.decision_support(syn_x_train, train_y, syn_x_test, test_y, examples, self.hparams.weights, self.hparams.powers)
-    #     #     self.log('decision support', ds_acc, sync_dist=True)  
+    #     #     self.log('decision support', ds_acc)  
     #     #     print(f"\ndecision support errors{ds_err}")
     #     # else:  ds_acc, ds_err = 0, []
 

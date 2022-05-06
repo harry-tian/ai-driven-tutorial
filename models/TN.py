@@ -47,8 +47,8 @@ class TN(RESN):
         triplet_idx = batch[0]
         triplet_loss, triplet_acc = self.train_triplets_step(triplet_idx)
 
-        self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('train_triplet_loss', triplet_loss, sync_dist=True)
+        self.log('train_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('train_triplet_loss', triplet_loss)
         return triplet_loss
 
     def validation_step(self, batch, batch_idx):
@@ -56,16 +56,16 @@ class TN(RESN):
         triplet_idx = batch[0]
 
         triplet_loss, triplet_acc = self.mixed_triplets_step(triplet_idx, input)
-        self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('valid_triplet_loss', triplet_loss, sync_dist=True)
+        self.log('valid_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('valid_triplet_loss', triplet_loss)
 
     def test_step(self, batch, batch_idx):
         input = self.test_input
         triplet_idx = batch[0]
         triplet_loss, triplet_acc = self.mixed_triplets_step(triplet_idx, input)
 
-        self.log('test_triplet_acc', triplet_acc, sync_dist=True)
-        self.log('test_triplet_loss', triplet_loss, sync_dist=True)
+        self.log('test_triplet_acc', triplet_acc)
+        self.log('test_triplet_loss', triplet_loss)
 
     def train_dataloader(self):
         dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))

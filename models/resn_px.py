@@ -69,30 +69,30 @@ class RESN(pl.LightningModule):
         x, y = batch
         logits = self(x)
         loss, m = self.get_loss_acc(logits, y)
-        self.log('train_loss', loss, sync_dist=True)
-        self.log('train_acc', m['acc'], prog_bar=True, sync_dist=True)
+        self.log('train_loss', loss)
+        self.log('train_acc', m['acc'], prog_bar=False)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
         loss, m = self.get_loss_acc(logits, y)
-        self.log('valid_loss', loss, sync_dist=True)
-        self.log('valid_acc', m['acc'], prog_bar=True, sync_dist=True)
+        self.log('valid_loss', loss)
+        self.log('valid_acc', m['acc'], prog_bar=False)
         if self.hparams.num_class < 3:
-            self.log('valid_auc', m['auc'], sync_dist=True)
-            # self.log('valid_sensitivity', m['tpr'], sync_dist=True)
-            # self.log('valid_specificity', m['tnr'], sync_dist=True)
-            # self.log('valid_precision', m['ppv'], sync_dist=True)
-            # self.log('valid_f1', m['f1'], sync_dist=True)
-            # self.log('valid_ap', m['ap'], sync_dist=True)
-            # self.log('valid_auprc', m['auprc'], sync_dist=True)
+            self.log('valid_auc', m['auc'])
+            # self.log('valid_sensitivity', m['tpr'])
+            # self.log('valid_specificity', m['tnr'])
+            # self.log('valid_precision', m['ppv'])
+            # self.log('valid_f1', m['f1'])
+            # self.log('valid_ap', m['ap'])
+            # self.log('valid_auprc', m['auprc'])
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
         loss, m = self.get_loss_acc(logits, y)
-        self.log('test_acc', m['acc'], prog_bar=True, sync_dist=True)
+        self.log('test_acc', m['acc'], prog_bar=False)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)

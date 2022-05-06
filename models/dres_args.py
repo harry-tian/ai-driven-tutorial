@@ -112,8 +112,8 @@ class DRES(pl.LightningModule):
         x, y = batch
         output_dict = self(x, y)
         m = self.metrics(output_dict['probs'][:, 1].exp(), y)
-        self.log('train_loss', output_dict['loss'], sync_dist=True)
-        self.log('train_acc', m['acc'], prog_bar=True, sync_dist=True)
+        self.log('train_loss', output_dict['loss'])
+        self.log('train_acc', m['acc'], prog_bar=False)
         return output_dict['loss']
 
     def classify(self, z, z_norm, ref_z, ref_y):
@@ -146,15 +146,15 @@ class DRES(pl.LightningModule):
         total_loss = self.criterion(probs, y)
         loss = total_loss.div(x.shape[0])
         m = self.metrics(probs[:, 1].exp(), y)
-        self.log('valid_loss', loss, sync_dist=True)
-        self.log('valid_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('valid_auc', m['auc'], prog_bar=True, sync_dist=True)
-        self.log('valid_sensitivity', m['tpr'], sync_dist=True)
-        self.log('valid_specificity', m['tnr'], sync_dist=True)
-        self.log('valid_precision', m['ppv'], sync_dist=True)
-        self.log('valid_f1', m['f1'], sync_dist=True)
-        self.log('valid_ap', m['ap'], sync_dist=True)
-        self.log('valid_auprc', m['auprc'], sync_dist=True)
+        self.log('valid_loss', loss)
+        self.log('valid_acc', m['acc'], prog_bar=False)
+        self.log('valid_auc', m['auc'], prog_bar=False)
+        self.log('valid_sensitivity', m['tpr'])
+        self.log('valid_specificity', m['tnr'])
+        self.log('valid_precision', m['ppv'])
+        self.log('valid_f1', m['f1'])
+        self.log('valid_ap', m['ap'])
+        self.log('valid_auprc', m['auprc'])
         return {'valid_loss': loss, 'valid_auc': m['auc']}
 
     def configure_optimizers(self):

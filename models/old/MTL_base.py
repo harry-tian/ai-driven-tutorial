@@ -47,32 +47,32 @@ class MTL(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, batch_idx)
 
-        self.log('train_clf_loss', clf_loss, sync_dist=True)
-        self.log('train_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('train_triplet_loss', triplet_loss, sync_dist=True)
-        self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('train_total_loss', total_loss, sync_dist=True)
+        self.log('train_clf_loss', clf_loss)
+        self.log('train_clf_acc', m['acc'], prog_bar=False)
+        self.log('train_triplet_loss', triplet_loss)
+        self.log('train_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('train_total_loss', total_loss)
         return total_loss
 
     def validation_step(self, batch, batch_idx):
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, batch_idx)
 
-        self.log('valid_clf_loss', clf_loss, sync_dist=True)
-        self.log('valid_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('valid_auc', m['auc'], prog_bar=True, sync_dist=True)
-        self.log('valid_triplet_loss', triplet_loss, sync_dist=True)
-        self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('valid_total_loss', total_loss, sync_dist=True)
+        self.log('valid_clf_loss', clf_loss)
+        self.log('valid_clf_acc', m['acc'], prog_bar=False)
+        self.log('valid_auc', m['auc'], prog_bar=False)
+        self.log('valid_triplet_loss', triplet_loss)
+        self.log('valid_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('valid_total_loss', total_loss)
 
     def test_step(self, batch, batch_idx):
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.get_loss_acc(batch, batch_idx)
 
-        self.log('test_clf_loss', clf_loss, sync_dist=True)
-        self.log('test_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('test_auc', m['auc'], prog_bar=True, sync_dist=True)
-        self.log('test_triplet_loss', triplet_loss, sync_dist=True)
-        self.log('test_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('test_total_loss', total_loss, sync_dist=True)
+        self.log('test_clf_loss', clf_loss)
+        self.log('test_clf_acc', m['acc'], prog_bar=False)
+        self.log('test_auc', m['auc'], prog_bar=False)
+        self.log('test_triplet_loss', triplet_loss)
+        self.log('test_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('test_total_loss', total_loss)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)

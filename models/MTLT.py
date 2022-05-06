@@ -149,10 +149,10 @@ class MTLT(pl.LightningModule):
         triplet_acc = self.trips_acc(ta, tp, tn)
         clf_triplet_acc = self.trips_acc(ca, cp, cn)
         self.log('train_clf_loss', clf_triplet_loss)
-        self.log('train_clf_triplet_acc', clf_triplet_acc, prog_bar=True)
+        self.log('train_clf_triplet_acc', clf_triplet_acc, prog_bar=False)
         self.log('train_triplet_loss', triplet_loss)
-        self.log('train_triplet_acc', triplet_acc, prog_bar=True)
-        self.log('train_total_loss', total_loss, prog_bar=True)
+        self.log('train_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('train_total_loss', total_loss, prog_bar=False)
         return total_loss
 
     def validation_step(self, batch, batch_idx):
@@ -177,10 +177,10 @@ class MTLT(pl.LightningModule):
         knn_acc, ds_acc = self.eval_knn_ds(
             self.valid_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_valid)
         self.log('valid_clf_loss', clf_triplet_loss)
-        self.log('valid_clf_triplet_acc', clf_triplet_acc, prog_bar=True)
+        self.log('valid_clf_triplet_acc', clf_triplet_acc, prog_bar=False)
         self.log('valid_triplet_loss', triplet_loss)
-        self.log('valid_triplet_acc', triplet_acc, prog_bar=True)
-        self.log('valid_total_loss', total_loss, prog_bar=True)
+        self.log('valid_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('valid_total_loss', total_loss, prog_bar=False)
         if knn_acc and ds_acc:
             self.log('valid_knn_acc', knn_acc)
             self.log('valid_decision_support', ds_acc)

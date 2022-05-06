@@ -10,7 +10,7 @@ do_test: True
 
 ### Hyperparameters
 embed_dim : 50
-max_epochs : 5
+max_epochs : 100
 learning_rate : 1e-3
 train_batch_size : 60
 lamda : 0.5

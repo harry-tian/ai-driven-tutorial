@@ -103,9 +103,9 @@ class RESN(pl.LightningModule):
             d_ap = self.pdist(triplets[0], triplets[1])
             d_an = self.pdist(triplets[0], triplets[2])
             triplet_acc = (d_ap < d_an).float().mean()
-        self.log('train_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('train_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('train_triplet_loss', triplet_loss, sync_dist=True)
+        self.log('train_clf_acc', m['acc'], prog_bar=False)
+        self.log('train_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('train_triplet_loss', triplet_loss)
         return triplet_loss
 
     def validation_step(self, batch, batch_idx):
@@ -118,16 +118,16 @@ class RESN(pl.LightningModule):
         d_ap = torch.nn.functional.pairwise_distance(triplets[0], triplets[1])
         d_an = torch.nn.functional.pairwise_distance(triplets[0], triplets[2])
         triplet_acc = (d_ap <= d_an).float().mean()
-        self.log('valid_clf_acc', m['acc'], prog_bar=True, sync_dist=True)
-        self.log('valid_auc', m['auc'], prog_bar=True, sync_dist=True)
-        self.log('valid_triplet_acc', triplet_acc, prog_bar=True, sync_dist=True)
-        self.log('valid_triplet_loss', triplet_loss, sync_dist=True)
-        # self.log('valid_sensitivity', m['tpr'], sync_dist=True)
-        # self.log('valid_specificity', m['tnr'], sync_dist=True)
-        # self.log('valid_precision', m['ppv'], sync_dist=True)
-        # self.log('valid_f1', m['f1'], sync_dist=True)
-        # self.log('valid_ap', m['ap'], sync_dist=True)
-        # self.log('valid_auprc', m['auprc'], sync_dist=True)
+        self.log('valid_clf_acc', m['acc'], prog_bar=False)
+        self.log('valid_auc', m['auc'], prog_bar=False)
+        self.log('valid_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('valid_triplet_loss', triplet_loss)
+        # self.log('valid_sensitivity', m['tpr'])
+        # self.log('valid_specificity', m['tnr'])
+        # self.log('valid_precision', m['ppv'])
+        # self.log('valid_f1', m['f1'])
+        # self.log('valid_ap', m['ap'])
+        # self.log('valid_auprc', m['auprc'])
         return {'valid_triplet_loss': triplet_loss, 'valid_triplet_acc': triplet_acc}
 
     def configure_optimizers(self):

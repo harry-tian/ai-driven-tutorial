@@ -70,8 +70,8 @@ class MTL_proto(MTL):
             d_ap = self.pdist(proto_triples[0], proto_triples[1])
             d_an = self.pdist(proto_triples[0], proto_triples[2])
             proto_triplet_acc = (d_ap < d_an).float().mean()
-            self.log('proto_triplet_loss', proto_triplet_loss, sync_dist=True)
-            self.log('proto_triplet_acc', proto_triplet_acc, prog_bar=True, sync_dist=True)
+            self.log('proto_triplet_loss', proto_triplet_loss)
+            self.log('proto_triplet_acc', proto_triplet_acc, prog_bar=False)
         else:
             proto_triplet_loss = 0
 

@@ -20,6 +20,7 @@ def config_parser():
     parser.add_argument("--triplet_config", default=None, type=str, required=False)
     parser.add_argument("--learning_rate", default=0, type=float)
     parser.add_argument("--train_batch_size", default=0, type=int)
+    parser.add_argument("--seed", default=42, type=int)
     return parser
 
 def test_configs(configs):
@@ -44,21 +45,22 @@ def test_configs(configs):
         print("WARNING: Unrecognized args:")
         print(np.setdiff1d(configs, required_args))
 
-def load_configs(config_files):
+def load_configs(args):
     '''' triplet_config > model_config > dataset_config > base_config '''
-    base_config = oc.load(config_files.base_config)
-    model_config = oc.load(config_files.model_config)
-    dataset_config = oc.load(config_files.dataset_config) if config_files.dataset_config else {}
-    triplet_config = oc.load(config_files.triplet_config) if config_files.triplet_config else {}
+    base_config = oc.load(args.base_config)
+    model_config = oc.load(args.model_config)
+    dataset_config = oc.load(args.dataset_config) if args.dataset_config else {}
+    triplet_config = oc.load(args.triplet_config) if args.triplet_config else {}
     configs = oc.merge(base_config, dataset_config,  model_config, triplet_config)
     test_configs(configs)
-    if config_files.learning_rate > 0:
-        lr = oc.create({"learning_rate": config_files.learning_rate}) 
+    if args.learning_rate > 0:
+        lr = oc.create({"learning_rate": args.learning_rate}) 
         configs = oc.merge(configs, lr)
-    if config_files.train_batch_size > 0:
-        lr = oc.create({"train_batch_size": config_files.train_batch_size}) 
-        configs = oc.merge(configs, lr)
-
+    if args.train_batch_size > 0:
+        bs = oc.create({"train_batch_size": args.train_batch_size}) 
+        configs = oc.merge(configs, bs)
+    seed = oc.create({"seed":args.seed})
+    configs = oc.merge(configs, seed)
     return configs
 
 def generic_train(model, args, monitor, 

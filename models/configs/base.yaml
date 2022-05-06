@@ -1,7 +1,6 @@
 ### Training args
 dataloader_num_workers: 16
 gpus: 1
-seed: 42
 do_train : True
 do_test : True
 
@@ -11,12 +10,3 @@ wandb_entity: ai-driven-tutorial
 wandb_group: None
 wandb_project : None
 wandb_name : None
-
-
-### Hyperparameters
-embed_dim : 10
-max_epochs : 50
-learning_rate : 1e-4
-train_batch_size : 120
-lamda : 0.5
-pretrained: False
