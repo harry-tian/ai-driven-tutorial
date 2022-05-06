@@ -12,7 +12,36 @@
 #SBATCH --mem=8Gs
 
 
-python MTLT.py \
-    --dataset_config=configs/bm/dataset.yaml \
-    --model_config=configs/bm/MTLT.yaml \
-    --triplet_config=configs/bm/triplets.yaml \
+# python MTLT.py \
+#     --dataset_config=configs/bm/dataset.yaml \
+#     --model_config=configs/bm/MTLT.yaml \
+#     --triplet_config=configs/bm/triplets.yaml \
+
+for i in {0..9}
+    do python MTLT.py \
+        --dataset_config=configs/wv_2d/dataset.yaml \
+        --model_config=configs/wv_2d/models/MTLT.yaml \
+        --triplet_config=configs/wv_2d/triplets/w1=1_w2=0.yaml \
+        --seed=$i \
+        --wandb_name=MTLT0.5s$i
+done
+
+for i in {0..9}
+    do python MTLT.py \
+        --dataset_config=configs/wv_2d/dataset.yaml \
+        --model_config=configs/wv_2d/models/MTLT.yaml \
+        --triplet_config=configs/wv_2d/triplets/w1=1_w2=0.yaml \
+        --seed=$i \
+        --lamda=0.2 \
+        --wandb_name=MTLT0.2s$i
+done
+
+for i in {0..9}
+    do python MTLT.py \
+        --dataset_config=configs/wv_2d/dataset.yaml \
+        --model_config=configs/wv_2d/models/MTLT.yaml \
+        --triplet_config=configs/wv_2d/triplets/w1=1_w2=0.yaml \
+        --seed=$i \
+        --lamda=0.8 \
+        --wandb_name=MTLT0.8s$i
+done
