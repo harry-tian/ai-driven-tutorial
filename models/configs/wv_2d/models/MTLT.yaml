@@ -1,0 +1,20 @@
+model: MTLT
+
+### Wandb args
+wandb_group: MTLT0.5
+wandb_name:  MTLT0.5
+
+### Training args
+do_train: True
+do_test: True
+
+### Hyperparameters
+embed_dim : 50
+max_epochs: 100
+learning_rate: 1e-4
+train_batch_size: 200
+dataloader_num_workers: 4
+log_every_n_steps: 10
+lamda : 0.5
+pretrained: True
+deterministic: True
