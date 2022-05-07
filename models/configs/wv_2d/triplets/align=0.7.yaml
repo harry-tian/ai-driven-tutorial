@@ -9,9 +9,9 @@ train_synthetic : ../embeds/wv_2d/train.pkl
 test_synthetic : ../embeds/wv_2d/test.pkl
 
 ### triplet data
-train_triplets: ../data/wv_2d_triplets/w1=1_w2=0/train_triplets.pkl
-valid_triplets: ../data/wv_2d_triplets/w1=1_w2=0/valid_triplets.pkl
-test_triplets: ../data/wv_2d_triplets/w1=1_w2=0/test_triplets.pkl
+train_triplets: ../data/wv_2d_triplets/align=0.7/train_triplets.pkl
+valid_triplets: ../data/wv_2d_triplets/align=0.7/valid_triplets.pkl
+test_triplets: ../data/wv_2d_triplets/align=0.7/test_triplets.pkl
 weights: 
   - 1
   - 0

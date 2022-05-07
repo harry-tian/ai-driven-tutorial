@@ -1,5 +1,0 @@
-torch
-torchvision
-pytorch_lightning
-wandb
-lpips

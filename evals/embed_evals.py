@@ -150,7 +150,10 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
     return score
 
 def weightedPdist(a, b, weights,powers=2):
-    return np.sqrt(np.sum((np.array(weights)*np.abs(a-b))**powers))
+    weights = np.array(weights)
+    # return np.sqrt(np.sum((weights*np.abs(a-b))**powers))
+    q = np.abs(a-b)
+    return np.sqrt(np.sum(weights*(q**powers)))
 
 def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers):
     ''' 1nn acc given distored weight and power metrics '''
