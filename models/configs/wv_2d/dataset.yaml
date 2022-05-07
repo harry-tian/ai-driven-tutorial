@@ -4,4 +4,3 @@ valid_dir : ../data/weevil_vespula/valid
 test_dir : ../data/weevil_vespula/test
 num_class : 2
 transform : wv
-train_batch_size : 196

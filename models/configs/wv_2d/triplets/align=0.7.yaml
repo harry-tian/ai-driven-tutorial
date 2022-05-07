@@ -6,6 +6,7 @@ wandb_group: w1=1_w2=0_pretrained
 #### synthetic data
 syn: True
 train_synthetic : ../embeds/wv_2d/train.pkl
+valid_synthetic : ../embeds/wv_2d/valid.pkl
 test_synthetic : ../embeds/wv_2d/test.pkl
 
 ### triplet data
@@ -22,4 +23,4 @@ powers:
 
 ### overwrite args
 embed_dim : 50
-pretrained: true
+pretrained: True
