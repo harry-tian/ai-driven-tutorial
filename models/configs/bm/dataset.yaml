@@ -1,7 +1,7 @@
 ### classification data
-train_dir : ../data/bm/train
-valid_dir : ../data/bm/valid
-test_dir : ../data/bm/test
+train_dir : ../dataset/bm/train
+valid_dir : ../dataset/bm/valid
+test_dir : ../dataset/bm/test
 num_class : 2
 transform : bm
 train_batch_size : 60

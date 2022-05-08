@@ -34,7 +34,7 @@ def test_configs(configs):
     "do_train", "do_test",
     "train_triplets", "valid_triplets", "test_triplets", "triplet_batch_size",
     "pretrained", "lamda", "syn"]
-    syn_args = ["syn", "train_synthetic", "valid_synthetic", "test_synthetic", "weights", "powers"]
+    syn_args = ["syn", "train_synthetic", "valid_synthetic", "test_synthetic", "weights"]
     
     if "syn" in configs:
         if configs["syn"]: 
@@ -64,6 +64,24 @@ def load_configs(args):
             args_override[hp] = args[hp]
     args_override = oc.create(args_override)
     configs = oc.merge(configs, args_override)
+    return configs
+
+def load_configs_sweep(args):
+    '''' triplet_config > model_config > dataset_config > base_config '''
+    base_config = oc.load(args.base_config)
+    model_config = oc.load(args.model_config)
+    dataset_config = oc.load(args.dataset_config) if args.dataset_config else {}
+    triplet_config = oc.load(args.triplet_config) if args.triplet_config else {}
+    configs = oc.merge(base_config, dataset_config,  model_config, triplet_config)
+    test_configs(configs)
+    if args.learning_rate > 0:
+        lr = oc.create({"learning_rate": args.learning_rate}) 
+        configs = oc.merge(configs, lr)
+    if args.train_batch_size > 0:
+        bs = oc.create({"train_batch_size": args.train_batch_size}) 
+        configs = oc.merge(configs, bs)
+    seed = oc.create({"seed":args.seed})
+    configs = oc.merge(configs, seed)
     return configs
 
 def generic_train(model, args, monitor, profiler=None,

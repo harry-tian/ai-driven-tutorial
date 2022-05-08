@@ -1,6 +1,6 @@
 ### classification data
-train_dir : ../data/weevil_vespula/train
-valid_dir : ../data/weevil_vespula/valid
-test_dir : ../data/weevil_vespula/test
+train_dir : ../dataset/weevil_vespula/train
+valid_dir : ../dataset/weevil_vespula/valid
+test_dir : ../dataset/weevil_vespula/test
 num_class : 2
 transform : wv

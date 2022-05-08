@@ -149,7 +149,7 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
         score = knc.score(x_valid, y_valid)
     return score
 
-def weightedPdist(a, b, weights,powers=2):
+def weightedPdist(a, b, weights,powers=[2,2]):
     weights = np.array(weights)
     # return np.sqrt(np.sum((weights*np.abs(a-b))**powers))
     q = np.abs(a-b)
