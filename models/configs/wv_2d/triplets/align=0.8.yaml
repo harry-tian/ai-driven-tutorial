@@ -5,15 +5,9 @@ syn: true
 train_synthetic: ../embeds/wv_2d/train.pkl
 valid_synthetic: ../embeds/wv_2d/valid.pkl
 test_synthetic: ../embeds/wv_2d/test.pkl
-<<<<<<< HEAD
 train_triplets: ../datasets/wv_2d_triplets/align=0.8/train_triplets.pkl
 valid_triplets: ../datasets/wv_2d_triplets/align=0.8/valid_triplets.pkl
 test_triplets: ../datasets/wv_2d_triplets/align=0.8/test_triplets.pkl
-=======
-train_triplets: ../dataset/wv_2d_triplets/align=0.8/train_triplets.pkl
-valid_triplets: ../dataset/wv_2d_triplets/align=0.8/valid_triplets.pkl
-test_triplets: ../dataset/wv_2d_triplets/align=0.8/test_triplets.pkl
->>>>>>> d3cac975d7958e9356b73ca8e0f7e1eee5347815
 weights:
 - 1
 - 0.001

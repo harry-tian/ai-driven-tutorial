@@ -2,6 +2,7 @@
 *.npz
 *.zip
 *.npy
+*.ckpt
 
 models/results
 models/wandb
