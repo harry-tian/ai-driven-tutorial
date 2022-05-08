@@ -13,7 +13,7 @@ transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
-data_dir = '/net/scratch/tianh/food100-dataset/images'
+data_dir = '/net/scratch/tianh/food100-datasets/images'
 dataset = torchvision.datasets.ImageFolder(data_dir, transform=transform)
 
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset))

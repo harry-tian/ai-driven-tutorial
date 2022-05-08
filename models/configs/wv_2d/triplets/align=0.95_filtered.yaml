@@ -1,0 +1,17 @@
+wandb_mode: online
+wandb_project: wv_2d
+wandb_group: align=0.95_filtered
+syn: true
+train_synthetic: ../embeds/wv_2d/train.pkl
+valid_synthetic: ../embeds/wv_2d/valid.pkl
+test_synthetic: ../embeds/wv_2d/test.pkl
+train_triplets: ../datasets/wv_2d_triplets/align=0.95/train_triplets_filtered.pkl
+valid_triplets: ../datasets/wv_2d_triplets/align=0.95/valid_triplets_filtered.pkl
+test_triplets: ../datasets/wv_2d_triplets/align=0.95/test_triplets_filtered.pkl
+weights:
+- 1
+- 0.05
+powers:
+- 2
+- 2
+embed_dim: 50

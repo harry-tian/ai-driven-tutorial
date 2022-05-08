@@ -11,10 +11,12 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
 
-for i in {9..19}
+# for file in configs/wv_2d/triplets/* ; do sbatch RESN.sh $file ; done
+
+for i in {0..18}
     do python main.py \
             --dataset_config=configs/wv_2d/dataset.yaml \
             --model_config=configs/wv_2d/models/RESN.yaml \
-            --triplet_config=configs/wv_2d/triplets/w1=1_w2=0_filtered.yaml \
+            --triplet_config=$1 \
             --seed=$i
 done
