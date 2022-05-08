@@ -1,7 +1,15 @@
 ### Wandb args
+wandb_mode: online
+wandb_project : bm_prolific_d50_e100
+wandb_group : baselines
 
 ### triplet data
 train_triplets : ../data/bm_triplets/train_triplets.pkl
 valid_triplets : ../data/bm_triplets/valid_triplets.pkl
 test_triplets : ../data/bm_triplets/test_triplets.pkl
+
+### overwrite args
 dataloader_num_workers: 16
+embed_dim: 50
+max_epochs: 100
+pretrained: False

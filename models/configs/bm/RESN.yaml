@@ -1,18 +1,17 @@
+model: RESN
+
 ### Wandb args
-wandb_entity: ai-driven-tutorial
-wandb_project : bm_prolific
-wandb_group : baselines
-wandb_name : RESN
+wandb_group: RESN
+wandb_name: RESN
 
 ### Training args
-do_train : True
+do_train: True
 do_test: True
 
 ### Hyperparameters
-embed_dim : 10
-max_epochs : 400
-learning_rate : 1e-4
-train_batch_size : 120
-lamda : 0.2
-pretrained: false
+embed_dim: 50
+max_epochs: 100
+learning_rate: 1e-4
+train_batch_size: 120
+pretrained: False
 
