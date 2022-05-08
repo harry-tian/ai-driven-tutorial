@@ -8,7 +8,11 @@ loss_fn.cuda()
 # d = loss_fn.forward()
 
 
+<<<<<<< HEAD
 train_dataset = torchvision.datasets.DatasetFolder("datasets/4/all/", extensions='npy', loader=np.load, transform=torchvision.transforms.ToTensor())
+=======
+train_dataset = torchvision.datasets.DatasetFolder("dataset/4/all/", extensions='npy', loader=np.load, transform=torchvision.transforms.ToTensor())
+>>>>>>> d3cac975d7958e9356b73ca8e0f7e1eee5347815
 train_N = len(train_dataset)
 
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=train_N)

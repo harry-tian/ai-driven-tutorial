@@ -1,7 +1,13 @@
 ### classification data
+<<<<<<< HEAD
 train_dir : ../datasets/bm/train
 valid_dir : ../datasets/bm/valid
 test_dir : ../datasets/bm/test
+=======
+train_dir : ../dataset/bm/train
+valid_dir : ../dataset/bm/valid
+test_dir : ../dataset/bm/test
+>>>>>>> d3cac975d7958e9356b73ca8e0f7e1eee5347815
 num_class : 2
 transform : bm
 train_batch_size : 60

@@ -5,8 +5,13 @@ loss_fn = lpips.LPIPS(net='alex')
 loss_fn.cuda()
 # d = loss_fn.forward()
 
+<<<<<<< HEAD
 train_dataset = torchvision.datasets.ImageFolder("datasets/bm/train", transform=torchvision.transforms.ToTensor())
 valid_dataset = torchvision.datasets.ImageFolder("datasets/bm/valid", transform=torchvision.transforms.ToTensor())
+=======
+train_dataset = torchvision.datasets.ImageFolder("dataset/bm/train", transform=torchvision.transforms.ToTensor())
+valid_dataset = torchvision.datasets.ImageFolder("dataset/bm/valid", transform=torchvision.transforms.ToTensor())
+>>>>>>> d3cac975d7958e9356b73ca8e0f7e1eee5347815
 train_N = len(train_dataset)
 valid_N = len(valid_dataset)
 
