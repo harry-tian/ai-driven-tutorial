@@ -57,11 +57,10 @@ def load_configs(args):
     test_configs(configs)
     args_override = {}
     args = vars(args)
-    print(args)
     for hp in args:
-        if args[hp] is not None:
-            print(hp)
+        if 'config' not in hp and args[hp] is not None:
             args_override[hp] = args[hp]
+            print("Args overwriting", hp, "with", args[hp])
     args_override = oc.create(args_override)
     configs = oc.merge(configs, args_override)
     return configs
@@ -84,7 +83,7 @@ def load_configs_sweep(args):
     configs = oc.merge(configs, seed)
     return configs
 
-def generic_train(model, args, monitor, profiler=None,
+def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
                     early_stopping_callback=False, extra_callbacks=[], checkpoint_callback=None, logging_callback=None,  **extra_train_kwargs):
     output_dir = os.path.join("checkpoints", model.hparams.wandb_project)
     odir = Path(output_dir)
@@ -125,6 +124,7 @@ def generic_train(model, args, monitor, profiler=None,
         logger=logger,
         check_val_every_n_epoch=1,
         profiler=profiler,
+        num_sanity_val_steps=num_sanity_val_steps,
         **train_params)
 
     if args["do_train"]:
