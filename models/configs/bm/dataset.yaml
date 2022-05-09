@@ -4,7 +4,6 @@ valid_dir : ../datasets/bm/valid
 test_dir : ../datasets/bm/test
 num_class : 2
 transform : bm
-train_batch_size : 60
 
 ### synthetic data
 syn: False

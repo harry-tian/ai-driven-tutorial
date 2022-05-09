@@ -1,15 +1,15 @@
 ### Wandb args
-wandb_mode: online
-wandb_project : bm_prolific_d50_e100
-wandb_group : baselines
+wandb_mode: disabled
+wandb_project : bm_prolific_d50_e100_no_aug
+# wandb_group : ???
 
 ### triplet data
-train_triplets : ../datasets/bm_profilic_triplets/train_triplets.pkl
-valid_triplets : ../datasets/bm_profilic_triplets/valid_triplets.pkl
-test_triplets : ../datasets/bm_profilic_triplets/test_triplets.pkl
+train_triplets : ../datasets/bm_prolific_triplets/train_triplets.pkl
+valid_triplets : ../datasets/bm_prolific_triplets/valid_triplets.pkl
+test_triplets : ../datasets/bm_prolific_triplets/test_triplets.pkl
 
 ### overwrite args
-dataloader_num_workers: 16
+dataloader_num_workers: 4
 embed_dim: 50
 max_epochs: 100
 pretrained: False
