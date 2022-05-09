@@ -4,3 +4,5 @@ valid_dir : ../datasets/weevil_vespula/valid
 test_dir : ../datasets/weevil_vespula/test
 num_class : 2
 transform : wv
+
+deterministic: true

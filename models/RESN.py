@@ -106,7 +106,7 @@ class RESN(pl.LightningModule):
         embeds = self(x)
         loss, m = self.clf_loss_acc(embeds, y)
         self.log('train_clf_loss', loss)
-        self.log('train_clf_acc', m['acc'], prog_bar=False)
+        self.log('train_clf_acc', m['acc'])
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -114,7 +114,7 @@ class RESN(pl.LightningModule):
         embeds = self(x)
         loss, m = self.clf_loss_acc(embeds, y)
         self.log('valid_clf_loss', loss)
-        self.log('valid_clf_acc', m['acc'], prog_bar=False)
+        self.log('valid_clf_acc', m['acc'])
         if self.hparams.num_class < 3: self.log('valid_auc', m['auc'])
 
     def test_step(self, batch, batch_idx):
@@ -159,6 +159,7 @@ class RESN(pl.LightningModule):
         self.train_dataset = torchvision.datasets.ImageFolder(self.hparams.train_dir, transform=train_transform)
         self.valid_dataset = torchvision.datasets.ImageFolder(self.hparams.valid_dir, transform=valid_transform)
         self.test_dataset = torchvision.datasets.ImageFolder(self.hparams.test_dir, transform=valid_transform)
+            
         self.train_input = torch.tensor(np.array([data[0].numpy() for data in self.train_dataset])).cuda()
         self.valid_input = torch.tensor(np.array([data[0].numpy() for data in self.valid_dataset])).cuda()
         self.test_input = torch.tensor(np.array([data[0].numpy() for data in self.test_dataset])).cuda()
@@ -175,6 +176,11 @@ class RESN(pl.LightningModule):
         # valid_idx = np.random.choice(len(self.valid_triplets), 800, replace=False)
         # self.test_triplets = self.test_triplets[valid_idx]
         # self.valid_triplets = self.valid_triplets[valid_idx]
+
+    def load_dataset_to_memory(self, dataset):
+        loader = torch.utils.data.DataLoader(dataset, len(dataset), num_workers=1)
+        batch = next(iter(loader))
+        return (batch[0].to(self.device), batch[1].to(self.device))
 
     def train_dataloader(self):
         dataset = self.train_dataset
@@ -202,7 +208,6 @@ def main():
     model = RESN(**configs)
     monitor = "valid_clf_loss"
     trainer.generic_train(model, configs, monitor)
-
 if __name__ == "__main__":
     main()
 

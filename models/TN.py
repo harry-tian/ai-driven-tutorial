@@ -47,7 +47,7 @@ class TN(RESN):
         triplet_idx = batch[0]
         triplet_loss, triplet_acc = self.train_triplets_step(triplet_idx)
 
-        self.log('train_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('train_triplet_acc', triplet_acc)
         self.log('train_triplet_loss', triplet_loss)
         return triplet_loss
 
@@ -56,7 +56,7 @@ class TN(RESN):
         triplet_idx = batch[0]
 
         triplet_loss, triplet_acc = self.mixed_triplets_step(triplet_idx, input)
-        self.log('valid_triplet_acc', triplet_acc, prog_bar=False)
+        self.log('valid_triplet_acc', triplet_acc)
         self.log('valid_triplet_loss', triplet_loss)
 
     def test_step(self, batch, batch_idx):

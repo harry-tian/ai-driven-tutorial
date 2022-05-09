@@ -23,6 +23,7 @@ def config_parser():
     parser.add_argument("--seed", default=None, type=int)
     parser.add_argument("--lamda", default=None, type=float)
     parser.add_argument("--wandb_name", default=None, type=str)
+    parser.add_argument("--ckpt_path", default=None, type=str)
     return parser
 
 def test_configs(configs):
@@ -125,6 +126,7 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
         check_val_every_n_epoch=1,
         profiler=profiler,
         num_sanity_val_steps=num_sanity_val_steps,
+        enable_progress_bar=False,
         **train_params)
 
     if args["do_train"]:
@@ -168,6 +170,7 @@ def do_test(model, args, ckpt_path):
         auto_select_gpus=True, ## true
         weights_summary=None,
         logger=logger,
+        enable_progress_bar=False,
         check_val_every_n_epoch=1,
         **train_params)
         
