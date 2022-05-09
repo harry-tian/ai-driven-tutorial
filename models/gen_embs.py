@@ -1,34 +1,33 @@
-from re import sub
-from telnetlib import SB
-
-from sklearn import datasets
 import argparse, pickle
 from pydoc import locate
 import numpy as np
-import torchvision, torch, os
+import torchvision, torch, os, pathlib
 import transforms
 
 ######### global variables ###########
 
-bm = {"data_dir":"/net/scratch/tianh-shared/bm",
+DATASETS = {}
+
+DATASETS["bm"] = {"data_dir":"../datasets/bm",
             "transform": "resn"}
 
-bird = {"data_dir":"/net/scratch/tianh-shared/bird",
+DATASETS["bird"] = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "bird"}
 
-chest_xray = {"data_dir":"/net/scratch/tianh-shared/PC/3classes",
+DATASETS["chest_xray"] = {"data_dir":"/net/scratch/tianh-shared/PC/3classes",
             "transform": "resn"}
 
-prostatex = {"data_dir":"/net/scratch/tianh-shared/bird",
+DATASETS["prostatex"] = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "xray"}
 
-wv = {"data_dir":"/net/scratch/chacha-shared/weevil_vespula",
+DATASETS["wv"] = {"data_dir":"../datasets/weevil_vespula",
             "transform": "wv"}
 
 model_path_dict ={
     'TN': "TN.TN",
     'MTL': "MTL.MTL",
-    'RESN': "RESN.RESN"
+    'RESN': "RESN.RESN",
+    'MTL_han': "MTL_han.MTL"
 }
 
 max_dataset = 30
@@ -77,24 +76,39 @@ def get_embeds(model_path, ckpt, split, data_dir, transform, embed_path):
 ####### Tune variables here #############
 
 
-model_name = "RESN"
-ckpt_infix = 'wv_2d/2wql6bo5' 
-suffix = "_emb50"
+# model_name = "RESN"
+# wandb_group = "wv_2d"
+# wandb_run = "2wql6bo5"
+# ckpt_infix =  "/".join([wandb_group, wandb_run])
+# suffix = "emb50"
 
-dataset = wv
-subdir = "wv_2d/pretrained"
+# dataset = DATASETS['wv']
+# subdir = "wv_2d/pretrained"
 
-
+parser = argparse.ArgumentParser()
+parser.add_argument("--model_name", default="RESN", type=str, required=True)
+parser.add_argument("--wandb_group", default="wv_2d", type=str, required=True)
+parser.add_argument("--wandb_name", default="", type=str, required=False)
+parser.add_argument("--wandb_run", default="2wql6bo5", type=str, required=True)
+parser.add_argument("--suffix", default="emb50", type=str, required=True)
+parser.add_argument("--dataset", default="wv", type=str, required=True)
+parser.add_argument("--subdir", default="wv_2d/pretrained", type=str, required=True)
 
 def main():
+    args = parser.parse_args()
     splits = ["train","test","valid"]
+    model_name = args.model_name
     model_path = model_path_dict[model_name]
-    ckpt = f"results/{ckpt_infix}/checkpoints/best_model.ckpt" 
-    # ckpt = "/net/scratch/hanliu-shared/ckpts/mtl.1gcr1clm.ckpt"
+    suffix = args.suffix
+    ckpt_infix = "/".join([args.wandb_group, args.wandb_run])
+    ckpt = f"checkpoints/{ckpt_infix}/checkpoints/best_model.ckpt"
+    dataset = DATASETS[args.dataset]
+    subdir = "/".join([args.subdir, args.wandb_group, args.wandb_name])
+    pathlib.Path("../embeds/" + subdir).mkdir(parents=True, exist_ok=True)
+    print(args)
     for split in splits:
-        name = f"{model_name}_{split}{suffix}"
+        name = f"{model_name}_{split}_{suffix}"
         embed_path = f"../embeds/{subdir}/{name}.pkl"
-
         get_embeds(model_path, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
 
 if __name__ == "__main__":
