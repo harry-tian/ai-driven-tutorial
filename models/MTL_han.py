@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pathlib
 import sys, pickle
 import numpy as np
 import torch
@@ -80,7 +81,7 @@ class MTL(pl.LightningModule):
 
     def sample_train_clf_trips(self, x_idx, ys):
         classes = torch.unique(ys)
-        k_trips = self.hparams.train_batch_size // len(classes)
+        k_trips = self.hparams.triplet_batch_size // len(classes)
         clf_trips = []
         for c in classes:
             in_idx = x_idx[ys == c]
@@ -182,7 +183,6 @@ class MTL(pl.LightningModule):
     def validation_epoch_end(self, validation_step_outputs):
         all_triplet_loss, all_triplet_acc = zip(*validation_step_outputs)
         if len(all_triplet_loss) > 1:
-            # valid_steps = torch.Tensor(len(all_triplet_loss)).to(self.device)
             triplet_loss = torch.cat(list(all_triplet_loss)).sum() / len(all_triplet_loss)
             triplet_acc = torch.cat(list(all_triplet_acc)).sum() / len(all_triplet_loss)
         else:
@@ -252,6 +252,37 @@ class MTL(pl.LightningModule):
             self.log('test_1nn_acc', knn_acc)
         if ds_acc:
             self.log('test_decision_support', ds_acc)
+        if self.hparams.embeds_output_dir is not None:
+            self.save_embeds()
+
+    def save_embeds(self):
+        self.eval()
+        if self.in_memeory_dataset:
+            z_train = self(self.ref_dataset[0].to(self.device)).cpu().detach().numpy()
+            z_valid = self(self.valid_dataset[0].to(self.device)).cpu().detach().numpy()
+            z_test = self(self.test_dataset[0].to(self.device)).cpu().detach().numpy()
+        else:
+            z_train, z_valid, z_test = [], [], []
+            tdl = torch.utils.data.DataLoader(self.ref_dataset, batch_size=self.hparams.train_batch_size)
+            vdl = torch.utils.data.DataLoader(self.valid_dataset, batch_size=self.hparams.train_batch_size)
+            sdl = torch.utils.data.DataLoader(self.test_dataset, batch_size=self.hparams.train_batch_size)
+            for x, _ in iter(tdl): z_train.append(self(x).cpu().detach().numpy())
+            for x, _ in iter(vdl): z_valid.append(self(x).cpu().detach().numpy())
+            for x, _ in iter(sdl): z_test.append(self(x).cpu().detach().numpy())
+            z_train = torch.cat(z_train)
+            z_valid = torch.cat(z_valid)
+            z_test = torch.cat(z_test)
+        for fold, emb in zip(['train', 'valid', 'test'], [z_train, z_valid, z_test]):
+            name = f"MTL_han_{fold}_emb{self.embed_dim}_s{self.hparams.seed}.pkl"
+            path = '/'.join([
+                self.hparams.embeds_output_dir, 
+                self.hparams.wandb_project,
+                self.hparams.wandb_group,
+                self.hparams.wandb_name.split('s')[0]
+                ])
+            print("Saving embeds at:", path)
+            pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+            pickle.dump(emb, open(path + '/' + name, 'wb'))
 
     def eval_knn_ds(self, test_ds, train_ds, syn_x_train=None, syn_x_test=None, status=None):
         x_train, y_train = self.sample_xs_ys(train_ds)
@@ -279,7 +310,7 @@ class MTL(pl.LightningModule):
     def train_dataloader(self):
         triplet_loader = torch.utils.data.DataLoader(
             torch.Tensor(self.train_triplets).long(), 
-            batch_size=self.hparams.train_batch_size, 
+            batch_size=self.hparams.triplet_batch_size, 
             num_workers=self.hparams.dataloader_num_workers,
             drop_last=True, shuffle=True)
         return triplet_loader

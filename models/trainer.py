@@ -34,7 +34,7 @@ def test_configs(configs):
     "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
     "do_train", "do_test",
     "train_triplets", "valid_triplets", "test_triplets", "triplet_batch_size",
-    "pretrained", "lamda", "syn"]
+    "pretrained", "lamda", "syn", "embeds_output_dir"]
     syn_args = ["syn", "train_synthetic", "valid_synthetic", "test_synthetic", "weights"]
     
     if "syn" in configs:
