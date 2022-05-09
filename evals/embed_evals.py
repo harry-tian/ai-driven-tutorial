@@ -9,19 +9,28 @@ import pandas as pd
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
-def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers):
+def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers, dist=None):
     evals = {}
     
     NINO = get_NINO(z_train, y_train, z_test, y_test)
-    NINO_ds_acc, NINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NINO, weights, powers)
+    if dist is not None:
+        NINO_ds_acc, NINO_ds_err = decision_support_with_dist(dist, NINO, y_train, y_test)
+    else:
+        NINO_ds_acc, NINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NINO, weights, powers)
     evals['NINO_ds_acc'], evals['NINO_ds_err'] = NINO_ds_acc, NINO_ds_err
     
     rNINO = get_rNINO(z_train, y_train, z_test, y_test)
-    rNINO_ds_acc, rNINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, rNINO, weights, powers)
+    if dist is not None:
+        rNINO_ds_acc, rNINO_ds_err = decision_support_with_dist(dist, rNINO, y_train, y_test)
+    else:
+        rNINO_ds_acc, rNINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, rNINO, weights, powers)
     evals['rNINO_ds_acc'], evals['rNINO_ds_err'] = rNINO_ds_acc, rNINO_ds_err
 
     NIFO = get_NIFO(z_train, y_train, z_test, y_test)
-    NIFO_ds_acc, NIFO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NIFO, weights, powers)
+    if dist is not None:
+        NIFO_ds_acc, NIFO_ds_err = decision_support_with_dist(dist, NIFO, y_train, y_test)
+    else:
+        NIFO_ds_acc, NIFO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NIFO, weights, powers)
     evals['NIFO_ds_acc'], evals['NIFO_ds_err'] = NIFO_ds_acc, NIFO_ds_err
 
     NIs = get_NI(z_train, y_train, z_test, y_test)
@@ -119,8 +128,25 @@ def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers
             err.append([test_idx, examples_idx[0], examples_idx[1]])
             continue
         ref = x_test[test_idx]
-        dists = [weightedPdist(ref, x_train[idx], weights, powers) for idx in examples_idx]
+        if weights is None and powers is None:
+            dist_fn = lambda x, y: euclidean_distances(x.reshape(1, -1), y.reshape(1, -1))
+        else:
+            dist_fn = lambda x, y: weightedPdist(x, y, weights, powers)
+        dists = [dist_fn(ref, x_train[idx]) for idx in examples_idx]
+        # dists = [weightedPdist(ref, x_train[idx], weights, powers) for idx in examples_idx]
         y_pred = y_train[examples_idx[np.argmin(dists)]]
+        if y_pred == y_test[test_idx]: correct += 1
+        else: err.append([test_idx, examples_idx[0], examples_idx[1]])
+    return correct/len(y_test), err
+
+def decision_support_with_dist(dist, examples, y_train, y_test):
+    correct = 0
+    err = []
+    for test_idx, examples_idx in enumerate(examples):
+        if len(np.unique(examples_idx)) < len(examples_idx): ## signal of error in rNINO
+            err.append([test_idx, examples_idx[0], examples_idx[1]])
+            continue
+        y_pred = y_train[examples_idx[np.argmin(dist[test_idx][examples_idx])]]
         if y_pred == y_test[test_idx]: correct += 1
         else: err.append([test_idx, examples_idx[0], examples_idx[1]])
     return correct/len(y_test), err
