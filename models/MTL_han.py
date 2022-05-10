@@ -29,7 +29,7 @@ class MTL(pl.LightningModule):
         if self.embed_dim:
             self.encoder.fc = nn.Sequential(nn.Linear(num_features, self.embed_dim, bias=False))
             self.classifier = nn.Sequential(
-                nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Linear(self.embed_dim, self.hparams.num_class))
+                nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, self.hparams.num_class))
         else:
             self.encoder.fc = nn.Identity()
             self.classifier = nn.Sequential(nn.Linear(num_features, self.hparams.num_class))
@@ -142,7 +142,7 @@ class MTL(pl.LightningModule):
             uniques, inverse = torch.unique(all_flatten, sorted=False, return_inverse=True)
             batch_trip_idx = inverse[:trip_numel].view(trip_shape)
             batch_clf_idx = inverse[trip_numel+1:]
-        xs, ys = self.sample_xs_ys(self.train_dataset, uniques, aug=False)
+        xs, ys = self.sample_xs_ys(self.train_dataset, uniques, aug=self.hparams.aug)
         xs, ys = xs.to(self.device), ys.to(self.device)
         zs = self(xs)
         total_loss = torch.zeros(1).to(self.device)

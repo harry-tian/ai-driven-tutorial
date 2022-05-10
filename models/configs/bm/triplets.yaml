@@ -1,7 +1,7 @@
 ### Wandb args
 wandb_mode: disabled
-wandb_project : bm_prolific_d512_e100
-wandb_group : disabled
+wandb_project : bm_prolific_d512_e50
+wandb_group : aug_0
 
 ### triplet data
 train_triplets : ../datasets/bm_prolific_triplets/train_triplets.pkl
@@ -11,6 +11,6 @@ test_triplets : ../datasets/bm_prolific_triplets/test_triplets.pkl
 ### overwrite args
 dataloader_num_workers: 4
 embed_dim: 512
-max_epochs: 1
+max_epochs: 50
 pretrained: False
 embeds_output_dir: ../embeds/bm/prolific

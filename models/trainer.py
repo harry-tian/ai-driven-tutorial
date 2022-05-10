@@ -30,7 +30,7 @@ def test_configs(configs):
     ''' checks for expected hyperparameters'''
     required_args = ["gpus", "seed", "dataloader_num_workers", "model",
     "max_epochs", "learning_rate", "train_batch_size", "embed_dim",
-    "num_class" ,"train_dir", "valid_dir", "test_dir", "transform", 
+    "num_class" ,"train_dir", "valid_dir", "test_dir", "transform", "aug",
     "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
     "do_train", "do_test",
     "train_triplets", "valid_triplets", "test_triplets", "triplet_batch_size",
