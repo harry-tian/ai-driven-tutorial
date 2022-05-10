@@ -29,7 +29,7 @@ class MTL(pl.LightningModule):
         if self.embed_dim:
             self.encoder.fc = nn.Sequential(nn.Linear(num_features, self.embed_dim, bias=False))
             self.classifier = nn.Sequential(
-                nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, self.hparams.num_class))
+                nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Linear(self.embed_dim, self.hparams.num_class))
         else:
             self.encoder.fc = nn.Identity()
             self.classifier = nn.Sequential(nn.Linear(num_features, self.hparams.num_class))
@@ -77,7 +77,7 @@ class MTL(pl.LightningModule):
     def load_dataset_to_memory(self, dataset):
         loader = torch.utils.data.DataLoader(dataset, len(dataset), num_workers=1)
         batch = next(iter(loader))
-        return (batch[0].to(self.device), batch[1].to(self.device))
+        return batch[0].to(self.device), batch[1].to(self.device)
 
     def sample_train_clf_trips(self, x_idx, ys):
         classes = torch.unique(ys)
@@ -160,6 +160,7 @@ class MTL(pl.LightningModule):
             total_loss += self.hparams.lamda * clf_loss
             self.log('train_clf_loss', clf_loss)
             self.log('train_clf_acc', clf_acc, prog_bar=True)
+        self.log('train_total_loss', total_loss)
         return total_loss
 
     def validation_step(self, batch, batch_idx):
