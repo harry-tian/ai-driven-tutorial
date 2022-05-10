@@ -182,7 +182,7 @@ def get_dataloader(dataset, batch_size, split, num_workers):
     drop_last = True if split == "train" else False
     shuffle = True if split == "train" else False
     batch_size = min(len(dataset), batch_size)
-    batch_size = min(128,batch_size)
+    batch_size = min(100,batch_size)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, 
         num_workers=num_workers, drop_last=drop_last, shuffle=shuffle)
     return dataloader

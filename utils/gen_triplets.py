@@ -1,6 +1,31 @@
 from itertools import combinations
-import random
+import random,sys
+import numpy as np
+sys.path.insert(0, '..')
 import evals.embed_evals as evals
+
+def get_noisy_triplets(triplets, p):
+    triplets = np.array(triplets)
+    noisy_triplets = []
+    for t in triplets:
+        if np.random.binomial(1, p, 1)[0] > 0:
+            noisy_triplets.append([t[0], t[2], t[1]])
+        else: noisy_triplets.append(t)
+    return noisy_triplets
+
+def filter_train_triplets(triplets, y_train):
+    filtered = []
+    for t in triplets:
+        a,p,n = t
+        if not (y_train[a]==y_train[n] and y_train[a]!=y_train[p]): filtered.append(t)
+    return np.array(filtered)
+
+def filter_mixed_triplets(triplets, y_train, y_test):
+    filtered = []
+    for t in triplets:
+        a,p,n = t
+        if not (y_test[a]==y_train[n] and y_test[a]!=y_train[p]): filtered.append(t)
+    return np.array(filtered)
 
 def sample_triplets(indexs, num_triplets, visual_weights, embeds, powers):
     combs = list(combinations(indexs, 3))
