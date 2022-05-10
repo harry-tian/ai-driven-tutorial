@@ -6,3 +6,4 @@ num_class : 2
 transform : wv
 
 deterministic: true
+aug: false

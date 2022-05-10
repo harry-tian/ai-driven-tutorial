@@ -70,7 +70,7 @@ class RESN(pl.LightningModule):
         logits = self(x)
         loss, m = self.get_loss_acc(logits, y)
         self.log('train_loss', loss)
-        self.log('train_acc', m['acc'], prog_bar=False)
+        self.log('train_acc', m['acc'])
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -78,7 +78,7 @@ class RESN(pl.LightningModule):
         logits = self(x)
         loss, m = self.get_loss_acc(logits, y)
         self.log('valid_loss', loss)
-        self.log('valid_acc', m['acc'], prog_bar=False)
+        self.log('valid_acc', m['acc'])
         if self.hparams.num_class < 3:
             self.log('valid_auc', m['auc'])
             # self.log('valid_sensitivity', m['tpr'])
@@ -92,7 +92,7 @@ class RESN(pl.LightningModule):
         x, y = batch
         logits = self(x)
         loss, m = self.get_loss_acc(logits, y)
-        self.log('test_acc', m['acc'], prog_bar=False)
+        self.log('test_acc', m['acc'])
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)

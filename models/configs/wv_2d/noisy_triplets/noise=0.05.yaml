@@ -1,0 +1,25 @@
+### Wandb args
+wandb_mode : online
+wandb_project: wv_2d
+wandb_group: noise=0.05
+
+#### synthetic data
+syn: True
+train_synthetic : ../embeds/wv_2d/train.pkl
+valid_synthetic : ../embeds/wv_2d/valid.pkl
+test_synthetic : ../embeds/wv_2d/test.pkl
+
+### triplet data
+train_triplets: ../datasets/wv_2d_triplets/align=0.7_noisy/0.05/train_triplets_noisy.pkl
+valid_triplets: ../datasets/wv_2d_triplets/align=0.7_noisy/0.05/valid_triplets_noisy.pkl
+test_triplets: ../datasets/wv_2d_triplets/align=0.7_noisy/0.05/test_triplets_noisy.pkl
+weights: 
+  - 1
+  - 0
+powers:
+  - 2
+  - 2
+
+
+### overwrite args
+embed_dim : 50

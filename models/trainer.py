@@ -34,7 +34,7 @@ def test_configs(configs):
     "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
     "do_train", "do_test",
     "train_triplets", "valid_triplets", "test_triplets", "triplet_batch_size",
-    "pretrained", "lamda", "syn", "embeds_output_dir"]
+    "pretrained", "lamda", "syn", "embeds_output_dir", "aug"]
     syn_args = ["syn", "train_synthetic", "valid_synthetic", "test_synthetic", "weights"]
     
     if "syn" in configs:
@@ -43,10 +43,15 @@ def test_configs(configs):
             required_args += syn_args
             
     if set(configs) != set(required_args):
+        missing_args = np.setdiff1d(required_args, configs)
         print("\n WARNING: Missing args:")
-        print(np.setdiff1d(required_args, configs))
+        print(missing_args)
         print("WARNING: Unrecognized args:")
         print(np.setdiff1d(configs, required_args))
+
+        for key in missing_args: configs[key] = None
+
+    return configs
 
 def load_configs(args):
     '''' triplet_config > model_config > dataset_config > base_config '''
@@ -55,7 +60,7 @@ def load_configs(args):
     dataset_config = oc.load(args.dataset_config) if args.dataset_config else {}
     triplet_config = oc.load(args.triplet_config) if args.triplet_config else {}
     configs = oc.merge(base_config, dataset_config,  model_config, triplet_config)
-    test_configs(configs)
+    configs = test_configs(configs)
     args_override = {}
     args = vars(args)
     for hp in args:
