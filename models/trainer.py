@@ -18,6 +18,7 @@ def config_parser():
     parser.add_argument("--model_config", default=None, type=str, required=True)
     parser.add_argument("--dataset_config", default=None, type=str, required=False)
     parser.add_argument("--triplet_config", default=None, type=str, required=False)
+    parser.add_argument("--debug_config", default=None, type=str, required=False)
     parser.add_argument("--learning_rate", default=None, type=float)
     parser.add_argument("--train_batch_size", default=None, type=int)
     parser.add_argument("--seed", default=None, type=int)
@@ -59,6 +60,7 @@ def load_configs(args):
     model_config = oc.load(args.model_config)
     dataset_config = oc.load(args.dataset_config) if args.dataset_config else {}
     triplet_config = oc.load(args.triplet_config) if args.triplet_config else {}
+    debug_config = oc.load(args.debug_config) if args.debug_config else {}
     configs = oc.merge(base_config, dataset_config,  model_config, triplet_config)
     configs = test_configs(configs)
     args_override = {}
@@ -68,7 +70,7 @@ def load_configs(args):
             args_override[hp] = args[hp]
             print("Args overwriting", hp, "with", args[hp])
     args_override = oc.create(args_override)
-    configs = oc.merge(configs, args_override)
+    configs = oc.merge(configs, args_override, debug_config)
     return configs
 
 def load_configs_sweep(args):

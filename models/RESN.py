@@ -40,10 +40,7 @@ class RESN(pl.LightningModule):
         self.feature_extractor.fc = nn.Identity()
 
     ###### old architectur: final linear layer, d=embed_dim
-        self.fc = nn.ModuleList([nn.Sequential(
-            nn.BatchNorm1d(num_features), nn.ReLU(), nn.Dropout(), nn.Linear(num_features, self.embed_dim), 
-            # nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(), nn.Linear(256, self.embed_dim)
-        )])
+        self.fc = nn.ModuleList([nn.Sequential(nn.Linear(num_features, self.embed_dim), nn.Dropout())])
         self.classifier = nn.Sequential(
             nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Dropout(), nn.Linear(self.embed_dim, self.out_dim)
         )
@@ -56,6 +53,7 @@ class RESN(pl.LightningModule):
         self.summarize()
 
     def forward(self, x):
+        x = x.to(self.device)
         embeds = self.feature_extractor(x)
         for layer in self.fc: embeds = layer(embeds)
         return embeds
@@ -159,7 +157,7 @@ class RESN(pl.LightningModule):
         self.train_dataset = torchvision.datasets.ImageFolder(self.hparams.train_dir, transform=train_transform)
         self.valid_dataset = torchvision.datasets.ImageFolder(self.hparams.valid_dir, transform=valid_transform)
         self.test_dataset = torchvision.datasets.ImageFolder(self.hparams.test_dir, transform=valid_transform)
-            
+
         self.train_input = torch.tensor(np.array([data[0].numpy() for data in self.train_dataset])).cuda()
         self.valid_input = torch.tensor(np.array([data[0].numpy() for data in self.valid_dataset])).cuda()
         self.test_input = torch.tensor(np.array([data[0].numpy() for data in self.test_dataset])).cuda()
@@ -176,11 +174,6 @@ class RESN(pl.LightningModule):
         # valid_idx = np.random.choice(len(self.valid_triplets), 800, replace=False)
         # self.test_triplets = self.test_triplets[valid_idx]
         # self.valid_triplets = self.valid_triplets[valid_idx]
-
-    def load_dataset_to_memory(self, dataset):
-        loader = torch.utils.data.DataLoader(dataset, len(dataset), num_workers=1)
-        batch = next(iter(loader))
-        return (batch[0].to(self.device), batch[1].to(self.device))
 
     def train_dataloader(self):
         dataset = self.train_dataset
