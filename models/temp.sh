@@ -81,6 +81,15 @@ python gen_embs.py \
     --subdir= \
     --wandb_group=wv_2d \
     --wandb_name=RESN \
+    --wandb_run=126y2ij3 \
+    --suffix=seed7
+
+python gen_embs.py \
+    --dataset=wv \
+    --model_name=MTL_han \
+    --subdir= \
+    --wandb_group=wv_2d \
+    --wandb_name=RESN \
     --wandb_run=36gi91ok \
     --suffix=seed8
     
