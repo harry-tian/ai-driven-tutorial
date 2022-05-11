@@ -4,7 +4,7 @@ valid_dir : ../datasets/bm/valid
 test_dir : ../datasets/bm/test
 num_class : 2
 transform : bm
-aug: True
+aug: False
 
 ### synthetic data
 syn: False
