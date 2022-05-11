@@ -1,6 +1,6 @@
 ### Wandb args
 wandb_mode : online
-wandb_project: wv_2d
+wandb_project: wv_2d_filtered
 wandb_group: align=0.7_filtered
 
 #### synthetic data

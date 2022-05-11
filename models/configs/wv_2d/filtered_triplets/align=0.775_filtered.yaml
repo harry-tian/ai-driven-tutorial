@@ -1,5 +1,5 @@
 wandb_mode: online
-wandb_project: wv_2d
+wandb_project: wv_2d_filtered
 wandb_group: align=0.775_filtered
 syn: true
 train_synthetic: ../embeds/wv_2d/train.pkl

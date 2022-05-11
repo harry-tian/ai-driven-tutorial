@@ -7,3 +7,5 @@ transform : wv
 
 deterministic: true
 aug: false
+
+embeds_output_dir : /net/scratch/tianh/explain_teach/embeds

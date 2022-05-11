@@ -4,10 +4,13 @@ do_test: True
 
 ### Hyperparameters
 embed_dim : 50
-max_epochs : 1
+max_epochs : 80
 learning_rate : 1e-4
 train_batch_size : 30
 triplet_batch_size : 200
 pretrained: true
 
-embeds_output_dir : /net/scratch/tianh/explain_teach/embeds
+
+
+wandb_project: wv_2d
+wandb_group: RESN_d=50
