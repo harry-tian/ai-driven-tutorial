@@ -38,6 +38,17 @@ def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights
 
     return evals
 
+def nn_comparison(x_train, x_test, NI1, NI2, weights, powers=[2,2]):
+    ni1_count, ni2_count, ties = 0, 0, 0
+    for test_idx, (ni1, ni2) in enumerate(zip(NI1,NI2)):
+        dist_ni1 = weightedPdist(x_test[test_idx], x_train[ni1], weights, powers)
+        dist_ni2 = weightedPdist(x_test[test_idx], x_train[ni2], weights, powers)
+        if  dist_ni1 < dist_ni2: ni1_count += 1
+        elif dist_ni1 > dist_ni2: ni2_count += 1
+        else: ties += 1
+
+    return ni1_count, ni2_count, ties
+
 def get_NINO(x_train, y_train, x_test, y_test):
     ''' Neareast In-class & Nearest Out-of-class '''
     NIs = get_NI(x_train, y_train, x_test, y_test)

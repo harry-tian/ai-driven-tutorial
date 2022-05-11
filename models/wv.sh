@@ -10,24 +10,28 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
-#SBATCH --exclude=a[001-002],a006
+#SBATCH --exclude=aa[001-002]
 
-# for triplet in configs/wv_2d/triplets/* ; do for model in configs/wv_2d/models/* ; do for i in {0..4} ; do if [ $model != configs/wv_2d/models/RESN.yaml ]; then sbatch wv.sh $triplet $model $i; fi; done; done; done
-
-# python main.py \
+ 
+# python MTL_han.py \
 #     --dataset_config=configs/wv_2d/dataset.yaml \
-#     --model_config=$2 \
-#     --triplet_config=$1 \
-#     --seed=$3
+#     --model_config=configs/wv_2d/models/MTL0.5.yaml \
+#     --triplet_config=configs/wv_2d/align_triplets/align=0.7.yaml \
+#     --overwrite_config=configs/wv_2d/overwrite.yaml \
+#     --seed=0
+#  
 
-# for file in configs/wv_2d/models/* ; do 
-#     for i in {3..4} ; do 
-#         if [ $file = configs/wv_2d/models/MTL0.2.yaml ]
-#         then python main.py \
-#             --dataset_config=configs/wv_2d/dataset.yaml \
-#             --model_config=$file \
-#             --triplet_config=configs/wv_2d/triplets/align=0.7_filtered.yaml \
-#             --seed=$i 
-#         fi 
-#     done
-# done
+# for triplet in configs/wv_2d/filtered_triplets/* ; do for model in configs/wv_2d/models/* ; do if [ $model = configs/wv_2d/models/TN.yaml ] || [ $model = configs/wv_2d/models/MTL0.5.yaml ]; then sbatch wv.sh $triplet $model; fi; done; done
+
+# for triplet in configs/wv_2d/align_triplets/* ; do for model in configs/wv_2d/models/* ; do if [ $model = configs/wv_2d/models/TN.yaml ] || [ $model = configs/wv_2d/models/MTL0.5.yaml ]; then sbatch wv.sh $triplet $model; fi; done; done
+
+for i in {0..2}
+    # do echo $1 $2 $i
+    do python MTL_han.py \
+        --dataset_config=configs/wv_2d/dataset.yaml \
+        --model_config=$2 \
+        --triplet_config=$1 \
+        --seed=$i
+done
+
+

@@ -72,31 +72,18 @@ def get_embeds(model_path, ckpt, split, data_dir, transform, embed_path):
     pickle.dump(embeds, open(embed_path, "wb"))
     print(f"dumped to {embed_path}")
 
-
-####### Tune variables here #############
-
-
-# model_name = "RESN"
-# wandb_group = "wv_2d"
-# wandb_run = "2wql6bo5"
-# ckpt_infix =  "/".join([wandb_group, wandb_run])
-# suffix = "emb50"
-
-# dataset = DATASETS['wv']
-# subdir = "wv_2d/pretrained"
-
 parser = argparse.ArgumentParser()
+parser.add_argument("--dataset", default="wv", type=str, required=True)
 parser.add_argument("--model_name", default="RESN", type=str, required=True)
+parser.add_argument("--subdir", default="wv_2d/pretrained", type=str, required=True)
 parser.add_argument("--wandb_group", default="wv_2d", type=str, required=True)
 parser.add_argument("--wandb_name", default="", type=str, required=False)
 parser.add_argument("--wandb_run", default="2wql6bo5", type=str, required=True)
 parser.add_argument("--suffix", default="emb50", type=str, required=True)
-parser.add_argument("--dataset", default="wv", type=str, required=True)
-parser.add_argument("--subdir", default="wv_2d/pretrained", type=str, required=True)
 
 def main():
     args = parser.parse_args()
-    splits = ["train","test","valid"]
+    splits = ["train","test"]#,"valid"]
     model_name = args.model_name
     model_path = model_path_dict[model_name]
     suffix = args.suffix

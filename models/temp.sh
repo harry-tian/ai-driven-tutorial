@@ -10,11 +10,14 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
-#SBATCH --exclude=a[001-002],a006
-# for file in configs/wv_2d/models/* ; do for i in {0..4} ; do if [ $file != configs/wv_2d/models/RESN.yaml ]; then sbatch wv.sh $file $i; fi; done; done
+#SBATCH --exclude=aa[001-002]
 
-python main.py \
-    --dataset_config=configs/wv_2d/dataset.yaml \
-    --model_config=configs/wv_2d/models/TN.yaml \
-    --triplet_config=configs/wv_2d/triplets/align=0.7_filtered.yaml \
-    --seed=0
+python gen_embs.py \
+    --dataset=wv \
+    --model_name=MTL_han \
+    --subdir= \
+    --wandb_group=wv_2d \
+    --wandb_name=RESN \
+    --wandb_run=1tip7ey5 \
+    --suffix=seed3
+
