@@ -6,6 +6,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.metrics.pairwise import euclidean_distances
 import pandas as pd
+# import eval_ds as utils
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
@@ -186,21 +187,75 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
         score = knc.score(x_valid, y_valid)
     return score
 
-def weightedPdist(a, b, weights,powers=[2,2]):
-    weights = np.array(weights)
-    # return np.sqrt(np.sum((weights*np.abs(a-b))**powers))
-    q = np.abs(a-b)
-    return np.sqrt(np.sum(weights*(q**powers)))
+def weightedPdist(a, b, w, power=2):
+    """ Han's faster version"""
+    a = a.reshape(-1,len(w))
+    b = b.reshape(-1,len(w))
 
-def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers):
-    ''' 1nn acc given distored weight and power metrics '''
-    correct = 0
-    for x,y in zip(x_test,y_test):
-        dists = [weightedPdist(x, x_, weights, powers) for x_ in x_train]
-        nn = np.argmin(dists)
-        if y_train[nn] == y: correct += 1
+    diff = a[:,np.newaxis].repeat(len(b),1) - b
+    return ((np.abs(diff)**2)*w).sum(-1)**(1/2)
+
+
+def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers=None):
+    """ Han's faster version"""
+    dist = weightedPdist(x_test,x_train,weights)
+    ds = get_ds(dist,y_test,y_train)
+    acc = eval_ds(dist,ds,y_test,y_train).mean()
+    return acc
+
+
+
+def get_ds(dist, y_test, y_train):
+    mask_train = np.tile(y_train, (len(y_test), 1))
+    apply_mask = lambda x, m: x + (-(m - 1) * x.max())
+    ds = np.arange(len(y_test)).reshape(-1, 1)
+    for label in np.sort(np.unique(y_train)):
+        mask_in = label == mask_train
+        in1nn = np.argmin(apply_mask(dist, mask_in), 1)
+        ds = np.hstack([ds, in1nn.reshape(-1, 1)])
+    return ds
+
+def eval_ds(dist, ds, y_test, y_train):
+    dst = dist.take(ds[:,0], 0)
+    dnn = np.vstack([np.take_along_axis(
+        dst, ds[:, c].reshape(-1,1), 1).ravel() for c in np.arange(1, ds.shape[1])])
+    y_pred = np.unique(y_train).take(dnn.argmin(0))
+    y_true = y_test.take(ds[:,0])
+    return y_pred == y_true
+
+def get_ds_choice(dist, ds):
+    dst = dist.take(ds[:,0], 0)
+    dnn = np.vstack([np.take_along_axis(
+        dst, ds[:, c].reshape(-1,1), 1).ravel() for c in np.arange(1, ds.shape[1])])
+    return dnn.argmin(0)
+
+def get_ds_chosen(choice, ds):
+    chosen = np.take_along_axis(ds[:,1:], choice.reshape(-1, 1), 1).ravel()
+    return chosen
+
+def eval_ds_choice(choice, ds, y_test, y_train):
+    chosen = np.take_along_axis(ds[:,1:], choice.reshape(-1, 1), 1).ravel()
+    y_pred = y_train.take(chosen)
+    y_true = y_test.take(ds[:,0])
+    return y_pred == y_true
+
+
+
+# def weightedPdist(a, b, weights,powers=[2,2]):
+#     weights = np.array(weights)
+#     # return np.sqrt(np.sum((weights*np.abs(a-b))**powers))
+#     q = np.abs(a-b)
+#     return np.sqrt(np.sum(weights*(q**2)))
+
+# def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers=None):
+#     ''' 1nn acc given distored weight and power metrics '''
+#     correct = 0
+#     for x,y in zip(x_test,y_test):
+#         dists = [weightedPdist(x, x_, weights, powers) for x_ in x_train]
+#         nn = np.argmin(dists)
+#         if y_train[nn] == y: correct += 1
         
-    return correct/len(y_test)
+#     return correct/len(y_test)
 
 def get_wv_df():
     wee_ves_dir = '/net/scratch/hanliu-shared/data/image-data/output/one-class_syn2_size-color-diff-2D'
