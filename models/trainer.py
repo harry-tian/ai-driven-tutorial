@@ -111,6 +111,7 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
 
     train_params = {}
     train_params["max_epochs"] = args["max_epochs"]
+    train_params["enable_progress_bar"] = args["enable_progress_bar"]
     if args["gpus"] == -1 or args["gpus"] > 1:
         train_params["distributed_backend"] = "ddp"
 
