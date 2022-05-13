@@ -24,7 +24,6 @@ def config_parser():
     parser.add_argument("--seed", default=None, type=int)
     parser.add_argument("--lamda", default=None, type=float)
     parser.add_argument("--wandb_name", default=None, type=str)
-    parser.add_argument("--ckpt_path", default=None, type=str)
     return parser
 
 def test_configs(configs):
@@ -35,7 +34,7 @@ def test_configs(configs):
     "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
     "do_train", "do_test", "checkpoint_callback", "enable_progress_bar", "log_every_n_steps",
     "train_triplets", "valid_triplets", "test_triplets", "triplet_batch_size",
-    "pretrained", "lamda", "syn", "embeds_output_dir", "deterministic"]
+    "pretrained", "lamda", "syn", "embeds_output_dir", "deterministic", "test_ckpt_path"]
     syn_args = ["syn", "train_synthetic", "valid_synthetic", "test_synthetic", "weights"]
     
     if "syn" in configs:
@@ -110,16 +109,16 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
 
     logger = WandbLogger(project="imagenet_bm", experiment=experiment)
 
+    train_params = {}
+    train_params["max_epochs"] = args["max_epochs"]
+    if args["gpus"] == -1 or args["gpus"] > 1:
+        train_params["distributed_backend"] = "ddp"
+
     ckpt_path = os.path.join(output_dir, logger.version, "checkpoints")
     if args["checkpoint_callback"]:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
             dirpath=ckpt_path, filename="{epoch}-{valid_total_loss:.2f}", monitor=monitor, mode="min", save_last=True, save_top_k=3, verbose=True)
         train_params["callbacks"] = extra_callbacks + [checkpoint_callback]
-
-    train_params = {}
-    train_params["max_epochs"] = args["max_epochs"]
-    if args["gpus"] == -1 or args["gpus"] > 1:
-        train_params["distributed_backend"] = "ddp"
 
     trainer = pl.Trainer(
         auto_select_gpus=True,
@@ -141,14 +140,13 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
 
     if args["do_test"]:
         model.eval()
-        test_ckpt_path = 'best' if args.ckpt_path is None else args.ckpt_path
+        test_ckpt_path = args.test_ckpt_path if args.test_ckpt_path else 'best'
         trainer.test(model, ckpt_path=test_ckpt_path)
     
-    if args.ckpt_path is None:
-        ckpts = [f for f in os.listdir(ckpt_path)]
-        for ckpt in ckpts:
-            if ckpt != "best_model.ckpt":
-                os.remove(os.path.join(ckpt_path, ckpt))
+    ckpts = [f for f in os.listdir(ckpt_path)]
+    for ckpt in ckpts:
+        if ckpt != "best_model.ckpt":
+            os.remove(os.path.join(ckpt_path, ckpt))
 
     return trainer
 
