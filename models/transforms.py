@@ -4,7 +4,7 @@ def get_transform(transform, aug=True):
     if transform == "bm":
         return bm_transform_aug() if aug else bm_transform()
     elif transform == "wv":
-        return no_transform()
+        return bird_transform()
     elif transform == "xray":
         return xray_transform_aug() if aug else xray_transform()
     elif transform == "bird":
@@ -13,7 +13,7 @@ def get_transform(transform, aug=True):
         return resn_normalize()
         return resn_normalize_aug() if aug else resn_normalize()
     elif transform == "wv_3d":
-        return no_transform()
+        return bird_transform()
 
 def bm_transform_aug():
     affine = {}

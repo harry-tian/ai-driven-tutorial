@@ -101,7 +101,7 @@ def get_alignment_filtered_triplets(train_features, valid_features, test_feature
     len_test = len(y_test)
     train_triplets = sample_triplets_weighted(np.arange(len_train), int(total*0.8), weight, train_features, [2,2])
     valid_triplets = sample_mixed_triplets_weighted(np.arange(len_valid),np.arange(len_train), int(total*0.2), weight, valid_features, train_features, [2,2])
-    test_triplets = sample_mixed_triplets_weighted(np.arange(len_test),np.arange(len_train), total, weight, test_features, train_features, [2,2])
+    test_triplets = sample_mixed_triplets_weighted(np.arange(len_test),np.arange(len_train), int(total*0.2), weight, test_features, train_features, [2,2])
     train_triplets_filtered = filter_train_triplets(train_triplets, y_train)
     valid_triplets_filtered = filter_mixed_triplets(valid_triplets, y_train, y_valid)
     test_triplets_filtered = filter_mixed_triplets(test_triplets, y_train, y_test)

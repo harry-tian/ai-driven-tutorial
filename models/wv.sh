@@ -13,13 +13,12 @@
 #SBATCH --exclude=aa[001-002]
 
  
-# python MTL_han.py \
-#     --dataset_config=configs/wv_2d/dataset.yaml \
-#     --model_config=configs/wv_2d/models/MTL0.5.yaml \
-#     --triplet_config=configs/wv_2d/align_triplets/align=0.7.yaml \
-#     --overwrite_config=configs/wv_2d/overwrite.yaml \
-#     --seed=0
-#  
+python MTL_han.py \
+    --dataset_config=configs/wv_3d/dataset.yaml \
+    --model_config=configs/wv_3d/models/MTL0.5.yaml \
+    --triplet_config=configs/wv_3d/align_triplets/align=0.8.yaml \
+    --overwrite_config=configs/wv_3d/overwrite.yaml \
+    --seed=0
 
 # for triplet in configs/wv_2d/filtered_triplets/* ; do for model in configs/wv_2d/models/* ; do if [ $model = configs/wv_2d/models/TN.yaml ] || [ $model = configs/wv_2d/models/MTL0.5.yaml ]; then sbatch wv.sh $triplet $model; fi; done; done
 

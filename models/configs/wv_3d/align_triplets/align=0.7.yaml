@@ -1,0 +1,15 @@
+wandb_mode: online
+wandb_project: wv_3d_alignments
+wandb_group: align=0.7
+train_triplets: ../datasets/wv_3d_triplets/align=0.7/train_triplets.pkl
+valid_triplets: ../datasets/wv_3d_triplets/align=0.7/valid_triplets.pkl
+test_triplets: ../datasets/wv_3d_triplets/align=0.7/test_triplets.pkl
+weights:
+- 4.8e-05
+- 0
+- 1
+- 1
+powers:
+- 2
+- 2
+embed_dim: 50

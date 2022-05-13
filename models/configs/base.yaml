@@ -9,10 +9,11 @@ deterministic: False
 enable_progress_bar: False
 log_every_n_steps: 50
 test_ckpt_path: best
+check_val_every_n_epoch: 1
 
 ### Wandb args
 wandb_mode : online
 wandb_entity: ai-driven-tutorial
-wandb_group: None
-wandb_project : None
-wandb_name : None
+wandb_group: null
+wandb_project : null
+wandb_name : null

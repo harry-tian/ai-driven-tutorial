@@ -28,7 +28,7 @@ def config_parser():
 
 def test_configs(configs):
     ''' checks for expected hyperparameters'''
-    required_args = ["gpus", "seed", "dataloader_num_workers", "model",
+    required_args = ["gpus", "seed", "dataloader_num_workers", "model","check_val_every_n_epoch",
     "max_epochs", "learning_rate", "train_batch_size", "embed_dim",
     "num_class" ,"train_dir", "valid_dir", "test_dir", "transform", "aug",
     "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
@@ -111,6 +111,7 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
 
     train_params = {}
     train_params["max_epochs"] = args["max_epochs"]
+    train_params["check_val_every_n_epoch"] = args["check_val_every_n_epoch"]
     train_params["enable_progress_bar"] = args["enable_progress_bar"]
     if args["gpus"] == -1 or args["gpus"] > 1:
         train_params["distributed_backend"] = "ddp"
@@ -126,7 +127,6 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
         gpus=args["gpus"],
         weights_summary=None,
         logger=logger,
-        check_val_every_n_epoch=1,
         profiler=profiler,
         num_sanity_val_steps=num_sanity_val_steps,
         **train_params)
@@ -144,10 +144,11 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
         test_ckpt_path = args.test_ckpt_path if args.test_ckpt_path else 'best'
         trainer.test(model, ckpt_path=test_ckpt_path)
     
-    ckpts = [f for f in os.listdir(ckpt_path)]
-    for ckpt in ckpts:
-        if ckpt != "best_model.ckpt":
-            os.remove(os.path.join(ckpt_path, ckpt))
+    if args["checkpoint_callback"]:
+        ckpts = [f for f in os.listdir(ckpt_path)]
+        for ckpt in ckpts:
+            if ckpt != "best_model.ckpt":
+                os.remove(os.path.join(ckpt_path, ckpt))
 
     return trainer
 

@@ -125,25 +125,25 @@ class RESN(pl.LightningModule):
         # triplet_acc = self.test_mixed_triplets()
         # self.log('test_triplet_acc', triplet_acc)
 
-    def test_epoch_end(self, outputs):
-        z_train = self(self.train_input).cpu().detach().numpy()
-        y_train = self.train_label.detach().numpy()
-        z_test = self(self.test_input).cpu().detach().numpy()
-        y_test = self.test_label.detach().numpy()
+    # def test_epoch_end(self, outputs):
+    #     z_train = self(self.train_input).cpu().detach().numpy()
+    #     y_train = self.train_label.detach().numpy()
+    #     z_test = self(self.test_input).cpu().detach().numpy()
+    #     y_test = self.test_label.detach().numpy()
 
-        knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
-        self.log('test_1nn_acc', knn_acc)
+    #     knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
+    #     self.log('test_1nn_acc', knn_acc)
 
-        if self.hparams.syn: 
-            syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))
-            syn_x_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
-            results = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
-            self.hparams.weights, self.hparams.powers)
+    #     if self.hparams.syn: 
+    #         syn_x_train  = pickle.load(open(self.hparams.train_synthetic,"rb"))
+    #         syn_x_test = pickle.load(open(self.hparams.test_synthetic,"rb"))
+    #         results = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
+    #         self.hparams.weights, self.hparams.powers)
 
-            to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
-            to_print = ["NINO_ds_err","rNINO_ds_err","NIFO_ds_err","NIs"]
-            for key in to_log: self.log(key, results[key])
-            for key in to_print: print(f"\n{key}: {results[key]}")
+    #         to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
+    #         to_print = ["NINO_ds_err","rNINO_ds_err","NIFO_ds_err","NIs"]
+    #         for key in to_log: self.log(key, results[key])
+    #         for key in to_print: print(f"\n{key}: {results[key]}")
 
 
     def configure_optimizers(self):

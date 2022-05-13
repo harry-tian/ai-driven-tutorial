@@ -10,7 +10,3 @@ train_batch_size : 30
 triplet_batch_size : 200
 pretrained: true
 
-
-
-wandb_project: wv_2d
-wandb_group: RESN_d=50

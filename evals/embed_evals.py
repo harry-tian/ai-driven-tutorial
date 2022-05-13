@@ -37,12 +37,12 @@ def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights
     NIs = get_NI(z_train, y_train, z_test, y_test, k)
     evals['NIs'] = NIs
 
-    if RESN_embeds is not None:
-        RESN_train, RESN_test = RESN_embeds
-        RESN_NIs = get_NI(RESN_train, y_train, RESN_test, y_test, k)
-        wins, errs, ties = nn_comparison(syn_x_train, syn_x_test, NIs, RESN_NIs, weights, powers)
-        h2h_acc = (wins + ties*0.5)/len(y_test)
-        evals["h2h_acc"] = h2h_acc
+    # if RESN_embeds is not None:
+    #     RESN_train, RESN_test = RESN_embeds
+    #     RESN_NIs = get_NI(RESN_train, y_train, RESN_test, y_test, k)
+    #     wins, errs, ties = nn_comparison(syn_x_train, syn_x_test, NIs, RESN_NIs, weights, powers)
+    #     h2h_acc = (wins + ties*0.5)/len(y_test)
+    #     evals["h2h_acc"] = h2h_acc
 
     return evals
 

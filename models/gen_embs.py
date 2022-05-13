@@ -20,8 +20,11 @@ DATASETS["chest_xray"] = {"data_dir":"/net/scratch/tianh-shared/PC/3classes",
 DATASETS["prostatex"] = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "xray"}
 
-DATASETS["wv"] = {"data_dir":"../datasets/weevil_vespula",
+DATASETS["wv_2d"] = {"data_dir":"../datasets/weevil_vespula",
             "transform": "wv"}
+
+DATASETS["wv_3d"] = {"data_dir":"../datasets/wv_3d",
+            "transform": "wv_3d"}
 
 model_path_dict ={
     'TN': "TN.TN",
@@ -44,9 +47,10 @@ def get_embeds(model_path, ckpt, split, data_dir, transform, embed_path):
     model.eval()
 
     transform = transforms.get_transform(transform, aug=False)
-    print(split)
     data_dir = os.path.join(data_dir, split)
     dataset = torchvision.datasets.ImageFolder(data_dir, transform=transform)
+
+    print(f"generating embeds: ----- {split} ------")
     if len(dataset) <= max_dataset:
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset), num_workers=4)
         embeds = model(list(iter(dataloader))[0][0].cuda())
@@ -83,7 +87,7 @@ parser.add_argument("--suffix", default="emb50", type=str, required=True)
 
 def main():
     args = parser.parse_args()
-    splits = ["train","test"]#,"valid"]
+    splits = ["test"]#,"valid"]
     model_name = args.model_name
     model_path = model_path_dict[model_name]
     suffix = args.suffix

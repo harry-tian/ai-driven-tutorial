@@ -199,17 +199,17 @@ class MTL(pl.LightningModule):
         clf_loss = self.valid_losses.mean()
         clf_acc = self.valid_corres.mean()
         total_loss += self.hparams.lamda * clf_loss
-        knn_acc, ds_acc = self.eval_knn_ds(
-            self.valid_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_valid, status='valid')
+        # knn_acc, ds_acc = self.eval_knn_ds(
+        #     self.valid_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_valid, status='valid')
         self.log('valid_clf_loss', clf_loss)
         self.log('valid_clf_acc', clf_acc, prog_bar=True)
         self.log('valid_triplet_loss', triplet_loss)
         self.log('valid_triplet_acc', triplet_acc, prog_bar=True)
         self.log('valid_total_loss', total_loss, prog_bar=True)
-        if knn_acc:
-            self.log('valid_1nn_acc', knn_acc)
-        if ds_acc:
-            self.log('valid_decision_support', ds_acc)
+        # if knn_acc:
+        #     self.log('valid_1nn_acc', knn_acc)
+        # if ds_acc:
+        #     self.log('valid_decision_support', ds_acc)
 
     def test_step(self, batch, batch_idx):
         if batch_idx == 0: 
