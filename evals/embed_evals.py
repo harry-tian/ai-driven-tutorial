@@ -10,7 +10,7 @@ import pandas as pd
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
-def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers, k=1, dist=None):
+def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers, k=1, dist=None, RESN_embeds=None):
     evals = {}
     
     NINO = get_NINO(z_train, y_train, z_test, y_test, k)
@@ -37,18 +37,25 @@ def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights
     NIs = get_NI(z_train, y_train, z_test, y_test, k)
     evals['NIs'] = NIs
 
+    if RESN_embeds is not None:
+        RESN_train, RESN_test = RESN_embeds
+        RESN_NIs = get_NI(RESN_train, y_train, RESN_test, y_test, k)
+        wins, errs, ties = nn_comparison(syn_x_train, syn_x_test, NIs, RESN_NIs, weights, powers)
+        h2h_acc = (wins + ties*0.5)/len(y_test)
+        evals["h2h_acc"] = h2h_acc
+
     return evals
 
 def nn_comparison(x_train, x_test, NI1, NI2, weights, powers=[2,2]):
-    ni1_count, ni2_count, ties = 0, 0, 0
+    ni1_score, ni2_score, ties = 0, 0, 0
     for test_idx, (ni1, ni2) in enumerate(zip(NI1,NI2)):
-        dist_ni1 = weightedPdist(x_test[test_idx], x_train[ni1], weights, powers)
-        dist_ni2 = weightedPdist(x_test[test_idx], x_train[ni2], weights, powers)
-        if  dist_ni1 < dist_ni2: ni1_count += 1
-        elif dist_ni1 > dist_ni2: ni2_count += 1
+        dist_ni1 = [weightedPdist(x_test[test_idx], x_train[ni], weights, powers) for ni in ni1]
+        dist_ni2 = [weightedPdist(x_test[test_idx], x_train[ni], weights, powers) for ni in ni2]
+        if  min(dist_ni1) < min(dist_ni2): ni1_score += 1
+        elif min(dist_ni1) > min(dist_ni2): ni2_score += 1
         else: ties += 1
 
-    return ni1_count, ni2_count, ties
+    return ni1_score, ni2_score, ties
 
 def get_NINO(x_train, y_train, x_test, y_test, k=1):
     ''' Neareast In-class & Nearest Out-of-class '''
