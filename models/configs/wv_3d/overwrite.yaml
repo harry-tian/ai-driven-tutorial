@@ -1,0 +1,15 @@
+### Training args
+do_train : True
+do_test: True
+
+### Hyperparameters
+embed_dim : 50
+learning_rate : 1e-4
+train_batch_size : 30
+triplet_batch_size : 60
+pretrained: true
+
+
+max_epochs : 50
+wandb_mode: online
+

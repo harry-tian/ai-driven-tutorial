@@ -12,92 +12,19 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=3tms2l1f \
-    --suffix=seed0
+ 
+python MTL.py \
+    --dataset_config=configs/wv_3d/dataset.yaml \
+    --model_config=configs/wv_3d/models/MTL0.5.yaml \
+    --triplet_config=configs/wv_3d/align_triplets/align=0.8.yaml \
+    --overwrite_config=configs/wv_3d/overwrite.yaml \
+    --seed=0
 
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=g43165ei \
-    --suffix=seed1
-
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=35sfyggl \
-    --suffix=seed2
-
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=2xqbs692 \
-    --suffix=seed3
     
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=3f17ht03 \
-    --suffix=seed4
-
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=3ajj2lcv \
-    --suffix=seed5
-    
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=30kjjz9b \
-    --suffix=seed6
-    
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=126y2ij3 \
-    --suffix=seed7
-
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=36gi91ok \
-    --suffix=seed8
-    
-python gen_embs.py \
-    --dataset=wv \
-    --model_name=MTL_han \
-    --subdir= \
-    --wandb_group=wv_2d \
-    --wandb_name=RESN \
-    --wandb_run=8120u09x \
-    --suffix=seed9
+ 
+# python MTL.py \
+#     --dataset_config=configs/wv_3d/dataset.yaml \
+#     --model_config=configs/wv_3d/models/MTL0.5.yaml \
+#     --triplet_config=configs/wv_3d/align_triplets/align=0.8.yaml \
+#     --overwrite_config=configs/wv_3d/overwrite.yaml \
+#     --seed=1

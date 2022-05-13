@@ -50,9 +50,9 @@ def nn_comparison(x_train, x_test, NI1, NI2, weights, powers=[2,2]):
 
     return ni1_count, ni2_count, ties
 
-def get_NINO(x_train, y_train, x_test, y_test):
+def get_NINO(x_train, y_train, x_test, y_test, k=1):
     ''' Neareast In-class & Nearest Out-of-class '''
-    NIs = get_NI(x_train, y_train, x_test, y_test)
+    NIs = get_NI(x_train, y_train, x_test, y_test, k)
 
     classes = np.unique(y_train)
     idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
@@ -62,16 +62,18 @@ def get_NINO(x_train, y_train, x_test, y_test):
         NINO = [NI]
         for c in classes:
             if y == c: continue
-            class_idx = x_train[idx_by_class[c]]
-            dists = np.array([euc_dist(x, x_) for x_ in class_idx])
-            nn = np.argmin(dists)
-            class_nn = idx_by_class[c][nn]
+            class_idx = idx_by_class[c]
+            dists = np.array([evals.euc_dist(x, x_) for x_ in x_train[class_idx]])
+            # nn = np.argmin(dists)
+            # class_nn = idx_by_class[c][nn]
+            nns = np.argsort(dists)[:k]
+            class_nn = [class_idx[nn] for nn in nns]
             NINO.append(class_nn)
         NINOs.append(NINO)
 
     return np.array(NINOs)
 
-def get_rNINO(x_train, y_train, x_test, y_test):
+def get_rNINO(x_train, y_train, x_test, y_test, k=1):
     ''' NINO with NO no nearer than NI '''
     NIs = get_NI(x_train, y_train, x_test, y_test)
 
@@ -83,20 +85,23 @@ def get_rNINO(x_train, y_train, x_test, y_test):
         NINO = [NI]
         for c in classes:
             if y == c: continue
-            class_idx = x_train[idx_by_class[c]]
-            dists = np.array([euc_dist(x, x_) for x_ in class_idx])
-            dists = dists[np.where(dists > euc_dist(x, x_train[NI]))[0]]
-            if len(dists) == 0: ## signal of error in rNINO
+            class_idx = idx_by_class[c]
+            dists = np.array([euc_dist(x, x_) for x_ in x_train[class_idx]])
+            dists = [d if d > euc_dist(x, x_train[NI]) else np.inf for d in dists]
+            # dists = dists[np.where(dists > euc_dist(x, x_train[NI]))[0]]
+            if min(dists) == np.inf: ## signal of error in rNINO
                 NINO.append(NI)
             else:
-                nn = np.argmin(dists)
-                class_nn = idx_by_class[c][nn]
+                # nn = np.argmin(dists)
+                # class_nn = idx_by_class[c][nn]
+                nns = np.argsort(dists)[:k]
+                class_nn = [class_idx[nn] for nn in nns]
                 NINO.append(class_nn)
         NINOs.append(NINO)
 
     return np.array(NINOs)
 
-def get_NI(x_train, y_train, x_test, y_test):
+def get_NI(x_train, y_train, x_test, y_test, k=1):
     ''' Neareast In-class '''
     classes = np.unique(y_train)
     idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
@@ -105,6 +110,8 @@ def get_NI(x_train, y_train, x_test, y_test):
     for x, y in zip(x_test, y_test):
         in_class = x_train[idx_by_class[y]]
         dists = np.array([euc_dist(x, x_) for x_ in in_class])
+        # nns = np.argsort(dists)[:k]
+        # NI = [idx_by_class[y][nn] for nn in nns]
         NN = np.argmin(dists)
         NI = idx_by_class[y][NN]
         NIs.append(NI)

@@ -1,17 +1,19 @@
 from torchvision import transforms
 
-def get_transform(dataset, aug=True):
-    if dataset == "bm":
+def get_transform(transform, aug=True):
+    if transform == "bm":
         return bm_transform_aug() if aug else bm_transform()
-    elif dataset == "wv":
+    elif transform == "wv":
         return no_transform()
-    elif dataset == "xray":
+    elif transform == "xray":
         return xray_transform_aug() if aug else xray_transform()
-    elif dataset == "bird":
+    elif transform == "bird":
         return bird_transform_aug() if aug else bird_transform()
-    elif dataset == "resn":
+    elif transform == "resn":
         return resn_normalize()
         return resn_normalize_aug() if aug else resn_normalize()
+    elif transform == "wv_3d":
+        return no_transform()
 
 def bm_transform_aug():
     affine = {}

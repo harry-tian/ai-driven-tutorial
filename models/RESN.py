@@ -113,7 +113,7 @@ class RESN(pl.LightningModule):
         loss, m = self.clf_loss_acc(embeds, y)
         self.log('valid_clf_loss', loss)
         self.log('valid_clf_acc', m['acc'])
-        if self.hparams.num_class < 3: self.log('valid_auc', m['auc'])
+        # if self.hparams.num_class < 3: self.log('valid_auc', m['auc'])
 
     def test_step(self, batch, batch_idx):
         x, y = batch
@@ -122,8 +122,8 @@ class RESN(pl.LightningModule):
         self.log('test_clf_loss', loss)
         self.log('test_clf_acc', m['acc'])
 
-        triplet_acc = self.test_mixed_triplets()
-        self.log('test_triplet_acc', triplet_acc)
+        # triplet_acc = self.test_mixed_triplets()
+        # self.log('test_triplet_acc', triplet_acc)
 
     def test_epoch_end(self, outputs):
         z_train = self(self.train_input).cpu().detach().numpy()

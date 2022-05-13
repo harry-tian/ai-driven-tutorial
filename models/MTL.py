@@ -65,37 +65,9 @@ class MTL(pl.LightningModule):
         self.test_embeds = None
 
     def load_dataset_to_memory(self, dataset):
-        loader = torch.utils.data.DataLoader(dataset, len(dataset), num_workers=1)
+        loader = torch.utils.data.DataLoader(dataset, len(dataset), num_workers=4)
         batch = next(iter(loader))
         return batch[0].to(self.device), batch[1].to(self.device)
-
-    def sample_train_clf_trips(self, x_idx, ys):
-        classes = torch.unique(ys)
-        k_trips = self.hparams.triplet_batch_size // len(classes)
-        clf_trips = []
-        for c in classes:
-            in_idx = x_idx[ys == c]
-            out_idx = x_idx[ys != c]
-            combs = torch.combinations(in_idx)
-            combs_idx = torch.arange(len(combs)).to(combs.device)
-            prods = torch.cartesian_prod(combs_idx, out_idx)
-            combs = torch.cat([combs[prods[:, 0]], prods[:, 1].unsqueeze(1)], 1)
-            trip = combs[torch.randperm(len(combs))[:k_trips]]
-            clf_trips.append(trip)
-        return torch.cat(clf_trips)
-
-    def sample_test_clf_trips(self, an_idx, nn_idx, y_an, y_nn, n_trips):
-        classes = torch.unique(y_an)
-        k_trips = n_trips // len(classes)
-        clf_trips = []
-        for c in classes:
-            a_idx = an_idx[y_an == c]
-            in_idx = nn_idx[y_nn == c]
-            out_idx = nn_idx[y_nn != c]
-            combs = torch.cartesian_prod(a_idx, in_idx, out_idx)
-            trip = combs[torch.randperm(len(combs))[:k_trips]]
-            clf_trips.append(trip)
-        return torch.cat(clf_trips)
 
     def sample_xs_ys(self, dataset, x_idx=None, aug=False):
         if type(dataset) == tuple:
@@ -104,7 +76,7 @@ class MTL(pl.LightningModule):
             x_idx = x_idx.to(dataset[0][0].device)
             subset = torch.utils.data.Subset(dataset, x_idx) if x_idx is not None else dataset
             loader = torch.utils.data.DataLoader(
-                subset, len(subset), num_workers=1)
+                subset, len(subset), num_workers=4)
             data = next(iter(loader))
             
         return data
@@ -158,11 +130,16 @@ class MTL(pl.LightningModule):
             self.valid_embeds = torch.zeros(len_valid_dataset, embed_dim)
         valid_batch, valid_idx = torch.unique(batch[:, 0], sorted=False, return_inverse=True)
         train_batch, train_idx = torch.unique(batch[:, 1:], sorted=False, return_inverse=True)
+        print(batch[:, 0])
+        print(batch[:, 1:])
         x_valid, y_valid = self.sample_xs_ys(self.valid_dataset, valid_batch)
         x_valid, y_valid = x_valid.to(self.device), y_valid.to(self.device)
         x_train, y_train = self.sample_xs_ys(self.ref_dataset, train_batch)
         x_train, y_train = x_train.to(self.device), y_train.to(self.device)
+        print(x_valid.shape)
+        print(x_train.shape)
         z_valid, z_train= self(x_valid), self(x_train)
+        return
         self.valid_embeds[valid_batch.cpu()] = z_valid[valid_batch].cpu()
         ta, tp, tn = z_valid[valid_idx], z_train[train_idx[:, 0]], z_train[train_idx[:, 1]]
         triplet_loss = self.criterion(ta, tp, tn)
@@ -170,6 +147,7 @@ class MTL(pl.LightningModule):
         return triplet_loss, triplet_acc
 
     def validation_epoch_end(self, validation_step_outputs):
+        exit()
         all_triplet_loss, all_triplet_acc = zip(*validation_step_outputs)
         if len(all_triplet_loss) > 1:
             triplet_loss = torch.cat(list(all_triplet_loss)).sum() / len(all_triplet_loss)
@@ -296,26 +274,43 @@ class MTL(pl.LightningModule):
         return (dap < dan).float().mean()
 
     def train_dataloader(self):
-        triplet_loader = torch.utils.data.DataLoader(
-            torch.Tensor(self.train_triplets).long(), 
-            batch_size=self.hparams.triplet_batch_size, 
-            num_workers=self.hparams.dataloader_num_workers,
-            drop_last=True, shuffle=True)
-        return triplet_loader
+        dataset = torch.Tensor(self.train_triplets).long()
+        print(f"\n train:{len(dataset)}")
+        return trainer.get_dataloader(dataset, self.hparams.triplet_batch_size, "train", self.hparams.dataloader_num_workers)
         
     def val_dataloader(self):
-        triplet_loader = torch.utils.data.DataLoader(
-            torch.Tensor(self.valid_triplets).long(), 
-            batch_size=len(self.valid_triplets), 
-            num_workers=self.hparams.dataloader_num_workers)
-        return triplet_loader
-
+        dataset = torch.Tensor(self.valid_triplets).long()
+        print(f"\n valid:{len(dataset)}")
+        return trainer.get_dataloader(dataset, len(dataset), "valid", self.hparams.dataloader_num_workers)
+        
     def test_dataloader(self):
-        triplet_loader = torch.utils.data.DataLoader(
-            torch.Tensor(self.test_triplets).long(), 
-            batch_size=len(self.test_triplets), 
-            num_workers=self.hparams.dataloader_num_workers)
-        return triplet_loader
+        dataset = torch.Tensor(self.test_triplets).long()
+        print(f"\n test:{len(dataset)}")
+        return trainer.get_dataloader(dataset, len(dataset), "test", self.hparams.dataloader_num_workers)
+
+
+    # def train_dataloader(self):
+    #     triplet_loader = torch.utils.data.DataLoader(
+    #         torch.Tensor(self.train_triplets).long(), 
+    #         batch_size=self.hparams.triplet_batch_size, 
+    #         num_workers=self.hparams.dataloader_num_workers,
+    #         drop_last=True, shuffle=True)
+    #     return triplet_loader
+        
+    # def val_dataloader(self):
+    #     triplet_loader = torch.utils.data.DataLoader(
+    #         torch.Tensor(self.valid_triplets).long(), 
+    #         batch_size=len(self.valid_triplets), 
+    #         num_workers=self.hparams.dataloader_num_workers)
+    #     return triplet_loader
+
+    # def test_dataloader(self):
+    #     triplet_loader = torch.utils.data.DataLoader(
+    #         torch.Tensor(self.test_triplets).long(), 
+    #         batch_size=len(self.test_triplets), 
+    #         num_workers=self.hparams.dataloader_num_workers)
+    #     return triplet_loader
+
 
 
 def main():
