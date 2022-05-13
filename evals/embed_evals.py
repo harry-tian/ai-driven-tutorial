@@ -10,6 +10,33 @@ import pandas as pd
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
+def resn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers, k=1, dist=None, RESN_embeds=None):
+    evals = {}
+    
+    NINO = get_NINO(z_train, y_train, z_test, y_test, k)
+    ds_dist = decision_support_with_dist if k==1 else knn_decision_support_with_dist
+    if dist is not None:
+        NINO_ds_acc, NINO_ds_err = ds_dist(dist, NINO, y_train, y_test)
+    else:
+        NINO_ds_acc, NINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NINO, weights, powers)
+    evals['NINO_ds_acc'], evals['NINO_ds_err'] = NINO_ds_acc, NINO_ds_err
+    
+    rNINO = get_rNINO(z_train, y_train, z_test, y_test, k)
+    if dist is not None:
+        rNINO_ds_acc, rNINO_ds_err = ds_dist(dist, rNINO, y_train, y_test)
+    else:
+        rNINO_ds_acc, rNINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, rNINO, weights, powers)
+    evals['rNINO_ds_acc'], evals['rNINO_ds_err'] = rNINO_ds_acc, rNINO_ds_err
+
+    NIFO = get_NIFO(z_train, y_train, z_test, y_test, k)
+    if dist is not None:
+        NIFO_ds_acc, NIFO_ds_err = ds_dist(dist, NIFO, y_train, y_test)
+    else:
+        NIFO_ds_acc, NIFO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NIFO, weights, powers)
+    evals['NIFO_ds_acc'], evals['NIFO_ds_err'] = NIFO_ds_acc, NIFO_ds_err
+
+    return evals
+    
 def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers, k=1, dist=None, RESN_embeds=None):
     evals = {}
     
@@ -37,13 +64,6 @@ def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights
 
     NIs = get_NI(z_train, y_train, z_test, y_test, k)
     evals['NIs'] = NIs
-
-    # if RESN_embeds is not None:
-    #     RESN_train, RESN_test = RESN_embeds
-    #     RESN_NIs = get_NI(RESN_train, y_train, RESN_test, y_test, k)
-    #     wins, errs, ties = nn_comparison(syn_x_train, syn_x_test, NIs, RESN_NIs, weights, powers)
-    #     h2h_acc = (wins + ties*0.5)/len(y_test)
-    #     evals["h2h_acc"] = h2h_acc
 
     return evals
 
@@ -230,12 +250,17 @@ def weightedPdist(a, b, w, power=2):
     diff = a[:,np.newaxis].repeat(len(b),1) - b
     return ((np.abs(diff)**2)*w).sum(-1)**(1/2)
 
-
+import time
 def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers=None):
     """ Han's faster version"""
+    # start = time.perf_counter()
     dist = weightedPdist(x_test,x_train,weights)
-    ds = get_ds(dist,y_test,y_train)
-    acc = eval_ds(dist,ds,y_test,y_train).mean()
+    # dist_time = time.perf_counter()
+    examples = get_ds(dist,y_test,y_train)
+    # getNINO_time = time.perf_counter()
+    acc = eval_ds(dist,examples,y_test,y_train).mean()
+    # eval_time = time.perf_counter()
+    # print(dist_time-start, getNINO_time-dist_time,eval_time-getNINO_time)
     return acc
 
 

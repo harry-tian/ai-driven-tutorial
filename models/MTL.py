@@ -272,7 +272,7 @@ class MTL(pl.LightningModule):
                 self.hparams.weights, self.hparams.powers, k=k)
 
                 h2h_acc = []
-                for seed in range(5):
+                for seed in range(3):
                     train_name = f"RESN_train_seed{seed}.pkl"
                     test_name = f"RESN_test_seed{seed}.pkl"
                     train_name = RESN_embed_dir + '/' + train_name

@@ -11,7 +11,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
 
-
+python RESN_evals.py
 
 # for i in {0..4}
 #       do python MTL.py \
