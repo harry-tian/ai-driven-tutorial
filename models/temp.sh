@@ -13,7 +13,7 @@
 #SBATCH --exclude=aa[001-002]
 
  
-python RESN.py \
+python MTL_han.py \
     --dataset_config=configs/wv_3d/dataset.yaml \
     --model_config=configs/wv_3d/models/RESN.yaml \
     --triplet_config=configs/wv_3d/align_triplets/align=0.8.yaml \

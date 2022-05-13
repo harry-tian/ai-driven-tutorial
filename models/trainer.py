@@ -33,9 +33,9 @@ def test_configs(configs):
     "max_epochs", "learning_rate", "train_batch_size", "embed_dim",
     "num_class" ,"train_dir", "valid_dir", "test_dir", "transform", "aug",
     "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
-    "do_train", "do_test",
+    "do_train", "do_test", "checkpoint_callback", "enable_progress_bar", "log_every_n_steps",
     "train_triplets", "valid_triplets", "test_triplets", "triplet_batch_size",
-    "pretrained", "lamda", "syn", "embeds_output_dir", "aug"]
+    "pretrained", "lamda", "syn", "embeds_output_dir", "deterministic"]
     syn_args = ["syn", "train_synthetic", "valid_synthetic", "test_synthetic", "weights"]
     
     if "syn" in configs:
@@ -111,47 +111,44 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
     logger = WandbLogger(project="imagenet_bm", experiment=experiment)
 
     ckpt_path = os.path.join(output_dir, logger.version, "checkpoints")
-    if checkpoint_callback is None:
+    if args["checkpoint_callback"]:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
             dirpath=ckpt_path, filename="{epoch}-{valid_total_loss:.2f}", monitor=monitor, mode="min", save_last=True, save_top_k=3, verbose=True)
+        train_params["callbacks"] = extra_callbacks + [checkpoint_callback]
 
     train_params = {}
     train_params["max_epochs"] = args["max_epochs"]
     if args["gpus"] == -1 or args["gpus"] > 1:
         train_params["distributed_backend"] = "ddp"
-    if "log_every_n_steps" in args:
-        train_params["log_every_n_steps"] = args["log_every_n_steps"]
-    if "deterministic" in args:
-        train_params["deterministic"] = args["deterministic"]
 
     trainer = pl.Trainer(
         auto_select_gpus=True,
         gpus=args["gpus"],
         weights_summary=None,
-        callbacks=extra_callbacks + [checkpoint_callback],
         logger=logger,
         check_val_every_n_epoch=1,
         profiler=profiler,
         num_sanity_val_steps=num_sanity_val_steps,
-        enable_progress_bar=False,
         **train_params)
 
     if args["do_train"]:
         model.train()
         trainer.fit(model)
-        target_path = os.path.join(ckpt_path, 'best_model.ckpt')
-        print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
-        shutil.copy(checkpoint_callback.best_model_path, target_path)
-
+        if args["checkpoint_callback"]:
+            target_path = os.path.join(ckpt_path, 'best_model.ckpt')
+            print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
+            shutil.copy(checkpoint_callback.best_model_path, target_path)
 
     if args["do_test"]:
         model.eval()
-        trainer.test(model, ckpt_path='best')
-        
-    ckpts = [f for f in os.listdir(ckpt_path)]
-    for ckpt in ckpts:
-        if ckpt != "best_model.ckpt":
-            os.remove(os.path.join(ckpt_path, ckpt))
+        test_ckpt_path = 'best' if args.ckpt_path is None else args.ckpt_path
+        trainer.test(model, ckpt_path=test_ckpt_path)
+    
+    if args.ckpt_path is None:
+        ckpts = [f for f in os.listdir(ckpt_path)]
+        for ckpt in ckpts:
+            if ckpt != "best_model.ckpt":
+                os.remove(os.path.join(ckpt_path, ckpt))
 
     return trainer
 

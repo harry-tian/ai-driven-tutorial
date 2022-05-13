@@ -1,5 +1,5 @@
 ### Training args
-do_train : True
+do_train : False
 do_test: True
 
 ### Hyperparameters
@@ -10,6 +10,9 @@ triplet_batch_size : 60
 pretrained: true
 
 
-max_epochs : 50
-wandb_mode: online
-
+max_epochs : 1
+wandb_mode: disabled
+checkpoint_callback: False
+deterministic: True
+ckpt_path: /data/hanliu/explain_teach/models/SLQ4Wt4P4HnwVSaEpGzBHd/checkpoints/epoch=0-step=133.ckpt
+embeds_output_dir: None
