@@ -118,7 +118,10 @@ for syn in syns:
             z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
             evals = syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn])
             nn_mat = np.vstack([np.arange(len(y_test)), evals['NIs'], resn_nis]).T
-            evals['NI_acc'] = (get_ds_choice(syns[syn], nn_mat) == 0).mean()
+            sames = np.where(nn_mat[:, 1] == nn_mat[:, 2])[0]
+            corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
+            corr[sames] = 0.5
+            evals['NI_acc'] = corr.mean()
             name = 's'.join([model, str(seed)])
             evals.update({k: v for k, v in zip(id_columns, [syn, name, model, seed])})
             test_values = df_wandb[df_wandb['Name'] == name][ts_columns].values[0]
