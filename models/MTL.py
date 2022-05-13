@@ -139,15 +139,14 @@ class MTL(pl.LightningModule):
         print(x_valid.shape)
         print(x_train.shape)
         z_valid, z_train= self(x_valid), self(x_train)
-        return
-        self.valid_embeds[valid_batch.cpu()] = z_valid[valid_batch].cpu()
+        # return
+        # self.valid_embeds[valid_batch.cpu()] = z_valid[valid_batch].cpu()
         ta, tp, tn = z_valid[valid_idx], z_train[train_idx[:, 0]], z_train[train_idx[:, 1]]
         triplet_loss = self.criterion(ta, tp, tn)
         triplet_acc = self.trips_acc(ta, tp, tn)
         return triplet_loss, triplet_acc
 
     def validation_epoch_end(self, validation_step_outputs):
-        exit()
         all_triplet_loss, all_triplet_acc = zip(*validation_step_outputs)
         if len(all_triplet_loss) > 1:
             triplet_loss = torch.cat(list(all_triplet_loss)).sum() / len(all_triplet_loss)
@@ -155,6 +154,7 @@ class MTL(pl.LightningModule):
         else:
             triplet_loss, triplet_acc = all_triplet_loss[0], all_triplet_acc[0]
         total_loss = (1 - self.hparams.lamda) * triplet_loss
+        exit()
         z_valid = self.valid_embeds
         _, y_valid = self.sample_xs_ys(self.valid_dataset)
         z_valid, y_valid = z_valid.to(self.device), y_valid.to(self.device)

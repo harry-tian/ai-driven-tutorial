@@ -10,31 +10,31 @@ import pandas as pd
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
-def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers, dist=None):
+def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers, k=1, dist=None):
     evals = {}
     
-    NINO = get_NINO(z_train, y_train, z_test, y_test)
+    NINO = get_NINO(z_train, y_train, z_test, y_test, k)
     if dist is not None:
         NINO_ds_acc, NINO_ds_err = decision_support_with_dist(dist, NINO, y_train, y_test)
     else:
         NINO_ds_acc, NINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NINO, weights, powers)
     evals['NINO_ds_acc'], evals['NINO_ds_err'] = NINO_ds_acc, NINO_ds_err
     
-    rNINO = get_rNINO(z_train, y_train, z_test, y_test)
+    rNINO = get_rNINO(z_train, y_train, z_test, y_test, k)
     if dist is not None:
         rNINO_ds_acc, rNINO_ds_err = decision_support_with_dist(dist, rNINO, y_train, y_test)
     else:
         rNINO_ds_acc, rNINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, rNINO, weights, powers)
     evals['rNINO_ds_acc'], evals['rNINO_ds_err'] = rNINO_ds_acc, rNINO_ds_err
 
-    NIFO = get_NIFO(z_train, y_train, z_test, y_test)
+    NIFO = get_NIFO(z_train, y_train, z_test, y_test, k)
     if dist is not None:
         NIFO_ds_acc, NIFO_ds_err = decision_support_with_dist(dist, NIFO, y_train, y_test)
     else:
         NIFO_ds_acc, NIFO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NIFO, weights, powers)
     evals['NIFO_ds_acc'], evals['NIFO_ds_err'] = NIFO_ds_acc, NIFO_ds_err
 
-    NIs = get_NI(z_train, y_train, z_test, y_test)
+    NIs = get_NI(z_train, y_train, z_test, y_test, k)
     evals['NIs'] = NIs
 
     return evals
@@ -63,11 +63,11 @@ def get_NINO(x_train, y_train, x_test, y_test, k=1):
         for c in classes:
             if y == c: continue
             class_idx = idx_by_class[c]
-            dists = np.array([evals.euc_dist(x, x_) for x_ in x_train[class_idx]])
+            dists = np.array([euc_dist(x, x_) for x_ in x_train[class_idx]])
             # nn = np.argmin(dists)
             # class_nn = idx_by_class[c][nn]
             nns = np.argsort(dists)[:k]
-            class_nn = [class_idx[nn] for nn in nns]
+            class_nn = np.array([class_idx[nn] for nn in nns])
             NINO.append(class_nn)
         NINOs.append(NINO)
 
@@ -75,7 +75,7 @@ def get_NINO(x_train, y_train, x_test, y_test, k=1):
 
 def get_rNINO(x_train, y_train, x_test, y_test, k=1):
     ''' NINO with NO no nearer than NI '''
-    NIs = get_NI(x_train, y_train, x_test, y_test)
+    NIs = get_NI(x_train, y_train, x_test, y_test, k)
 
     classes = np.unique(y_train)
     idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
@@ -87,15 +87,14 @@ def get_rNINO(x_train, y_train, x_test, y_test, k=1):
             if y == c: continue
             class_idx = idx_by_class[c]
             dists = np.array([euc_dist(x, x_) for x_ in x_train[class_idx]])
-            dists = [d if d > euc_dist(x, x_train[NI]) else np.inf for d in dists]
-            # dists = dists[np.where(dists > euc_dist(x, x_train[NI]))[0]]
+            dists = [d if d > euc_dist(x, x_train[NI[0]]) else np.inf for d in dists]
             if min(dists) == np.inf: ## signal of error in rNINO
                 NINO.append(NI)
             else:
                 # nn = np.argmin(dists)
                 # class_nn = idx_by_class[c][nn]
                 nns = np.argsort(dists)[:k]
-                class_nn = [class_idx[nn] for nn in nns]
+                class_nn = np.array([class_idx[nn] for nn in nns])
                 NINO.append(class_nn)
         NINOs.append(NINO)
 
@@ -110,17 +109,17 @@ def get_NI(x_train, y_train, x_test, y_test, k=1):
     for x, y in zip(x_test, y_test):
         in_class = x_train[idx_by_class[y]]
         dists = np.array([euc_dist(x, x_) for x_ in in_class])
-        # nns = np.argsort(dists)[:k]
-        # NI = [idx_by_class[y][nn] for nn in nns]
-        NN = np.argmin(dists)
-        NI = idx_by_class[y][NN]
+        nns = np.argsort(dists)[:k]
+        NI = [idx_by_class[y][nn] for nn in nns]
+        # NN = np.argmin(dists)
+        # NI = idx_by_class[y][NN]
         NIs.append(NI)
 
     return np.array(NIs)
         
-def get_NIFO(x_train, y_train, x_test, y_test):
+def get_NIFO(x_train, y_train, x_test, y_test, k=1):
     ''' Neareast In-class & Furthest Out-of-class '''
-    NIs = get_NI(x_train, y_train, x_test, y_test)
+    NIs = get_NI(x_train, y_train, x_test, y_test, k)
 
     classes = np.unique(y_train)
     idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
@@ -130,10 +129,12 @@ def get_NIFO(x_train, y_train, x_test, y_test):
         NINO = [NI]
         for c in classes:
             if y == c: continue
-            class_idx = x_train[idx_by_class[c]]
-            dists = np.array([euc_dist(x, x_) for x_ in class_idx])
-            nn = np.argmax(dists)
-            class_nn = idx_by_class[c][nn]
+            class_idx = idx_by_class[c]
+            dists = np.array([euc_dist(x, x_) for x_ in x_train[class_idx]])
+            # nn = np.argmax(dists)
+            # class_nn = idx_by_class[c][nn]
+            nns = np.argsort(dists)[-k:]
+            class_nn = np.array([class_idx[nn] for nn in nns])
             NINO.append(class_nn)
         NINOs.append(NINO)
 
@@ -143,6 +144,8 @@ def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers
     correct = 0
     err = []
     for test_idx, examples_idx in enumerate(examples):
+        examples_idx = examples_idx.flatten()
+        # print(examples_idx)
         if len(np.unique(examples_idx)) < len(examples_idx): ## signal of error in rNINO
             err.append([test_idx, examples_idx[0], examples_idx[1]])
             continue
@@ -161,7 +164,8 @@ def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers
 def decision_support_with_dist(dist, examples, y_train, y_test):
     correct = 0
     err = []
-    for test_idx, examples_idx in enumerate(examples):
+    for test_idx, examples_idx in enumerate(examples):       
+        examples_idx = examples_idx.flatten()
         if len(np.unique(examples_idx)) < len(examples_idx): ## signal of error in rNINO
             err.append([test_idx, examples_idx[0], examples_idx[1]])
             continue
