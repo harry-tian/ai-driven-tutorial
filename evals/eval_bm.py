@@ -107,9 +107,11 @@ resn_nis = get_NI(z_train, y_train, z_test, y_test)
 id_columns = ['agent', 'name', 'model', 'seed']
 ts_columns = ['test_clf_acc', 'test_1nn_acc', 'test_triplet_acc']
 ds_columns = ['NINO_ds_acc', 'NIFO_ds_acc', 'rNINO_ds_acc']
+kd = [2, 3]
+kd_columns = ['_'.join([str(k), ds]) for ds in ds_columns for k in kd]
 er_columns = ['NINO_ds_err', 'NIFO_ds_err', 'rNINO_ds_err']
 ni_columns = ['NIs', 'NI_acc']
-all_columns = id_columns + ts_columns + ds_columns + er_columns + ni_columns
+all_columns = id_columns + ts_columns + ds_columns + kd_columns + ni_columns
 results = pd.DataFrame(columns=all_columns)
 for syn in syns:
     print(f"Evaluating models with agent: {syn}")
@@ -117,7 +119,7 @@ for syn in syns:
         for seed in seeds:
             z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
             evals = syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn])
-            nn_mat = np.vstack([np.arange(len(y_test)), evals['NIs'], resn_nis]).T
+            nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), evals['NIs'], resn_nis])
             sames = np.where(nn_mat[:, 1] == nn_mat[:, 2])[0]
             corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
             corr[sames] = 0.5
@@ -126,6 +128,9 @@ for syn in syns:
             evals.update({k: v for k, v in zip(id_columns, [syn, name, model, seed])})
             test_values = df_wandb[df_wandb['Name'] == name][ts_columns].values[0]
             evals.update({k: v for k, v in zip(ts_columns, test_values)})
+            for k in kd:
+                k_evals = syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn], k=k)
+                evals.update({'_'.join([str(k), ds]): k_evals[ds] for ds in ds_columns})
             results.loc[len(results)] = [evals[k] for k in all_columns]
 
 results.to_csv(results_csv, index=False)
