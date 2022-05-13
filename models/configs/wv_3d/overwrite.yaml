@@ -17,8 +17,7 @@ enable_progress_bar: False
 
 
 
-max_epochs : 1
+max_epochs : 3
 checkpoint_callback: False
-# embeds_output_dir: ../embeds
-k: 1
-wandb_group : test
+embeds_output_dir: ../embeds
+# wandb_group : test

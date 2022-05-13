@@ -22,21 +22,21 @@
 # done
 
     
-python MTL_han.py \
+python MTL.py \
     --dataset_config=configs/wv_3d/dataset.yaml \
     --model_config=configs/wv_3d/models/TN.yaml \
     --triplet_config=configs/wv_3d/align_triplets/align=0.8.yaml \
     --overwrite_config=configs/wv_3d/overwrite.yaml \
     --seed=0
 
-# python MTL_han.py \
+# python MTL.py \
 #     --dataset_config=configs/wv_3d/dataset.yaml \
 #     --model_config=configs/wv_3d/models/MTL0.5.yaml \
 #     --triplet_config=configs/wv_3d/filtered_triplets/align=0.8_filtered.yaml \
 #     --overwrite_config=configs/wv_3d/overwrite.yaml \
 #     --seed=0
 
-# python MTL_han.py \
+# python MTL.py \
 #     --dataset_config=configs/wv_3d/dataset.yaml \
 #     --model_config=configs/wv_3d/models/MTL0.5.yaml \
 #     --triplet_config=configs/wv_3d/noisy_triplets/noise=0.1.yaml \

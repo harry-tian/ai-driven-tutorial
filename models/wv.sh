@@ -12,27 +12,28 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
- 
-python MTL_han.py \
-    --dataset_config=configs/wv_3d/dataset.yaml \
-    --model_config=configs/wv_3d/models/MTL0.5.yaml \
-    --triplet_config=configs/wv_3d/align_triplets/align=0.8.yaml \
-    --overwrite_config=configs/wv_3d/overwrite.yaml \
-    --seed=0
 
-# for triplet in configs/wv_2d/filtered_triplets/* ; do for model in configs/wv_2d/models/* ; do if [ $model = configs/wv_2d/models/TN.yaml ] || [ $model = configs/wv_2d/models/MTL0.5.yaml ]; then sbatch wv.sh $triplet $model; fi; done; done
-
-# for triplet in configs/wv_2d/align_triplets/* ; do for model in configs/wv_2d/models/* ; do if [ $model = configs/wv_2d/models/TN.yaml ] || [ $model = configs/wv_2d/models/MTL0.5.yaml ]; then sbatch wv.sh $triplet $model; fi; done; done
-
-for i in {0..2}
-    # do echo $1 $2 $i
-    do python MTL_han.py \
-        --dataset_config=configs/wv_2d/dataset.yaml \
+for seed in {0..2}
+    do python MTL.py \
+        --dataset_config=configs/wv_3d/dataset.yaml \
         --model_config=$2 \
         --triplet_config=$1 \
-        --seed=$i
+        --overwrite_config=configs/wv_3d/overwrite.yaml \
+        --seed=$seed
 done
 
+# for triplet in configs/wv_3d/noisy_triplets/* ; do for model in configs/wv_3d/models/* ; do if [ $model != configs/wv_3d/models/RESN.yaml ]; then sbatch wv.sh $triplet $model ; fi; done; done
+ 
+
+# python MTL.py \
+#     --dataset_config=configs/wv_3d/dataset.yaml \
+#     --model_config=$2 \
+#     --triplet_config=$1 \
+#     --overwrite_config=configs/wv_3d/overwrite.yaml \
+#     --seed=$3
+
+# for triplet in configs/wv_3d/align_triplets/* ; do for model in configs/wv_3d/models/* ; do if [ $model != configs/wv_3d/models/RESN.yaml ]; then sbatch wv.sh $triplet $model 2; fi; done; done
+
+# for triplet in configs/wv_3d/filtered_triplets/* ; do for model in configs/wv_3d/models/* ; do if [ $model != configs/wv_3d/models/RESN.yaml ]; then sbatch wv.sh $triplet $model 2; fi; done; done
 
 
-        # --overwrite_config=configs/wv_2d/overwrite.yaml \

@@ -263,28 +263,31 @@ class MTL(pl.LightningModule):
         knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
         ds_acc = None
         if self.hparams.syn:
-            results = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
-            self.hparams.weights, self.hparams.powers, k=self.hparams.k)
             to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc", "h2h_acc"]
             to_print = ["NINO_ds_err", "rNINO_ds_err", "NIFO_ds_err", "NIs"]
-
-            h2h_acc = []
             RESN_embed_dir = "../embeds/wv_3d_alignments/RESN"
-            for seed in range(5):
-                train_name = f"RESN_train_seed{seed}.pkl"
-                test_name = f"RESN_test_seed{seed}.pkl"
-                train_name = RESN_embed_dir + '/' + train_name
-                test_name = RESN_embed_dir + '/' + test_name
-                RESN_train = pickle.load(open(train_name,"rb"))
-                RESN_test = pickle.load(open(test_name,"rb"))
-                RESN_NIs = evals.get_NI(RESN_train, y_train, RESN_test, y_test, k=self.hparams.k)
-                wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, results["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                h2h_acc.append((wins + ties*0.5)/len(y_test))
-            results["h2h_acc"] = np.array(h2h_acc).mean()
+            
+            for k in [1,3,5]:
+                results = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
+                self.hparams.weights, self.hparams.powers, k=k)
 
-            for key in to_log: self.log(status + "_" + key, results[key])
-            if status == 'test':
-                for key in to_print: print(f"\n{status}_{key}: {results[key]}")
+                h2h_acc = []
+                for seed in range(5):
+                    train_name = f"RESN_train_seed{seed}.pkl"
+                    test_name = f"RESN_test_seed{seed}.pkl"
+                    train_name = RESN_embed_dir + '/' + train_name
+                    test_name = RESN_embed_dir + '/' + test_name
+                    RESN_train = pickle.load(open(train_name,"rb"))
+                    RESN_test = pickle.load(open(test_name,"rb"))
+                    
+                    RESN_NIs = evals.get_NI(RESN_train, y_train, RESN_test, y_test, k=k)
+                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, results["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                    h2h_acc.append((wins + ties*0.5)/len(y_test))
+                results["h2h_acc"] = np.array(h2h_acc).mean()
+
+                for key in to_log: self.log(f"{key}_k={k}", results[key])
+                if status == 'test':
+                    for key in to_print: print(f"\n{key}_k={k}: {results[key]}")
         return knn_acc, ds_acc
 
     def trips_corr(self, a, p, n):
