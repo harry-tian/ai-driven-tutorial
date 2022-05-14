@@ -19,4 +19,6 @@ datasets/wv_3d
 
 old/
 
-embeds/
+embeds/wv_3d_alignments/
+embeds/wv_3d_alignments_filtered/
+embeds/wv_3d_noisy/

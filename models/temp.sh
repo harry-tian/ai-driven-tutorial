@@ -12,6 +12,11 @@
 #SBATCH --mem=10G
 
 
+python gen_RESN.py \
+    --dataset=bm \
+    --subdir=bm/RESN_baseline \
+    --suffix=emb512
+
 
 # for i in {0..4}
 #       do python MTL.py \
