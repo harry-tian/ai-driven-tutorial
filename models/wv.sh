@@ -12,12 +12,14 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
-python MTL.py \
-    --dataset_config=configs/wv_3d/dataset.yaml \
-    --model_config=$2 \
-    --triplet_config=$1 \
-    --overwrite_config=configs/wv_3d/overwrite.yaml \
-    --seed=$3
+for seed in {0..2}
+    do python MTL.py \
+        --dataset_config=configs/wv_3d/dataset.yaml \
+        --model_config=$2 \
+        --triplet_config=$1 \
+        --overwrite_config=configs/wv_3d/overwrite.yaml \
+        --seed=$seed
+done
 
 # python MTL.py \
 #     --dataset_config=configs/wv_3d/dataset.yaml \
@@ -27,7 +29,7 @@ python MTL.py \
 #     --seed=$1
 # for seed in {0..4}; do sbatch wv.sh $seed; done;
 
-# for triplet in configs/wv_3d/align_triplets/* ; do for model in configs/wv_3d/models/* ; do if [ $model != configs/wv_3d/models/RESN.yaml ]; then sbatch wv.sh $triplet $model 2; fi; done; done
+# for triplet in configs/wv_3d/align_triplets/* ; do for model in configs/wv_3d/models/* ; do if [ $model != configs/wv_3d/models/RESN.yaml ]; then sbatch wv.sh $triplet $model; fi; done; done
 
 
 

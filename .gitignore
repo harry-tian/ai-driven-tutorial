@@ -4,7 +4,6 @@
 *.npy
 *.ckpt
 
-models/results
 models/wandb
 models/checkpoints
 models/lightning_logs
