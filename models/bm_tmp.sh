@@ -14,14 +14,16 @@
 
 # python MTL_han.py \
 #     --dataset_config=configs/bm/dataset.yaml \
-#     --model_config=configs/bm/MTL.yaml \
-#     --triplet_config=configs/bm/low_lr.yaml \
+#     --model_config=configs/bm/models/MTL.yaml \
+#     --triplet_config=configs/bm/triplets/filtered.yaml \
+#     --overwrite_config=configs/bm/overwrite.yaml
 
 for i in {0..4}
     do python MTL_han.py \
         --dataset_config=configs/bm/dataset.yaml \
-        --model_config=configs/bm/MTL.yaml \
-        --triplet_config=configs/bm/low_lr.yaml \
+        --model_config=configs/bm/models/MTL.yaml \
+        --triplet_config=configs/bm/triplets/filtered.yaml \
+        --overwrite_config=configs/bm/debug/dim_50.yaml \
         --seed=$i \
         --lamda=0 \
         --wandb_name=MTL0s$i
@@ -30,8 +32,9 @@ done
 for i in {0..4}
     do python MTL_han.py \
         --dataset_config=configs/bm/dataset.yaml \
-        --model_config=configs/bm/MTL.yaml \
-        --triplet_config=configs/bm/low_lr.yaml \
+        --model_config=configs/bm/models/MTL.yaml \
+        --triplet_config=configs/bm/triplets/filtered.yaml \
+        --overwrite_config=configs/bm/debug/dim_50.yaml \
         --seed=$i \
         --lamda=1 \
         --wandb_name=MTL1s$i
@@ -40,8 +43,9 @@ done
 for i in {0..4}
     do python MTL_han.py \
         --dataset_config=configs/bm/dataset.yaml \
-        --model_config=configs/bm/MTL.yaml \
-        --triplet_config=configs/bm/low_lr.yaml \
+        --model_config=configs/bm/models/MTL.yaml \
+        --triplet_config=configs/bm/triplets/filtered.yaml \
+        --overwrite_config=configs/bm/debug/dim_50.yaml \
         --seed=$i \
         --lamda=0.5 \
         --wandb_name=MTL0.5s$i
@@ -50,8 +54,9 @@ done
 for i in {0..4}
     do python MTL_han.py \
         --dataset_config=configs/bm/dataset.yaml \
-        --model_config=configs/bm/MTL.yaml \
-        --triplet_config=configs/bm/low_lr.yaml \
+        --model_config=configs/bm/models/MTL.yaml \
+        --triplet_config=configs/bm/triplets/filtered.yaml \
+        --overwrite_config=configs/bm/debug/dim_50.yaml \
         --seed=$i \
         --lamda=0.2 \
         --wandb_name=MTL0.2s$i
@@ -60,8 +65,9 @@ done
 for i in {0..4}
     do python MTL_han.py \
         --dataset_config=configs/bm/dataset.yaml \
-        --model_config=configs/bm/MTL.yaml \
-        --triplet_config=configs/bm/low_lr.yaml \
+        --model_config=configs/bm/models/MTL.yaml \
+        --triplet_config=configs/bm/triplets/filtered.yaml \
+        --overwrite_config=configs/bm/debug/dim_50.yaml \
         --seed=$i \
         --lamda=0.8 \
         --wandb_name=MTL0.8s$i

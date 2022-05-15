@@ -1,11 +1,11 @@
 ### Wandb args
 wandb_mode: online
 wandb_project : bm_filtered_d512_e50
-wandb_group : pre_no_aug_0
+wandb_group : pre_no_aug_2
 
 ### triplet data
 train_triplets : ../datasets/bm_prolific_triplets/train_triplets_filtered.pkl
-valid_triplets : ../datasets/bm_prolific_triplets/valid_triplets.pkl
+valid_triplets : ../datasets/bm_prolific_triplets/valid_triplets_filtered.pkl
 test_triplets : ../datasets/bm_prolific_triplets/test_triplets.pkl
 
 ### overwrite args
@@ -14,4 +14,5 @@ embed_dim: 512
 max_epochs: 50
 pretrained: True
 aug: False
+deterministic: True
 embeds_output_dir: ../embeds/bm/prolific
