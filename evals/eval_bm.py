@@ -13,6 +13,8 @@ parser = parser = argparse.ArgumentParser()
 parser.add_argument("-w", "--wandb_csv", default=None, type=str)
 parser.add_argument("-p", "--wandb_project", default=None, type=str)
 parser.add_argument("-g", "--wandb_group", default=None, type=str)
+parser.add_argument("-n", "--ni_train_embs_path", default=None, type=str)
+parser.add_argument("-u", "--update", default=None, type=str)
 args = parser.parse_args()
 print(args)
 
@@ -100,9 +102,15 @@ syns = {k: v for k, v in dsts.items() if 'MTL0s' in k}
 # b_syns = {s: syns[s] for s in [agent, 'lpips.alex', 'lpips.vgg']}
 print("syn agents:", syns.keys(), len(syns))
 
-model, seed = 'MTL1', best[model]
-z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
-resn_nis = get_NI(z_train, y_train, z_test, y_test)
+if args.ni_train_embs_path:
+    train_path = pathlib.Path(args.ni_train_embs_path)
+    test_path = train_path.with_name(train_path.name.replace('train', 'test'))
+    z_train = pickle.load(open(train_path, 'rb'))
+    z_test = pickle.load(open(test_path, 'rb'))
+else:
+    model, seed = 'MTL1', best[model]
+    z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
+    resn_nis = get_NI(z_train, y_train, z_test, y_test)
 
 id_columns = ['agent', 'name', 'model', 'seed']
 ts_columns = ['test_clf_acc', 'test_1nn_acc', 'test_triplet_acc']
@@ -111,26 +119,43 @@ kd = [2, 3]
 kd_columns = ['_'.join([str(k), ds]) for ds in ds_columns for k in kd]
 er_columns = ['NINO_ds_err', 'NIFO_ds_err', 'rNINO_ds_err']
 ni_columns = ['NIs', 'NI_acc']
-all_columns = id_columns + ts_columns + ds_columns + kd_columns + ni_columns
-results = pd.DataFrame(columns=all_columns)
+
+if args.update:
+    all_columns = ['customized_NI_acc']
+    results = pd.read_csv(results_csv)[all_columns]
+else:
+    all_columns = id_columns + ts_columns + ds_columns + kd_columns + ni_columns
+    results = pd.DataFrame(columns=all_columns)
 for syn in syns:
     print(f"Evaluating models with agent: {syn}")
     for model in models:
         for seed in seeds:
-            z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
-            evals = syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn])
-            nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), evals['NIs'], resn_nis])
-            sames = np.where(nn_mat[:, 1] == nn_mat[:, 2])[0]
-            corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
-            corr[sames] = 0.5
-            evals['NI_acc'] = corr.mean()
-            name = 's'.join([model, str(seed)])
-            evals.update({k: v for k, v in zip(id_columns, [syn, name, model, seed])})
-            test_values = df_wandb[df_wandb['Name'] == name][ts_columns].values[0]
-            evals.update({k: v for k, v in zip(ts_columns, test_values)})
-            for k in kd:
-                k_evals = syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn], k=k)
-                evals.update({'_'.join([str(k), ds]): k_evals[ds] for ds in ds_columns})
+            evals = {}
+            if np.any([col in id_columns for col in all_columns]):
+                name = 's'.join([model, str(seed)])
+                evals.update({k: v for k, v in zip(id_columns, [syn, name, model, seed])})
+            if np.any([col in ts_columns for col in all_columns]):
+                test_values = df_wandb[df_wandb['Name'] == name][ts_columns].values[0]
+                evals.update({k: v for k, v in zip(ts_columns, test_values)})
+            if np.any([col in (ds_columns + kd_columns + ni_columns) for col in all_columns]):
+                z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
+                evals.update(syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn]))
+                nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), evals['NIs'], resn_nis])
+                sames = np.where(nn_mat[:, 1] == nn_mat[:, 2])[0]
+                corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
+                corr[sames] = 0.5
+                evals['NI_acc'] = corr.mean()
+                for k in kd:
+                    k_evals = syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn], k=k)
+                    evals.update({'_'.join([str(k), ds]): k_evals[ds] for ds in ds_columns})
+            if 'customized_NI_acc' in all_columns:
+                z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
+                nis = get_NI(z_train, y_train, z_test, y_test)
+                nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), nis['NIs'], resn_nis])
+                sames = np.where(nn_mat[:, 1] == nn_mat[:, 2])[0]
+                corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
+                corr[sames] = 0.5
+                evals['NI_acc'] = corr.mean()
             results.loc[len(results)] = [evals[k] for k in all_columns]
 
 results.to_csv(results_csv, index=False)

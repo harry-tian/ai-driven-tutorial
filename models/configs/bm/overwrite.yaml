@@ -1,0 +1,13 @@
+### Wandb args
+wandb_mode: disabled
+# wandb_project : 
+# wandb_group : 
+
+### overwrite args
+# dataloader_num_workers: 4
+embed_dim: 50
+max_epochs: 1
+# pretrained: True
+# aug: False
+# deterministic: True
+# embeds_output_dir: ../embeds/bm/prolific

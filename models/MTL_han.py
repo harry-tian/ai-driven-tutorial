@@ -38,6 +38,7 @@ class MTL(pl.LightningModule):
         if 'profiler' in kwargs:
             self.profiler = kwargs['profiler']
 
+    ### DATA ###
     def setup_data(self):
         train_transform = transforms.get_transform(self.hparams.transform, aug=True)
         valid_transform = transforms.get_transform(self.hparams.transform, aug=False)
@@ -81,34 +82,6 @@ class MTL(pl.LightningModule):
         batch = next(iter(loader))
         return batch[0].to(self.device), batch[1].to(self.device)
 
-    def sample_train_clf_trips(self, x_idx, ys):
-        classes = torch.unique(ys)
-        k_trips = self.hparams.triplet_batch_size // len(classes)
-        clf_trips = []
-        for c in classes:
-            in_idx = x_idx[ys == c]
-            out_idx = x_idx[ys != c]
-            combs = torch.combinations(in_idx)
-            combs_idx = torch.arange(len(combs)).to(combs.device)
-            prods = torch.cartesian_prod(combs_idx, out_idx)
-            combs = torch.cat([combs[prods[:, 0]], prods[:, 1].unsqueeze(1)], 1)
-            trip = combs[torch.randperm(len(combs))[:k_trips]]
-            clf_trips.append(trip)
-        return torch.cat(clf_trips)
-
-    def sample_test_clf_trips(self, an_idx, nn_idx, y_an, y_nn, n_trips):
-        classes = torch.unique(y_an)
-        k_trips = n_trips // len(classes)
-        clf_trips = []
-        for c in classes:
-            a_idx = an_idx[y_an == c]
-            in_idx = nn_idx[y_nn == c]
-            out_idx = nn_idx[y_nn != c]
-            combs = torch.cartesian_prod(a_idx, in_idx, out_idx)
-            trip = combs[torch.randperm(len(combs))[:k_trips]]
-            clf_trips.append(trip)
-        return torch.cat(clf_trips)
-
     def sample_xs_ys(self, dataset, x_idx=None, aug=False):
         if type(dataset) == tuple:
             data = (dataset[0][x_idx], dataset[1][x_idx]) if x_idx is not None else dataset
@@ -123,6 +96,7 @@ class MTL(pl.LightningModule):
             data = (x, data[1])
         return data
     
+    ### Forward ###
     def forward(self, inputs):
         embeds = self.encoder(inputs)
         return embeds
@@ -199,17 +173,17 @@ class MTL(pl.LightningModule):
         clf_loss = self.valid_losses.mean()
         clf_acc = self.valid_corres.mean()
         total_loss += self.hparams.lamda * clf_loss
-        # knn_acc, ds_acc = self.eval_knn_ds(
-        #     self.valid_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_valid, status='valid')
+        knn_acc, ds_acc = self.eval_knn_ds(
+            self.valid_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_valid, status='valid')
         self.log('valid_clf_loss', clf_loss)
         self.log('valid_clf_acc', clf_acc, prog_bar=True)
         self.log('valid_triplet_loss', triplet_loss)
         self.log('valid_triplet_acc', triplet_acc, prog_bar=True)
         self.log('valid_total_loss', total_loss, prog_bar=True)
-        # if knn_acc:
-        #     self.log('valid_1nn_acc', knn_acc)
-        # if ds_acc:
-        #     self.log('valid_decision_support', ds_acc)
+        if knn_acc:
+            self.log('valid_1nn_acc', knn_acc)
+        if ds_acc:
+            self.log('valid_decision_support', ds_acc)
 
     def test_step(self, batch, batch_idx):
         if batch_idx == 0: 
@@ -259,6 +233,7 @@ class MTL(pl.LightningModule):
         if self.hparams.embeds_output_dir is not None:
             self.save_embeds()
 
+    ### Embed ###
     def embed_dataset(self, dataset):
         self.eval()
         dataset = torch.utils.data.TensorDataset(*dataset) if self.in_memeory_dataset else dataset
@@ -283,6 +258,7 @@ class MTL(pl.LightningModule):
             pathlib.Path(path).mkdir(parents=True, exist_ok=True)
             pickle.dump(emb, open(path + '/' + name, 'wb'))
 
+    ### Eval ###
     def eval_knn_ds(self, test_ds, train_ds, syn_x_train=None, syn_x_test=None, status=None):
         _, y_train = self.sample_xs_ys(train_ds)
         _, y_test = self.sample_xs_ys(test_ds)
@@ -306,6 +282,7 @@ class MTL(pl.LightningModule):
         dan = F.pairwise_distance(a, n)
         return (dap < dan).float()
 
+    ### DataLoaders ###
     def train_dataloader(self):
         triplet_loader = torch.utils.data.DataLoader(
             torch.Tensor(self.train_triplets).long(), 

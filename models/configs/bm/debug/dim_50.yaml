@@ -1,0 +1,3 @@
+wandb_project : bm_filtered_d50_e50
+wandb_group : pre_no_aug_3
+embed_dim: 50
