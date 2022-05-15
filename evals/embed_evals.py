@@ -41,7 +41,7 @@ def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights
     evals = {}
     
     NINO = get_NINO(z_train, y_train, z_test, y_test, k)
-    ds_dist = decision_support_with_dist if k==1 else knn_decision_support_with_dist
+    ds_dist = decision_support_with_dist if True else knn_decision_support_with_dist
     if dist is not None:
         NINO_ds_acc, NINO_ds_err = ds_dist(dist, NINO, y_train, y_test)
     else:
