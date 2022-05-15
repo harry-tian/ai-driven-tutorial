@@ -28,17 +28,20 @@ def config_parser():
 
 def test_configs(configs):
     ''' checks for expected hyperparameters'''
-    required_args = ["gpus", "seed", "dataloader_num_workers", "model","check_val_every_n_epoch",
-    "max_epochs", "learning_rate", "train_batch_size", "embed_dim",
-    "num_class" ,"train_dir", "valid_dir", "test_dir", "transform", "aug",
-    "wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name",
-    "do_train", "do_test", "checkpoint_callback", "enable_progress_bar", "log_every_n_steps",
-    "train_triplets", "valid_triplets", "test_triplets", "triplet_batch_size",
-    "pretrained", "lamda", "syn", "embeds_output_dir", "deterministic", "test_ckpt_path"]
-    syn_args = ["syn", "train_synthetic", "valid_synthetic", "test_synthetic", "weights"]
-    
+    wandb_args = ["wandb_group", "wandb_mode", "wandb_project", "wandb_entity",  "wandb_name"]
+    trainer_args = ["gpus", "seed",  "deterministic", "dataloader_num_workers",
+        "do_train", "do_test", "checkpoint_callback", "enable_progress_bar", "log_every_n_steps"]
+    training_args = ["max_epochs", "learning_rate","check_val_every_n_epoch",
+        "train_batch_size", "triplet_batch_size"]
+    dataset_args = ["train_dir", "valid_dir", "test_dir", "transform", "aug", "num_class", "syn"]
+    triplet_args = ["train_triplets", "valid_triplets", "test_triplets"]
+    model_args = ["model", "embed_dim","pretrained", "lamda"]
+    file_args = ["embeds_output_dir", "test_ckpt_path","out_csv"]
+    required_args = wandb_args + trainer_args + training_args + dataset_args + triplet_args + model_args + file_args
+
     if "syn" in configs:
         if configs["syn"]: 
+            syn_args = ["syn", "train_synthetic", "valid_synthetic", "test_synthetic", "weights"]
             for arg in syn_args: assert(arg in configs)
             required_args += syn_args
             

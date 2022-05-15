@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import pathlib
+import pathlib, time, random
 import sys, pickle
 import numpy as np
 import torch
@@ -9,7 +9,9 @@ import torchvision
 from torchvision import  models
 import pytorch_lightning as pl
 import trainer, transforms
+import pandas as pd
 
+from sklearn.metrics.pairwise import euclidean_distances
 sys.path.insert(0, '..')
 import evals.embed_evals as evals
 
@@ -26,7 +28,7 @@ class MTL(pl.LightningModule):
             pretrained=self.hparams.pretrained, zero_init_residual=not self.hparams.pretrained)
         num_features = self.encoder.fc.weight.shape[1]
         self.embed_dim = self.hparams.embed_dim
-        if self.embed_dim:
+        if self.embed_dim!=512:
             self.encoder.fc = nn.Sequential(nn.Linear(num_features, self.embed_dim, bias=False))
             self.classifier = nn.Sequential(
                 nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Linear(self.embed_dim, self.hparams.num_class))
@@ -35,8 +37,7 @@ class MTL(pl.LightningModule):
             self.classifier = nn.Sequential(nn.Linear(num_features, self.hparams.num_class))
         self.clf_criterion = nn.CrossEntropyLoss()
         self.criterion = nn.TripletMarginLoss()
-        if 'profiler' in kwargs:
-            self.profiler = kwargs['profiler']
+        self.summarize()
 
     def setup_data(self):
         train_transform = transforms.get_transform(self.hparams.transform, aug=True)
@@ -171,17 +172,11 @@ class MTL(pl.LightningModule):
         clf_loss = self.valid_losses.mean()
         clf_acc = self.valid_corres.mean()
         total_loss += self.hparams.lamda * clf_loss
-        # knn_acc, ds_acc = self.eval_knn_ds(
-        #     self.valid_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_valid, status='valid')
         self.log('valid_clf_loss', clf_loss)
         self.log('valid_clf_acc', clf_acc, prog_bar=True)
         self.log('valid_triplet_loss', triplet_loss)
         self.log('valid_triplet_acc', triplet_acc, prog_bar=True)
         self.log('valid_total_loss', total_loss, prog_bar=True)
-        # if knn_acc:
-        #     self.log('valid_1nn_acc', knn_acc)
-        # if ds_acc:
-        #     self.log('valid_decision_support', ds_acc)
 
     def test_step(self, batch, batch_idx):
         if batch_idx == 0: 
@@ -217,17 +212,37 @@ class MTL(pl.LightningModule):
         clf_loss = self.test_losses.mean()
         clf_acc = self.test_corres.mean()
         total_loss += self.hparams.lamda * clf_loss
-        knn_acc, ds_acc = self.eval_knn_ds(
+        results = self.eval_knn_ds(
             self.test_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_test, status='test')
+        for k,v in results.items(): self.log(k,v)
         self.log('test_clf_loss', clf_loss)
         self.log('test_clf_acc', clf_acc, prog_bar=True)
         self.log('test_triplet_loss', triplet_loss)
         self.log('test_triplet_acc', triplet_acc, prog_bar=True)
         self.log('test_total_loss', total_loss, prog_bar=True)
-        if knn_acc:
-            self.log('test_1nn_acc', knn_acc)
-        if ds_acc:
-            self.log('test_decision_support', ds_acc)
+
+        csv = {
+            "wandb_project": self.hparams.wandb_project,
+            "wandb_group": self.hparams.wandb_group,
+            "wandb_name": self.hparams.wandb_name,
+            "seed": self.hparams.seed,
+            "weights": self.hparams.weights,
+            "embed_dim": self.hparams.embed_dim,
+            "lamda": self.hparams.lamda,
+            "test_clf_acc": clf_acc.cpu().detach().numpy(),
+            "test_triplet_acc": triplet_acc.cpu().detach().numpy(),
+            }
+        csv.update(results)
+        csv = {k:[v] for k,v in csv.items()}
+        if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
+        else: out_csv = "out.csv"
+        out_csv = f"results/{out_csv}"
+        time.sleep(random.randint(0,20))
+        df = pd.read_csv(out_csv)
+        # df = pd.DataFrame()
+        df = pd.concat([df,pd.DataFrame(csv)])
+        df.to_csv(out_csv,index=False)
+
         if self.hparams.embeds_output_dir is not None:
             self.save_embeds()
 
@@ -261,34 +276,38 @@ class MTL(pl.LightningModule):
         z_test = self.embed_dataset(test_ds).numpy()
         y_train, y_test = y_train.numpy(), y_test.numpy()
         knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
-        ds_acc = None
+        results = {"test_1nn_acc":knn_acc}
         if self.hparams.syn:
-            to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc", "h2h_acc"]
+            to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
             to_print = ["NINO_ds_err", "rNINO_ds_err", "NIFO_ds_err", "NIs"]
-            RESN_embed_dir = "../embeds/wv_3d_alignments/RESN"
-            
+            RESN_d512_dir = "../embeds/wv_3d/RESN_d=512"
+            RESN_d50_dir = "../embeds/wv_3d/RESN_d=50"
+
             for k in [1,3,5]:
-                results = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
+                syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
                 self.hparams.weights, self.hparams.powers, k=k)
 
-                h2h_acc = []
-                for seed in range(3):
-                    train_name = f"RESN_train_seed{seed}.pkl"
-                    test_name = f"RESN_test_seed{seed}.pkl"
-                    train_name = RESN_embed_dir + '/' + train_name
-                    test_name = RESN_embed_dir + '/' + test_name
-                    RESN_train = pickle.load(open(train_name,"rb"))
-                    RESN_test = pickle.load(open(test_name,"rb"))
-                    
-                    RESN_NIs = evals.get_NI(RESN_train, y_train, RESN_test, y_test, k=k)
-                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, results["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                    h2h_acc.append((wins + ties*0.5)/len(y_test))
-                results["h2h_acc"] = np.array(h2h_acc).mean()
+                h2h_50 = []
+                h2h_512 = []
+                for seed in range(5):
+                    RESN_train_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_train_seed{seed}.pkl","rb"))
+                    RESN_test_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_test_seed{seed}.pkl","rb"))
+                    euc_dist_M = euclidean_distances(RESN_test_50,RESN_train_50)
+                    RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
+                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                    h2h_50.append((wins + ties*0.5)/len(y_test))
 
-                for key in to_log: self.log(f"{key}_k={k}", results[key])
-                if status == 'test':
-                    for key in to_print: print(f"\n{key}_k={k}: {results[key]}")
-        return knn_acc, ds_acc
+                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_seed{seed}.pkl","rb"))
+                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_seed{seed}.pkl","rb"))
+                    euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
+                    RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
+                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                    h2h_512.append((wins + ties*0.5)/len(y_test))
+                results["h2h_50"] = np.array(h2h_50).mean()
+                results["h2h_512"] = np.array(h2h_512).mean()
+
+                for eval in to_log: results[f"{eval}_k={k}"] = syn_evals[eval]
+        return results
 
     def trips_corr(self, a, p, n):
         dap = F.pairwise_distance(a, p)
