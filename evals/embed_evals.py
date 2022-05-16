@@ -207,6 +207,9 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
         score = knc.score(x_valid, y_valid)
     return score
 
+# def dynamic_dist(a,b,k=2):
+
+
 ##### From Han's code, import doesn't work for some reason ########
 
 def distorted_1nn(x_train, y_train, x_test, y_test, weights, powers=None):
@@ -260,6 +263,19 @@ def eval_ds_choice(choice, ds, y_test, y_train):
 
 
 
+def dynamic_dist(a,b,k=1):
+    diff = np.abs(a-b)
+    dims = np.argsort(diff)[-k:]
+    return euc_dist(a[dims],b[dims])
+def dynamic_1nn(x_train, y_train, x_test, y_test):
+    ''' 1nn acc given distored weight and power metrics '''
+    correct = 0
+    for x,y in zip(x_test,y_test):
+        dists = [dynamic_dist(x, x_) for x_ in x_train]
+        nn = np.argmin(dists)
+        if y_train[nn] == y: correct += 1
+        
+    return correct/len(y_test)
 ##########  OLD STUFF #################
 
 

@@ -1,0 +1,2 @@
+wandb_project,wandb_group,wandb_name,seed,weights,embed_dim,lamda,test_clf_acc,test_triplet_acc,test_1nn_acc,h2h_50,h2h_512,NINO_ds_acc_k=1,rNINO_ds_acc_k=1,NIFO_ds_acc_k=1,NINO_ds_acc_k=3,rNINO_ds_acc_k=3,NIFO_ds_acc_k=3,NINO_ds_acc_k=5,rNINO_ds_acc_k=5,NIFO_ds_acc_k=5
+wv_3d_linear_aligns,align=0.5,RESN,2,"[0, 0, 1, 1]",50,1,0.9975,0.49866667,0.9975,0.46875,0.37275,0.54,0.54,0.5825,0.595,0.5975,0.5025,0.5425,0.5425,0.53

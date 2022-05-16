@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
-import torchvision
+import torchvision, os
 from torchvision import  models
 import pytorch_lightning as pl
 import trainer, transforms
@@ -237,9 +237,9 @@ class MTL(pl.LightningModule):
         if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
         else: out_csv = "out.csv"
         out_csv = f"results/{out_csv}"
+        if not os.path.isfile(out_csv): df = pd.DataFrame()
+        else: df = pd.read_csv(out_csv)
         time.sleep(random.randint(0,20))
-        df = pd.read_csv(out_csv)
-        # df = pd.DataFrame()
         df = pd.concat([df,pd.DataFrame(csv)])
         df.to_csv(out_csv,index=False)
 
@@ -315,23 +315,29 @@ class MTL(pl.LightningModule):
         return (dap < dan).float()
 
     def train_dataloader(self):
+        triplets = torch.Tensor(self.train_triplets).long()
+        print(f"\n len_test: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
-            torch.Tensor(self.train_triplets).long(), 
+            triplets, 
             batch_size=self.hparams.triplet_batch_size, 
             num_workers=self.hparams.dataloader_num_workers,
             drop_last=True, shuffle=True)
         return triplet_loader
         
     def val_dataloader(self):
+        triplets = torch.Tensor(self.valid_triplets).long()
+        print(f"\n len_test: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
-            torch.Tensor(self.valid_triplets).long(), 
+            triplets, 
             batch_size=self.hparams.triplet_batch_size, 
             num_workers=self.hparams.dataloader_num_workers)
         return triplet_loader
 
     def test_dataloader(self):
+        triplets = torch.Tensor(self.test_triplets).long()
+        print(f"\n len_test: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
-            torch.Tensor(self.test_triplets).long(), 
+            triplets, 
             batch_size=self.hparams.triplet_batch_size, 
             num_workers=self.hparams.dataloader_num_workers)
         return triplet_loader
