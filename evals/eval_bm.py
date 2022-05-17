@@ -13,6 +13,8 @@ parser = parser = argparse.ArgumentParser()
 parser.add_argument("-w", "--wandb_csv", default=None, type=str)
 parser.add_argument("-p", "--wandb_project", default=None, type=str)
 parser.add_argument("-g", "--wandb_group", default=None, type=str)
+parser.add_argument("-o", "--output_path", default=None, type=str)
+parser.add_argument("-s", "--syn_embs_path", default=None, type=str)
 parser.add_argument("-n", "--ni_train_embs_path", default=None, type=str)
 parser.add_argument("-u", "--update", default=None, type=str)
 args = parser.parse_args()
@@ -34,17 +36,14 @@ else:
     print("Error: no argument passed!")
     exit()
 
+if args.output_path:
+    results_path = args.output_path + '/' if args.output_path[-1] != '/' else args.output_path
+
 results_csv = results_path + '.'.join([project, group, 'csv'])
 print(results_path, results_csv)
 
-from torchvision.datasets import ImageFolder
-train_ds = ImageFolder('../datasets/bm/train')
-valid_ds = ImageFolder('../datasets/bm/valid')
-test_ds = ImageFolder('../datasets/bm/test')
-y_train = np.array([y for _, y in train_ds])
-y_valid = np.array([y for _, y in valid_ds])
-y_test = np.array([y for _, y in test_ds])
-ytvs = y_train, y_valid, y_test
+y_train, y_valid, y_test = pickle.load(open('../datasets/bm/labels.pkl', 'rb'))
+
 
 def load_all_embs(path, models, dim, arch=None, seeds=None):
     emb, folds = {}, ['train', 'valid', 'test']
@@ -96,7 +95,18 @@ for model in models:
         dsts[name] = get_dst_from_embs(embs[model][seed])
 b_embs = {m: embs[m][best[m]] for m in embs}
 
-syns = {k: v for k, v in dsts.items() if 'MTL0s' in k}
+if args.syn_embs_path:
+    syn_path = args.syn_embs_path
+    syn_models = [f'MTL{l}' for l in [0]]
+    syn_embs = load_all_embs(syn_path, syn_models, 50, 'MTL_han', range(5))
+    syn_dsts = {}
+    for model in syn_models:
+        for seed in range(5):
+            name = 's'.join([model, str(seed)])
+            syn_dsts[name] = get_dst_from_embs(syn_embs[model][seed])
+    syns = {k: v for k, v in syn_dsts.items() if 'MTL0s' in k}
+else:
+    syns = {k: v for k, v in dsts.items() if 'MTL0s' in k}
 # syns['lpips.alex'] = pickle.load(open('../embeds/lpips/bm/lpips.alex.dstt.pkl', 'rb'))
 # syns['lpips.vgg'] = pickle.load(open('../embeds/lpips/bm/lpips.vgg.dstt.pkl', 'rb'))
 # b_syns = {s: syns[s] for s in [agent, 'lpips.alex', 'lpips.vgg']}
@@ -110,7 +120,8 @@ if args.ni_train_embs_path:
 else:
     model, seed = 'MTL1', best[model]
     z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
-    resn_nis = get_NI(z_train, y_train, z_test, y_test)
+    r_dst = euc_dist(z_test, z_train)
+    resn_nis = get_NI(r_dst, y_train, y_test)
 
 id_columns = ['agent', 'name', 'model', 'seed']
 ts_columns = ['test_clf_acc', 'test_1nn_acc', 'test_triplet_acc']
@@ -150,8 +161,8 @@ for syn in syns:
                     evals.update({'_'.join([str(k), ds]): k_evals[ds] for ds in ds_columns})
             if 'customized_NI_acc' in all_columns:
                 z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
-                nis = get_NI(z_train, y_train, z_test, y_test)
-                nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), nis['NIs'], resn_nis])
+                nis = get_NI(euc_dist(z_test, z_train), y_train, y_test)
+                nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), nis, resn_nis])
                 sames = np.where(nn_mat[:, 1] == nn_mat[:, 2])[0]
                 corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
                 corr[sames] = 0.5
