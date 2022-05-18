@@ -122,6 +122,7 @@ else:
     z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
     r_dst = euc_dist(z_test, z_train)
     resn_nis = get_NI(r_dst, y_train, y_test)
+    resn_nos = get_NI(r_dst, 1-y_train, y_test)
 
 id_columns = ['agent', 'name', 'model', 'seed']
 ts_columns = ['test_clf_acc', 'test_1nn_acc', 'test_triplet_acc']
@@ -129,7 +130,7 @@ ds_columns = ['NINO_ds_acc', 'NIFO_ds_acc', 'rNINO_ds_acc']
 kd = [2, 3]
 kd_columns = ['_'.join([str(k), ds]) for ds in ds_columns for k in kd]
 er_columns = ['NINO_ds_err', 'NIFO_ds_err', 'rNINO_ds_err']
-ni_columns = ['NIs', 'NI_acc']
+ni_columns = ['NIs', 'NI_acc', 'NO_acc']
 
 if args.update:
     all_columns = ['customized_NI_acc']
@@ -151,14 +152,22 @@ for syn in syns:
             if np.any([col in (ds_columns + kd_columns + ni_columns) for col in all_columns]):
                 z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
                 evals.update(syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn]))
+                for k in kd:
+                    k_evals = syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn], k=k)
+                    evals.update({'_'.join([str(k), ds]): k_evals[ds] for ds in ds_columns})
+                # NI
                 nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), evals['NIs'], resn_nis])
                 sames = np.where(nn_mat[:, 1] == nn_mat[:, 2])[0]
                 corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
                 corr[sames] = 0.5
                 evals['NI_acc'] = corr.mean()
-                for k in kd:
-                    k_evals = syn_evals(z_train, y_train, z_test, y_test, None, None, None, None, dist=syns[syn], k=k)
-                    evals.update({'_'.join([str(k), ds]): k_evals[ds] for ds in ds_columns})
+                # NO
+                nos = get_NI(euc_dist(z_test, z_train), 1-y_train, y_test)
+                nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), nos, resn_nos])
+                sames = np.where(nn_mat[:, 1] == nn_mat[:, 2])[0]
+                corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
+                corr[sames] = 0.5
+                evals['NO_acc'] = corr.mean()
             if 'customized_NI_acc' in all_columns:
                 z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
                 nis = get_NI(euc_dist(z_test, z_train), y_train, y_test)
