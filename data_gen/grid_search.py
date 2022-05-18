@@ -8,10 +8,10 @@ from tqdm import tqdm
 sys.path.insert(0, '..')
 import evals.embed_evals as evals
 
-train_embeds = pickle.load(open("../datasets/wv_3d/pseudo_label/train_features.pkl","rb"))
-test_embeds = pickle.load(open("../datasets/wv_3d/pseudo_label/test_features.pkl","rb"))
-y_train = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d/pseudo_label/train")])
-y_test = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d/pseudo_label/test")])
+train_embeds = pickle.load(open("../datasets/wv_3d_linear/train_features.pkl","rb"))
+test_embeds = pickle.load(open("../datasets/wv_3d_linear/test_features.pkl","rb"))
+y_train = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d_linear/train")])
+y_test = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d_linear/test")])
 
 total_weights = list(itertools.product([0]+[2**i for i in range(7)],repeat=4))
 

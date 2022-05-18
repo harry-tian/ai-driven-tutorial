@@ -5,17 +5,27 @@
 #SBATCH --output=/home/tianh/slurm/out/%j.%N.stdout
 #SBATCH --error=/home/tianh/slurm/stderr/%j.%N.stderr
 #SBATCH --job-name=triplets
-#SBATCH --partition=cdac-own
+#SBATCH --partition=dev
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
 
+for seed in {0..1}
+    do python MTL_slow.py \
+        --dataset_config=configs/wv_3d/square.yaml \
+        --model_config=$2 \
+        --triplet_config=$1 \
+        --overwrite_config=configs/wv_3d/overwrite.yaml \
+        --seed=$seed
+done
 
-python gen_RESN.py \
-    --dataset=bm \
-    --subdir=bm/RESN_baseline \
-    --suffix=emb512
+# for triplet in configs/wv_3d/square/num_0.8/* ; do for model in configs/wv_3d/models/* ; do if [ $model != configs/wv_3d/models/RESN.yaml ]; then sbatch temp.sh $triplet $model ; fi; done; done
+
+# python gen_RESN.py \
+#     --dataset=bm \
+#     --subdir=bm/RESN_baseline \
+#     --suffix=emb512
 
 
 # for i in {0..4}

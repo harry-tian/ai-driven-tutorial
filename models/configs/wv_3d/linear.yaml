@@ -1,0 +1,16 @@
+### classification data
+train_dir : ../datasets/wv_3d/linear/train
+valid_dir : ../datasets/wv_3d/linear/valid
+test_dir : ../datasets/wv_3d/linear/test
+num_class : 2
+transform : wv_3d
+
+syn: true
+train_synthetic: ../datasets/wv_3d/linear/train_features.pkl
+valid_synthetic: ../datasets/wv_3d/linear/valid_features.pkl
+test_synthetic: ../datasets/wv_3d/linear/test_features.pkl
+
+deterministic: true
+aug: false
+
+embeds_output_dir : ../embeds

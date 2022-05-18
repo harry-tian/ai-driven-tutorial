@@ -16,9 +16,9 @@ enable_progress_bar: False
 
 
 max_epochs : 3
-embed_dim : 50
+embed_dim : 512
 checkpoint_callback: False
 embeds_output_dir: ../embeds
-# wandb_project : wv_3d_d=512
-# wandb_group : RESN_d=512
-out_csv : wv_3d_linear.csv
+
+wandb_entity : harry-tian
+out_csv : wv_3d_square_num_512.csv

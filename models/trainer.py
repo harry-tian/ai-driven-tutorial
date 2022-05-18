@@ -24,6 +24,7 @@ def config_parser():
     parser.add_argument("--seed", default=None, type=int)
     parser.add_argument("--lamda", default=None, type=float)
     parser.add_argument("--wandb_name", default=None, type=str)
+    parser.add_argument("--embed_dim", default=None, type=int)
     return parser
 
 def test_configs(configs):

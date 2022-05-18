@@ -3,7 +3,7 @@ import shutil
 import os
 import numpy as np
 from sklearn.model_selection import KFold
-import shutil
+import shutil, pathlib
 
 def files_in_dir(mypath): return [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]
 
@@ -34,9 +34,9 @@ def auto_split(src_dir, dst_dir):
     train_dir = os.path.join(dst_dir, "train")
     valid_dir = os.path.join(dst_dir, "valid")
     test_dir = os.path.join(dst_dir, "test")
-    if not os.path.isdir(train_dir): os.mkdir(train_dir)
-    if not os.path.isdir(valid_dir): os.mkdir(valid_dir)
-    if not os.path.isdir(test_dir): os.mkdir(test_dir)
+    pathlib.Path(train_dir).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(valid_dir).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(test_dir).mkdir(parents=True, exist_ok=True)
 
     for c in classes:
         if c == "auto_split": continue
@@ -48,13 +48,13 @@ def auto_split(src_dir, dst_dir):
         c_idx = np.setdiff1d(c_idx,c_valid)
         c_train = c_idx
         c_train_dir = os.path.join(train_dir, c)
-        if not os.path.isdir(c_train_dir): os.mkdir(c_train_dir)
+        pathlib.Path(c_train_dir).mkdir(parents=True, exist_ok=True)
         for f in instances[c_train,0]: shutil.copy(f,c_train_dir)
         c_valid_dir = os.path.join(valid_dir, c)
-        if not os.path.isdir(c_valid_dir): os.mkdir(c_valid_dir)
+        pathlib.Path(c_valid_dir).mkdir(parents=True, exist_ok=True)
         for f in instances[c_valid,0]: shutil.copy(f,c_valid_dir)
         c_test_dir = os.path.join(test_dir, c)
-        if not os.path.isdir(c_test_dir): os.mkdir(c_test_dir)
+        pathlib.Path(c_test_dir).mkdir(parents=True, exist_ok=True)
         for f in instances[c_test,0]: shutil.copy(f,c_test_dir)
 
  

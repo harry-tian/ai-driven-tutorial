@@ -259,7 +259,7 @@ class MTL(pl.LightningModule):
         datasets = [self.ref_dataset, self.valid_dataset, self.test_dataset]
         z_train, z_valid, z_test = [self.embed_dataset(ds) for ds in datasets]
         for fold, emb in zip(['train', 'valid', 'test'], [z_train, z_valid, z_test]):
-            name = f"{self.hparams.wandb_name}_{fold}_seed{self.hparams.seed}.pkl"
+            name = f"{self.hparams.wandb_name}_{fold}_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl"
             path = '/'.join([
                 self.hparams.embeds_output_dir, 
                 self.hparams.wandb_project,
@@ -281,30 +281,31 @@ class MTL(pl.LightningModule):
             to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
             to_print = ["NINO_ds_err", "rNINO_ds_err", "NIFO_ds_err", "NIs"]
             RESN_d512_dir = "../embeds/wv_3d/RESN_d=512"
-            RESN_d50_dir = "../embeds/wv_3d/RESN_d=50"
+            RESN_d50_dir = "../embeds/wv_3d/RESN_d=512"
 
             for k in [1,3,5]:
                 syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
                 self.hparams.weights, self.hparams.powers, k=k)
 
-                h2h_50 = []
-                h2h_512 = []
-                for seed in range(5):
-                    RESN_train_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_train_seed{seed}.pkl","rb"))
-                    RESN_test_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_test_seed{seed}.pkl","rb"))
-                    euc_dist_M = euclidean_distances(RESN_test_50,RESN_train_50)
-                    RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
-                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                    h2h_50.append((wins + ties*0.5)/len(y_test))
+                if self.hparams.model != "RESN":
+                    h2h_50 = []
+                    h2h_512 = []
+                    for seed in range(5):
+                        RESN_train_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_train_seed{seed}.pkl","rb"))
+                        RESN_test_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_test_seed{seed}.pkl","rb"))
+                        euc_dist_M = euclidean_distances(RESN_test_50,RESN_train_50)
+                        RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
+                        wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                        h2h_50.append((wins + ties*0.5)/len(y_test))
 
-                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_seed{seed}.pkl","rb"))
-                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_seed{seed}.pkl","rb"))
-                    euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
-                    RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
-                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                    h2h_512.append((wins + ties*0.5)/len(y_test))
-                results["h2h_50"] = np.array(h2h_50).mean()
-                results["h2h_512"] = np.array(h2h_512).mean()
+                        RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_seed{seed}.pkl","rb"))
+                        RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_seed{seed}.pkl","rb"))
+                        euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
+                        RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
+                        wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                        h2h_512.append((wins + ties*0.5)/len(y_test))
+                    results["h2h_50"] = np.array(h2h_50).mean()
+                    results["h2h_512"] = np.array(h2h_512).mean()
 
                 for eval in to_log: results[f"{eval}_k={k}"] = syn_evals[eval]
         return results
@@ -316,7 +317,7 @@ class MTL(pl.LightningModule):
 
     def train_dataloader(self):
         triplets = torch.Tensor(self.train_triplets).long()
-        print(f"\n len_test: {len(triplets)}")
+        print(f"\n len_train: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
             triplets, 
             batch_size=self.hparams.triplet_batch_size, 
@@ -326,7 +327,7 @@ class MTL(pl.LightningModule):
         
     def val_dataloader(self):
         triplets = torch.Tensor(self.valid_triplets).long()
-        print(f"\n len_test: {len(triplets)}")
+        print(f"\n len_valid: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
             triplets, 
             batch_size=self.hparams.triplet_batch_size, 
