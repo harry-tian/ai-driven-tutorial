@@ -1,1 +1,0 @@
-wandb_project,wandb_group,wandb_name,seed,weights,embed_dim,lamda,test_1nn_acc,h2h_50,h2h_512,NINO_ds_acc_k=1,rNINO_ds_acc_k=1,NIFO_ds_acc_k=1,NINO_ds_acc_k=3,rNINO_ds_acc_k=3,NIFO_ds_acc_k=3,NINO_ds_acc_k=5,rNINO_ds_acc_k=5,NIFO_ds_acc_k=5

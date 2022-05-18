@@ -170,9 +170,13 @@ class MTL(TN):
         out_csv = f"results/{out_csv}"
         if not os.path.isfile(out_csv): df = pd.DataFrame()
         else: df = pd.read_csv(out_csv)
-        time.sleep(random.randint(0,20))
         df = pd.concat([df,pd.DataFrame(csv)])
         df.to_csv(out_csv,index=False)
+
+        df = pd.read_csv("results/out.csv")
+        df = pd.concat([df,pd.DataFrame(csv)])
+        df.to_csv("results/out.csv",index=False)
+
 
     def eval_knn_ds(self, test_ds, train_ds, syn_x_train=None, syn_x_test=None):
         z_train = self.embed_dataset(train_ds).numpy()
