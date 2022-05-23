@@ -5,19 +5,25 @@
 #SBATCH --output=/home/tianh/slurm/out/%j.%N.stdout
 #SBATCH --error=/home/tianh/slurm/stderr/%j.%N.stderr
 #SBATCH --job-name=triplets
-#SBATCH --partition=cdac-contrib
+#SBATCH --partition=cdac-own
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
-#SBATCH --exclude=aa[001-002]
 
 python MTL_slow.py \
         --dataset_config=configs/wv_3d/square.yaml \
-        --model_config=$2 \
+        --model_config=configs/wv_3d/models/TN.yaml \
         --triplet_config=$1 \
-        --overwrite_config=configs/wv_3d/overwrite.yaml \
-        --seed=$3
+        --overwrite_config=configs/wv_3d/square/num.yaml \
+        --seed=0
+
+# for triplet in configs/wv_3d/square/num_0.925/* ; do sbatch temp.sh $triplet ;done
+
+# for triplet in configs/wv_3d/square/filtered/* ; do sbatch temp.sh $triplet ;done
+
+# for triplet in configs/wv_3d/square/num_0.925/* ; do for model in configs/wv_3d/models/* ; do if [ $model = configs/wv_3d/models/TN.yaml ] ; then sbatch temp.sh $triplet $model $seed; fi; done; done
+# for triplet in configs/wv_3d/square/num_0.8/* ; do for model in configs/wv_3d/models/* ; do if [ $model = configs/wv_3d/models/TN.yaml ] ; then sbatch temp.sh $triplet $model $seed; fi; done; done
 
 # for seed in {0..2}; do for triplet in configs/wv_3d/square/num_0.925/* ; do for model in configs/wv_3d/models/* ; do if [ $model = configs/wv_3d/models/TN.yaml ] || [ $model = configs/wv_3d/models/MTL0.5.yaml ]; then sbatch temp.sh $triplet $model $seed; fi; done; done; done
 # for seed in {0..2}; do for triplet in configs/wv_3d/square/num_0.8/* ; do for model in configs/wv_3d/models/* ; do if [ $model = configs/wv_3d/models/TN.yaml ] || [ $model = configs/wv_3d/models/MTL0.5.yaml ]; then sbatch wv.sh $triplet $model $seed; fi; done; done; done

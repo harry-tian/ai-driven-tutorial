@@ -8,15 +8,16 @@ from tqdm import tqdm
 sys.path.insert(0, '..')
 import evals.embed_evals as evals
 
-train_embeds = pickle.load(open("../datasets/wv_3d_linear/train_features.pkl","rb"))
-test_embeds = pickle.load(open("../datasets/wv_3d_linear/test_features.pkl","rb"))
-y_train = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d_linear/train")])
-y_test = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d_linear/test")])
+train_embeds = pickle.load(open("../datasets/wv_3d/train_features.pkl","rb"))
+test_embeds = pickle.load(open("../datasets/wv_3d/test_features.pkl","rb"))
+y_train = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d/train")])
+y_test = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d/test")])
 
-total_weights = list(itertools.product([0]+[2**i for i in range(7)],repeat=4))
+total_weights = np.array(list(itertools.product([0]+[2**i for i in range(7)],repeat=2)))
 
-# total_weights = list(itertools.product(np.arange(8),repeat=4))
 
+total_weights = np.vstack([np.hstack([total_weights,np.zeros_like(total_weights)]), 
+                np.hstack([total_weights,np.ones_like(total_weights)])])
 
 
 

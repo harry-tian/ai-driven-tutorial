@@ -10,11 +10,11 @@ import pandas as pd
 np.random.seed(42)
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
     
-def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights, powers, k=1, dist=None, RESN_embeds=None):
+def syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, weights, powers, k=1, dist=None, RESN_embeds=None):
     evals = {}
     euc_dist_M = euclidean_distances(z_test,z_train)
 
-    NINO = get_NINO(euc_dist_M, y_train, y_test, k)
+    NINO = get_NINO(euc_dist_M, y_train, y_pred, k)
     ds_dist = decision_support_with_dist if True else knn_decision_support_with_dist
     if dist is not None:
         NINO_ds_acc, NINO_ds_err = ds_dist(dist, NINO, y_train, y_test)
@@ -22,22 +22,23 @@ def syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, weights
         NINO_ds_acc, NINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NINO, weights, powers)
     evals['NINO_ds_acc'], evals['NINO_ds_err'] = NINO_ds_acc, NINO_ds_err
     
-    rNINO = get_rNINO(euc_dist_M, y_train, y_test, k)
+    rNINO = get_rNINO(euc_dist_M, y_train, y_pred, k)
     if dist is not None:
         rNINO_ds_acc, rNINO_ds_err = ds_dist(dist, rNINO, y_train, y_test)
     else:
         rNINO_ds_acc, rNINO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, rNINO, weights, powers)
     evals['rNINO_ds_acc'], evals['rNINO_ds_err'] = rNINO_ds_acc, rNINO_ds_err
 
-    NIFO = get_NIFO(euc_dist_M, y_train, y_test, k)
+    NIFO = get_NIFO(euc_dist_M, y_train, y_pred, k)
     if dist is not None:
         NIFO_ds_acc, NIFO_ds_err = ds_dist(dist, NIFO, y_train, y_test)
     else:
         NIFO_ds_acc, NIFO_ds_err = decision_support(syn_x_train, y_train, syn_x_test, y_test, NIFO, weights, powers)
     evals['NIFO_ds_acc'], evals['NIFO_ds_err'] = NIFO_ds_acc, NIFO_ds_err
 
-    NIs = get_NI(euc_dist_M, y_train, y_test, k)
+    NIs = get_NI(euc_dist_M, y_train, y_pred, k)
     evals['NIs'] = NIs
+    evals['NINOs'] = NINO
 
     return evals
 
@@ -51,6 +52,23 @@ def nn_comparison(x_train, x_test, NI1, NI2, weights, powers=[2,2]):
         else: ties += 1
 
     return ni1_score, ni2_score, ties
+    
+def temp(x_train, MTL_NINOs, RESN_NINOs, weights):
+    MTL_score, RESN_score, ties = 0,0,0
+    for MTL_NINO, RESN_NINO in zip(MTL_NINOs,RESN_NINOs):
+        MTL_NI, MTL_NO = MTL_NINO
+        RESN_NI, RESN_NO = RESN_NINO
+        MTL_dist = weightedPdist(x_train[MTL_NI[0]], x_train[MTL_NO[0]], weights, 1)
+        RESN_dist = weightedPdist(x_train[RESN_NI[0]], x_train[RESN_NO[0]], weights, 1)
+        if MTL_dist > RESN_dist: MTL_score += 1
+        elif MTL_dist < RESN_dist: RESN_score += 1
+        else: 
+            # print("\n")
+            # print(MTL_NINO)
+            # print(RESN_NINO)
+            ties += 1
+
+    return MTL_score, RESN_score, ties
 
 def get_NI(dist_M, y_train, y_test, k=1):
     ''' Neareast In-class '''
@@ -203,8 +221,10 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
         probs = knc.predict_proba(x_valid)
         probs = probs[:, 1] if probs.shape[1] > 1 else probs
         score = roc_auc_score(y_valid, probs)
-    else:
+    elif metric =="acc":
         score = knc.score(x_valid, y_valid)
+    elif metric =="preds":
+        score = knc.predict(x_valid)
     return score
 
 # def dynamic_dist(a,b,k=2):

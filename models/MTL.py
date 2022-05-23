@@ -213,7 +213,7 @@ class MTL(pl.LightningModule):
         clf_acc = self.test_corres.mean()
         total_loss += self.hparams.lamda * clf_loss
         results = self.eval_knn_ds(
-            self.test_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_test, status='test')
+            self.test_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_test, mask=self.test_corres)
         for k,v in results.items(): self.log(k,v)
         self.log('test_clf_loss', clf_loss)
         self.log('test_clf_acc', clf_acc, prog_bar=True)
@@ -229,6 +229,7 @@ class MTL(pl.LightningModule):
             "weights": self.hparams.weights,
             "embed_dim": self.hparams.embed_dim,
             "lamda": self.hparams.lamda,
+            "filtered": self.hparams.filtered,
             "test_clf_acc": clf_acc.cpu().detach().numpy(),
             "test_triplet_acc": triplet_acc.cpu().detach().numpy(),
             }
@@ -272,45 +273,46 @@ class MTL(pl.LightningModule):
             print("Saving embeds at:", f_name)
             pickle.dump(emb, open(f_name, 'wb'))
 
-    def eval_knn_ds(self, test_ds, train_ds, syn_x_train=None, syn_x_test=None, status=None):
+    def eval_knn_ds(self, test_ds, train_ds, syn_x_train=None, syn_x_test=None, mask=None):
         _, y_train = self.sample_xs_ys(train_ds)
         _, y_test = self.sample_xs_ys(test_ds)
         z_train = self.embed_dataset(train_ds).numpy()
         z_test = self.embed_dataset(test_ds).numpy()
         y_train, y_test = y_train.numpy(), y_test.numpy()
+
+        ## predicted labels
+        y_pred = np.array([not y if not m else y for y, m in zip(y_test, mask)])
+        if self.hparams.model == "TN":
+            y_pred = evals.get_knn_score(z_train, y_train, z_test, y_test, metric="preds")
+
         knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
         results = {"test_1nn_acc":knn_acc}
         if self.hparams.syn:
             to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
-            to_print = ["NINO_ds_err", "rNINO_ds_err", "NIFO_ds_err", "NIs"]
-            RESN_d512_dir = "../embeds/wv_3d/RESN_d=512"
-            RESN_d50_dir = "../embeds/wv_3d/RESN_d=512"
+            RESN_d512_dir = "../embeds/wv_3d_linear_RESN"
 
-            for k in [1,3,5]:
-                syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
-                self.hparams.weights, self.hparams.powers, k=k)
+            syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
+            self.hparams.weights, self.hparams.powers, k=1)
 
-                if self.hparams.model != "RESN":
-                    h2h_50 = []
-                    h2h_512 = []
-                    for seed in range(5):
-                        RESN_train_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_train_seed{seed}.pkl","rb"))
-                        RESN_test_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_test_seed{seed}.pkl","rb"))
-                        euc_dist_M = euclidean_distances(RESN_test_50,RESN_train_50)
-                        RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
-                        wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                        h2h_50.append((wins + ties*0.5)/len(y_test))
+            if self.hparams.model != "RESN":
+                NI_h2h = []
+                NO_h2h = []
+                for seed in range(3):
+                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_d512_seed{seed}.pkl","rb"))
+                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_d512_seed{seed}.pkl","rb"))
+                    RESN_pred_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_preds_d512_seed{seed}.pkl","rb"))
+                    euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
+                    RESN_NINOs = evals.get_NINO(euc_dist_M, y_train, RESN_pred_512, k=1)
+                    RESN_NIs = RESN_NINOs[:,0]
+                    RESN_NOs = RESN_NINOs[:,1]
+                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,0], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                    NI_h2h.append((wins + ties*0.5)/len(y_test))
+                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,1], RESN_NOs, self.hparams.weights, self.hparams.powers)
+                    NO_h2h.append((wins + ties*0.5)/len(y_test))
+                results["NI_h2h"] = np.array(NI_h2h).mean()
+                results["NO_h2h"] = np.array(NO_h2h).mean()
 
-                        RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_seed{seed}.pkl","rb"))
-                        RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_seed{seed}.pkl","rb"))
-                        euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
-                        RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
-                        wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                        h2h_512.append((wins + ties*0.5)/len(y_test))
-                    results["h2h_50"] = np.array(h2h_50).mean()
-                    results["h2h_512"] = np.array(h2h_512).mean()
-
-                for eval in to_log: results[f"{eval}_k={k}"] = syn_evals[eval]
+            for eval in to_log: results[eval] = syn_evals[eval]
         return results
 
     def trips_corr(self, a, p, n):

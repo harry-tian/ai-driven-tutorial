@@ -121,11 +121,16 @@ class MTL(TN):
         self.log('valid_total_loss', total_loss)
 
     def test_step(self, batch, batch_idx):
+        if batch_idx == 0: self.test_corrects = torch.zeros(len(self.test_input) )
         triplet_idx = batch["triplet"][0]
         clf_idx, labels = batch["clf"]
 
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.mixed_triplets_step(triplet_idx, clf_idx, labels, "test")
-
+        # print(clf_idx)
+        # print(m["pred"])
+        # print(clf_idx.shape)
+        # print(m["pred"].shape)
+        self.test_corrects[clf_idx] = m["pred"].reshape(-1).float().cpu().detach()
         self.log('test_clf_loss', clf_loss)
         self.log('test_clf_acc', m['acc'], prog_bar=False)
         # self.log('test_auc', m['auc'], prog_bar=False)
@@ -182,6 +187,13 @@ class MTL(TN):
         z_train = self.embed_dataset(train_ds).numpy()
         z_test = self.embed_dataset(test_ds).numpy()
         y_train, y_test = self.train_label.numpy(), self.test_label.numpy()
+
+        ## predicted labels
+        y_pred = np.array([not y if not m else y for y, m in zip(y_test, self.test_corrects)])
+        if self.hparams.model == "TN":
+            y_pred = evals.get_knn_score(z_train, y_train, z_test, y_test, metric="preds")
+
+
         knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
         results = {"test_1nn_acc":knn_acc}
         if self.hparams.syn:
@@ -190,7 +202,7 @@ class MTL(TN):
             RESN_d50_dir = "../embeds/wv_3d/RESN_d=512"
 
             for k in [1,3,5]:
-                syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, syn_x_train, syn_x_test, 
+                syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
                 self.hparams.weights, self.hparams.powers, k=k)
 
                 if self.hparams.model != "RESN":

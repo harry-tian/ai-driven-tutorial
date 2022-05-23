@@ -1,0 +1,15 @@
+wandb_mode: online
+wandb_project: wv_3d_noisy
+wandb_group: align=0.8_p=0.6
+train_triplets: ../datasets/wv_3d_square_triplets/align=0.8_noisy/0.6/train_triplets_filtered.pkl
+valid_triplets: ../datasets/wv_3d_square_triplets/align=0.8_noisy/0.6/valid_triplets_filtered.pkl
+test_triplets: ../datasets/wv_3d_square_triplets/align=0.8_noisy/0.6/test_triplets_filtered.pkl
+weights:
+- 1
+- 0
+- 1
+- 1
+powers:
+- 2
+- 2
+max_epochs: 3

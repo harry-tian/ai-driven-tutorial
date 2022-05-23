@@ -23,8 +23,11 @@ def config_parser():
     parser.add_argument("--train_batch_size", default=None, type=int)
     parser.add_argument("--seed", default=None, type=int)
     parser.add_argument("--lamda", default=None, type=float)
+    parser.add_argument("--wandb_group", default=None, type=str)
     parser.add_argument("--wandb_name", default=None, type=str)
     parser.add_argument("--embed_dim", default=None, type=int)
+    parser.add_argument("--max_epochs", default=None, type=int)
+    parser.add_argument("--out_csv", default=None, type=str)
     return parser
 
 def test_configs(configs):
@@ -35,9 +38,10 @@ def test_configs(configs):
     training_args = ["max_epochs", "learning_rate","check_val_every_n_epoch",
         "train_batch_size", "triplet_batch_size"]
     dataset_args = ["train_dir", "valid_dir", "test_dir", "transform", "aug", "num_class", "syn"]
-    triplet_args = ["train_triplets", "valid_triplets", "test_triplets"]
+    triplet_args = ["train_triplets", "valid_triplets", "test_triplets", "filtered"]
     model_args = ["model", "embed_dim","pretrained", "lamda"]
     file_args = ["embeds_output_dir", "test_ckpt_path","out_csv"]
+    ds_args = ["predicted_labels"]
     required_args = wandb_args + trainer_args + training_args + dataset_args + triplet_args + model_args + file_args
 
     if "syn" in configs:

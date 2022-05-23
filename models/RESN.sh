@@ -11,28 +11,14 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
 
-python MTL.py \
+for seed in {0..2}
+        do python RESN.py \
         --dataset_config=configs/wv_3d_linear/dataset.yaml \
         --model_config=configs/wv_3d_linear/models/RESN.yaml \
         --triplet_config=configs/wv_3d_linear/triplets/filtered/align=0.5_filtered.yaml \
-        --overwrite_config=configs/wv_3d_linear/50.yaml \
-        --embed_dim=50 \
-        --seed=$1
+        --overwrite_config=configs/wv_3d_linear/overwrite.yaml \
+        --seed=$seed \
+        --out_csv=wv_3d_linear_RESN.csv \
+        --wandb_group=wv_3d_linear_RESN 
+done
 
-
-python MTL.py \
-        --dataset_config=configs/wv_3d_linear/dataset.yaml \
-        --model_config=configs/wv_3d_linear/models/RESN.yaml \
-        --triplet_config=configs/wv_3d_linear/triplets/filtered/align=0.5_filtered.yaml \
-        --overwrite_config=configs/wv_3d_linear/512.yaml \
-        --embed_dim=512 \
-        --seed=$1
-
-# for seed in {0..3}; do sbatch RESN.sh $seed; done
-
-# for file in configs/wv_2d/triplets/* ; do sbatch RESN.sh $file ; done
-# python main.py \
-#             --dataset_config=configs/wv_2d/dataset.yaml \
-#             --model_config=configs/wv_2d/models/RESN.yaml \
-#             --triplet_config=configs/wv_2d/triplets/align=0.8.yaml \
-#             --seed=0

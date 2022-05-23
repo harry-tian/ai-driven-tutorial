@@ -1,9 +1,40 @@
-
-import shutil
-import os
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import KFold
-import shutil, pathlib
+import shutil, pathlib, os, wandb
+
+def get_wandb_runs(project, entity="harry-tian"):
+    api = wandb.Api()
+    runs = api.runs(entity + "/" + project) 
+
+    summary_list, config_list, name_list = [], [], []
+    for run in runs: 
+        # .summary contains the output keys/values for metrics like accuracy.
+        #  We call ._json_dict to omit large files 
+        summary_list.append(run.summary._json_dict)
+
+        # .config contains the hyperparameters.
+        #  We remove special values that start with _.
+        config_list.append(
+            {k: v for k,v in run.config.items()
+            if not k.startswith('_')})
+
+        # .name is the human-readable name of the run.
+        name_list.append(run.name)
+
+    runs_df = pd.DataFrame({
+        "summary": summary_list,
+        "config": config_list,
+        "name": name_list
+        })
+    return runs_df
+
+def strip_df(df, eval_cols, config_cols):
+    for col in config_cols: df[col] = [d[col] for d in df["config"]]
+    for col in eval_cols:  df[col] = [d[col] for d in df["summary"]]
+    df = df.drop("config",axis=1)
+    df = df.drop("summary",axis=1)
+    return df
 
 def files_in_dir(mypath): return [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]
 

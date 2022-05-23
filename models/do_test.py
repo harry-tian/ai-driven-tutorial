@@ -9,8 +9,9 @@ warnings.filterwarnings("ignore")
 
 model_path_dict ={
     'TN': "TN.TN",
-    'MTL': "MTL.MTL",
+    'MTL': "MTL_han.MTL",
     'RESN': "RESN.RESN"
+    # 'MTL': "MTL.MTL",
 }
 
 
@@ -50,16 +51,19 @@ model_path_dict ={
 
 
 
-parser = trainer.config_parser()
-args = parser.parse_args()
-configs = trainer.load_configs(args)
-pl.seed_everything(configs["seed"], workers=True)
+# parser = trainer.config_parser()
+# args = parser.parse_args()
+# configs = trainer.load_configs(args)
+# pl.seed_everything(configs["seed"], workers=True)
+
+
+ckpt_path
 model_path = model_path_dict[configs["model"]]
 
 model = locate(model_path)
-model = model.load_from_checkpoint(args.ckpt_path)
+model = model.load_from_checkpoint(ckpt_path)
 
-trainer.do_test(model, configs, args.ckpt_path)
+trainer.do_test(model,ckpt_path)
 
 
 
