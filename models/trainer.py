@@ -23,10 +23,12 @@ def config_parser():
     parser.add_argument("--train_batch_size", default=None, type=int)
     parser.add_argument("--seed", default=None, type=int)
     parser.add_argument("--lamda", default=None, type=float)
+    parser.add_argument("--wandb_project", default=None, type=str)
     parser.add_argument("--wandb_group", default=None, type=str)
     parser.add_argument("--wandb_name", default=None, type=str)
     parser.add_argument("--embed_dim", default=None, type=int)
     parser.add_argument("--max_epochs", default=None, type=int)
+    parser.add_argument("--embeds_output_dir", default=None, type=str)
     parser.add_argument("--out_csv", default=None, type=str)
     return parser
 

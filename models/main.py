@@ -6,7 +6,8 @@ from pydoc import locate
 model_path_dict ={
     'TN': "TN.TN",
     'MTL': "MTL.MTL",
-    'RESN': "RESN.RESN"
+    'RESN': "RESN.MTL",
+    'MTL_slow': 'MTL_slow.MTL'
 }
 
 model_monitor_dict ={
@@ -28,7 +29,8 @@ def main():
     model = locate(model_path)
     model = model(**configs)
 
-    monitor = model_monitor_dict[configs["model"]]
+    # monitor = model_monitor_dict[configs["model"]]
+    monitor = "valid_total_loss"
     trainer.generic_train(model, configs, monitor)
 
 if __name__ == "__main__":

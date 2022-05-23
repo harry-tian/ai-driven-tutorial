@@ -27,14 +27,9 @@ class MTL(pl.LightningModule):
         self.encoder = models.resnet18(
             pretrained=self.hparams.pretrained, zero_init_residual=not self.hparams.pretrained)
         num_features = self.encoder.fc.weight.shape[1]
-        self.embed_dim = self.hparams.embed_dim
-        if self.embed_dim!=512:
-            self.encoder.fc = nn.Sequential(nn.Linear(num_features, self.embed_dim, bias=False))
-            self.classifier = nn.Sequential(
-                nn.BatchNorm1d(self.embed_dim), nn.ReLU(), nn.Linear(self.embed_dim, self.hparams.num_class))
-        else:
-            self.encoder.fc = nn.Identity()
-            self.classifier = nn.Sequential(nn.Linear(num_features, self.hparams.num_class))
+        self.encoder.fc = nn.Sequential(nn.Linear(num_features, self.hparams.embed_dim, bias=False))
+        self.classifier = nn.Sequential(
+            nn.BatchNorm1d(self.hparams.embed_dim), nn.ReLU(), nn.Linear(self.hparams.embed_dim, self.hparams.num_class))
         self.clf_criterion = nn.CrossEntropyLoss()
         self.criterion = nn.TripletMarginLoss()
         self.summarize()
@@ -221,34 +216,34 @@ class MTL(pl.LightningModule):
         self.log('test_triplet_acc', triplet_acc, prog_bar=True)
         self.log('test_total_loss', total_loss, prog_bar=True)
 
-        csv = {
-            "wandb_project": self.hparams.wandb_project,
-            "wandb_group": self.hparams.wandb_group,
-            "wandb_name": self.hparams.wandb_name,
-            "seed": self.hparams.seed,
-            "weights": self.hparams.weights,
-            "embed_dim": self.hparams.embed_dim,
-            "lamda": self.hparams.lamda,
-            "filtered": self.hparams.filtered,
-            "test_clf_acc": clf_acc.cpu().detach().numpy(),
-            "test_triplet_acc": triplet_acc.cpu().detach().numpy(),
-            }
-        csv.update(results)
-        csv = {k:[v] for k,v in csv.items()}
-        if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
-        else: out_csv = "out.csv"
-        out_csv = f"results/{out_csv}"
-        if not os.path.isfile(out_csv): df = pd.DataFrame()
-        else: df = pd.read_csv(out_csv)
-        df = pd.concat([df,pd.DataFrame(csv)])
-        df.to_csv(out_csv,index=False)
+        # csv = {
+        #     "wandb_project": self.hparams.wandb_project,
+        #     "wandb_group": self.hparams.wandb_group,
+        #     "wandb_name": self.hparams.wandb_name,
+        #     "seed": self.hparams.seed,
+        #     "weights": self.hparams.weights,
+        #     "embed_dim": self.hparams.embed_dim,
+        #     "lamda": self.hparams.lamda,
+        #     "filtered": self.hparams.filtered,
+        #     "test_clf_acc": clf_acc.cpu().detach().numpy(),
+        #     "test_triplet_acc": triplet_acc.cpu().detach().numpy(),
+        #     }
+        # csv.update(results)
+        # csv = {k:[v] for k,v in csv.items()}
+        # if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
+        # else: out_csv = "out.csv"
+        # out_csv = f"results/{out_csv}"
+        # if not os.path.isfile(out_csv): df = pd.DataFrame()
+        # else: df = pd.read_csv(out_csv)
+        # df = pd.concat([df,pd.DataFrame(csv)])
+        # df.to_csv(out_csv,index=False)
         
-        df = pd.read_csv("results/out.csv")
-        df = pd.concat([df,pd.DataFrame(csv)])
-        df.to_csv("results/out.csv",index=False)
+        # df = pd.read_csv("results/out.csv")
+        # df = pd.concat([df,pd.DataFrame(csv)])
+        # df.to_csv("results/out.csv",index=False)
 
-        if self.hparams.embeds_output_dir is not None:
-            self.save_embeds()
+        # if self.hparams.embeds_output_dir is not None:
+        #     self.save_embeds()
 
     def embed_dataset(self, dataset):
         self.eval()
@@ -289,7 +284,7 @@ class MTL(pl.LightningModule):
         results = {"test_1nn_acc":knn_acc}
         if self.hparams.syn:
             to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
-            RESN_d512_dir = "../embeds/wv_3d_linear_RESN"
+            RESN_d512_dir = "../embeds/" + self.hparams.resn_embed_dir
 
             syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
             self.hparams.weights, self.hparams.powers, k=1)
@@ -298,9 +293,12 @@ class MTL(pl.LightningModule):
                 NI_h2h = []
                 NO_h2h = []
                 for seed in range(3):
-                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_d512_seed{seed}.pkl","rb"))
-                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_d512_seed{seed}.pkl","rb"))
-                    RESN_pred_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_preds_d512_seed{seed}.pkl","rb"))
+                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_seed{seed}.pkl","rb"))
+                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_seed{seed}.pkl","rb"))
+                    if self.hparams.predicted_labels:
+                        RESN_pred_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_preds_seed{seed}.pkl","rb"))
+                    else:
+                        RESN_pred_512 = y_test
                     euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
                     RESN_NINOs = evals.get_NINO(euc_dist_M, y_train, RESN_pred_512, k=1)
                     RESN_NIs = RESN_NINOs[:,0]

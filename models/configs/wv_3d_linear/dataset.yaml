@@ -14,3 +14,5 @@ deterministic: true
 aug: false
 
 embeds_output_dir : /net/scratch/tianh/explain_teach/embeds
+resn_embed_dir: wv_3d_linear_RESN
+predicted_labels: True

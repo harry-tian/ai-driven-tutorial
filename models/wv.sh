@@ -12,23 +12,24 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
-# python MTL.py \
+# python main.py \
 #         --dataset_config=configs/wv_3d_linear/dataset.yaml \
 #         --model_config=configs/wv_3d_linear/models/MTL0.2.yaml \
-#         --triplet_config=configs/wv_3d_linear/triplets/aligns/align=0.62_filtered.yaml \
-#         --overwrite_config=configs/wv_3d_linear/overwrite.yaml \
+#         --triplet_config=configs/wv_3d_linear/triplets/num_0.97/p=0.0078125.yaml \
+#         --overwrite_config=configs/wv_3d_linear/overwrite_num.yaml \
 #         --seed=0 \
-#         --max_epochs=1
 
 for seed in {0..2}
-        do      python MTL.py \
+        do      python main.py \
                 --dataset_config=configs/wv_3d_linear/dataset.yaml \
                 --model_config=$2 \
                 --triplet_config=$1 \
-                --overwrite_config=configs/wv_3d_linear/overwrite.yaml \
+                --overwrite_config=configs/wv_3d_linear/overwrite_num.yaml \
                 --seed=$seed
 done
 
+# for triplet in configs/wv_3d_linear/triplets/num_0.62/* ; do for model in configs/wv_3d_linear/models/* ; do if [ $model != configs/wv_3d_linear/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# for triplet in configs/wv_3d_linear/triplets/num_0.97/* ; do for model in configs/wv_3d_linear/models/* ; do if [ $model != configs/wv_3d_linear/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
 
 
 # for triplet in configs/wv_3d_linear/triplets/aligns/* ; do for model in configs/wv_3d_linear/models/* ; do if [ $model != configs/wv_3d_linear/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done

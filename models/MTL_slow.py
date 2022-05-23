@@ -12,7 +12,6 @@ import warnings
 from torchvision import  models
 warnings.filterwarnings("ignore")
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from TN import TN
 import trainer, transforms
 from sklearn.metrics.pairwise import euclidean_distances
 from pytorch_lightning.trainer.supporters import CombinedLoader
@@ -21,9 +20,26 @@ import pandas as pd
 sys.path.insert(0, '..')
 import evals.embed_evals as evals
 
-class MTL(TN):
+class MTL(pl.LightningModule):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs) 
+        super().__init__()
+        self.save_hyperparameters()
+        self.setup_data()
+
+        self.encoder = models.resnet18(pretrained=self.hparams.pretrained)
+        num_features = 512
+
+        self.pdist = nn.PairwiseDistance()
+        self.triplet_loss = nn.TripletMarginLoss()
+
+        self.criterion = nn.CrossEntropyLoss()
+        self.nonlinear = nn.Softmax()
+
+        num_features = self.encoder.fc.weight.shape[1]
+        self.encoder.fc = nn.Sequential(nn.Linear(num_features, self.hparams.embed_dim, bias=False))
+        self.classifier = nn.Sequential(
+            nn.BatchNorm1d(self.hparams.embed_dim), nn.ReLU(), nn.Linear(self.hparams.embed_dim, self.hparams.num_class))
+
         self.loader_mode = 'max_size_cycle'
 
     def setup_data(self):
@@ -48,6 +64,36 @@ class MTL(TN):
             self.syn_x_train = pickle.load(open(self.hparams.train_synthetic, "rb"))
             self.syn_x_valid = pickle.load(open(self.hparams.valid_synthetic, "rb"))
             self.syn_x_test = pickle.load(open(self.hparams.test_synthetic, "rb"))
+
+    def forward(self, inputs):
+        inputs = inputs.to(self.device)        
+        embeds = self.encoder(inputs)
+        return embeds
+        
+    def clf_loss_acc(self, embeds, labels):
+        logits = self.classifier(embeds)
+        # probs = self.nonlinear(logits)
+        # if self.hparams.num_class < 3:
+        #     labels = labels.type_as(logits).unsqueeze(1)
+        preds = (logits.argmax(1) == labels).float()
+        clf_loss = self.criterion(logits, labels)
+        # m = trainer.metrics(probs, labels, num_class=self.hparams.num_class)
+        m = {"pred":preds}
+        return clf_loss, m
+        
+    def triplet_loss_acc(self, triplets):
+        triplet_loss = self.triplet_loss(*triplets)
+        d_ap = self.pdist(triplets[0], triplets[1])
+        d_an = self.pdist(triplets[0], triplets[2])
+        triplet_acc = (d_ap < d_an).float().mean()
+        return triplet_loss, triplet_acc
+
+    def test_mixed_triplets(self):
+        triplet_idx = torch.tensor(self.test_triplets).long()
+        train_embeds, test_embeds = self(self.train_input), self(self.test_input)
+        x1, x2, x3 = test_embeds[triplet_idx[:,0]], train_embeds[triplet_idx[:,1]], train_embeds[triplet_idx[:,2]]
+        triplets = (x1, x2, x3)
+        return self.triplet_loss_acc(triplets)[1]
 
     def train_triplets_step(self, triplet_idx, clf_idx, labels):
         uniques = torch.unique(torch.concat([clf_idx, triplet_idx.flatten()]))
@@ -101,7 +147,7 @@ class MTL(TN):
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.train_triplets_step(triplet_idx, clf_idx, labels)
 
         self.log('train_clf_loss', clf_loss)
-        self.log('train_clf_acc', m['acc'], prog_bar=False)
+        # self.log('train_clf_acc', m['acc'], prog_bar=False)
         self.log('train_triplet_loss', triplet_loss)
         self.log('train_triplet_acc', triplet_acc, prog_bar=False)
         self.log('train_total_loss', total_loss)
@@ -114,7 +160,7 @@ class MTL(TN):
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.mixed_triplets_step(triplet_idx, clf_idx, labels, "valid")
 
         self.log('valid_clf_loss', clf_loss)
-        self.log('valid_clf_acc', m['acc'], prog_bar=False)
+        # self.log('valid_clf_acc', m['acc'], prog_bar=False)
         # self.log('valid_auc', m['auc'], prog_bar=False)
         self.log('valid_triplet_loss', triplet_loss)
         self.log('valid_triplet_acc', triplet_acc, prog_bar=False)
@@ -126,61 +172,48 @@ class MTL(TN):
         clf_idx, labels = batch["clf"]
 
         clf_loss, m, triplet_loss, triplet_acc, total_loss = self.mixed_triplets_step(triplet_idx, clf_idx, labels, "test")
-        # print(clf_idx)
-        # print(m["pred"])
-        # print(clf_idx.shape)
-        # print(m["pred"].shape)
         self.test_corrects[clf_idx] = m["pred"].reshape(-1).float().cpu().detach()
         self.log('test_clf_loss', clf_loss)
-        self.log('test_clf_acc', m['acc'], prog_bar=False)
+        # self.log('test_clf_acc', m['acc'], prog_bar=False)
         # self.log('test_auc', m['auc'], prog_bar=False)
         self.log('test_triplet_loss', triplet_loss)
         self.log('test_triplet_acc', triplet_acc, prog_bar=False)
         self.log('test_total_loss', total_loss)
-        return m['acc'], triplet_acc
+        return triplet_acc
 
     def embed_dataset(self, dataset):
         self.eval()
-        # dataset = torch.utils.data.TensorDataset(*dataset) if self.in_memeory_dataset else dataset
         zs, dl = [], torch.utils.data.DataLoader(dataset, batch_size=self.hparams.train_batch_size)
         for x, _ in iter(dl): 
             zs.append(self(x.to(self.device)).cpu())
         return torch.cat(zs)
 
     def test_epoch_end(self, outputs):
-        # clf_acc, triplet_acc = zip(*outputs)
-        # if len(triplet_acc) > 1: triplet_acc = triplet_acc.mean()
-        # else: triplet_acc = triplet_acc[0].mean()
-        # if len(clf_acc) > 1: clf_acc = clf_acc.mean()
-        # else: clf_acc = clf_acc[0].mean()
-
         results = self.eval_knn_ds(
             self.test_dataset, self.train_dataset, self.syn_x_train, self.syn_x_test)
         for k,v in results.items(): self.log(k,v)
-        csv = {
-            "wandb_project": self.hparams.wandb_project,
-            "wandb_group": self.hparams.wandb_group,
-            "wandb_name": self.hparams.wandb_name,
-            "seed": self.hparams.seed,
-            "weights": self.hparams.weights,
-            "embed_dim": self.hparams.embed_dim,
-            "lamda": self.hparams.lamda,
-            # "test_clf_acc": clf_acc.cpu().detach().numpy(),
-            # "test_triplet_acc": triplet_acc.cpu().detach().numpy(),
-            }
-        csv.update(results)
-        csv = {k:[v] for k,v in csv.items()}
-        if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
-        else: out_csv = "out.csv"
-        out_csv = f"results/{out_csv}"
-        if not os.path.isfile(out_csv): df = pd.DataFrame()
-        else: df = pd.read_csv(out_csv)
-        df = pd.concat([df,pd.DataFrame(csv)])
-        df.to_csv(out_csv,index=False)
+        # csv = {
+        #     "wandb_project": self.hparams.wandb_project,
+        #     "wandb_group": self.hparams.wandb_group,
+        #     "wandb_name": self.hparams.wandb_name,
+        #     "seed": self.hparams.seed,
+        #     "weights": self.hparams.weights,
+        #     "embed_dim": self.hparams.embed_dim,
+        #     "lamda": self.hparams.lamda,
+        #     }
+        # csv.update(results)
+        # csv = {k:[v] for k,v in csv.items()}
+        # if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
+        # else: out_csv = "out.csv"
+        # out_csv = f"results/{out_csv}"
+        # if not os.path.isfile(out_csv): df = pd.DataFrame()
+        # else: df = pd.read_csv(out_csv)
+        # df = pd.concat([df,pd.DataFrame(csv)])
+        # df.to_csv(out_csv,index=False)
 
-        df = pd.read_csv("results/out.csv")
-        df = pd.concat([df,pd.DataFrame(csv)])
-        df.to_csv("results/out.csv",index=False)
+        # df = pd.read_csv("results/out.csv")
+        # df = pd.concat([df,pd.DataFrame(csv)])
+        # df.to_csv("results/out.csv",index=False)
 
 
     def eval_knn_ds(self, test_ds, train_ds, syn_x_train=None, syn_x_test=None):
@@ -198,35 +231,36 @@ class MTL(TN):
         results = {"test_1nn_acc":knn_acc}
         if self.hparams.syn:
             to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
-            RESN_d512_dir = "../embeds/wv_3d/RESN_d=512"
-            RESN_d50_dir = "../embeds/wv_3d/RESN_d=512"
+            RESN_d512_dir = "../embeds/wv_3d_linear_RESN"
 
-            for k in [1,3,5]:
-                syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
-                self.hparams.weights, self.hparams.powers, k=k)
+            syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
+            self.hparams.weights, self.hparams.powers, k=1)
 
-                if self.hparams.model != "RESN":
-                    h2h_50 = []
-                    h2h_512 = []
-                    for seed in range(5):
-                        RESN_train_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_train_seed{seed}.pkl","rb"))
-                        RESN_test_50 = pickle.load(open(f"{RESN_d50_dir}/RESN_test_seed{seed}.pkl","rb"))
-                        euc_dist_M = euclidean_distances(RESN_test_50,RESN_train_50)
-                        RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
-                        wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                        h2h_50.append((wins + ties*0.5)/len(y_test))
+            if self.hparams.model != "RESN":
+                NI_h2h = []
+                NO_h2h = []
+                for seed in range(3):
+                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_d512_seed{seed}.pkl","rb"))
+                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_d512_seed{seed}.pkl","rb"))
+                    RESN_pred_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_preds_d512_seed{seed}.pkl","rb"))
+                    euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
+                    RESN_NINOs = evals.get_NINO(euc_dist_M, y_train, RESN_pred_512, k=1)
+                    RESN_NIs = RESN_NINOs[:,0]
+                    RESN_NOs = RESN_NINOs[:,1]
+                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,0], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                    NI_h2h.append((wins + ties*0.5)/len(y_test))
+                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,1], RESN_NOs, self.hparams.weights, self.hparams.powers)
+                    NO_h2h.append((wins + ties*0.5)/len(y_test))
+                results["NI_h2h"] = np.array(NI_h2h).mean()
+                results["NO_h2h"] = np.array(NO_h2h).mean()
 
-                        RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_seed{seed}.pkl","rb"))
-                        RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_seed{seed}.pkl","rb"))
-                        euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
-                        RESN_NIs = evals.get_NI(euc_dist_M, y_train, y_test, k=k)
-                        wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NIs"], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                        h2h_512.append((wins + ties*0.5)/len(y_test))
-                    results["h2h_50"] = np.array(h2h_50).mean()
-                    results["h2h_512"] = np.array(h2h_512).mean()
-
-                for eval in to_log: results[f"{eval}_k={k}"] = syn_evals[eval]
+            for eval in to_log: results[eval] = syn_evals[eval]
         return results
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        self.opt = optimizer
+        return optimizer
 
     def train_dataloader(self):
         triplet_dataset = torch.utils.data.TensorDataset(torch.tensor(self.train_triplets))

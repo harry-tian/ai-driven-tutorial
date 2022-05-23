@@ -24,4 +24,5 @@ embeds/wv_3d_alignments_filtered/
 embeds/wv_3d_noisy/
 embeds/
 
-link/
+
+*.png
