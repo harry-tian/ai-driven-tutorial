@@ -6,8 +6,8 @@ test_triplets: ../datasets/wv_3d_linear0_triplets/align=1/test_triplets.pkl
 weights:
 - 1
 - 1
-- 0
-- 0
+- 1
+- 1
 powers:
 - 2
 - 2

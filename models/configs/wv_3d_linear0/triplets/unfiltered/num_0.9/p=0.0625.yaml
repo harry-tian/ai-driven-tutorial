@@ -1,0 +1,15 @@
+wandb_project: wv_3d_linear0_num
+wandb_group: align=0.9_p=0.0625
+train_triplets: ../datasets/wv_3d_linear0_triplets/align=0.9_num/0.0625/train_triplets.pkl
+valid_triplets: ../datasets/wv_3d_linear0_triplets/align=0.9_num/0.0625/valid_triplets.pkl
+test_triplets: ../datasets/wv_3d_linear0_triplets/align=0.9_num/0.0625/test_triplets.pkl
+weights:
+- 1
+- 1000000
+- 1
+- 1
+powers:
+- 2
+- 2
+filtered: false
+model: MTL_slow

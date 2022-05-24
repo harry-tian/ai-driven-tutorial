@@ -1,5 +1,5 @@
 wandb_mode: online
-wandb_project: wandb_project: wv_3d_square_num_filtered
+wandb_project:  wv_3d_square_num_filtered
 wandb_group: align=0.8_p=0.125
 train_triplets: ../datasets/wv_3d_square_triplets/align=0.8_num/0.125/train_triplets_filtered.pkl
 valid_triplets: ../datasets/wv_3d_square_triplets/align=0.8_num/0.125/valid_triplets_filtered.pkl
@@ -13,3 +13,4 @@ powers:
 - 2
 - 2
 model: MTL_slow
+filtered: True
