@@ -216,35 +216,6 @@ class MTL(pl.LightningModule):
         self.log('test_triplet_acc', triplet_acc, prog_bar=True)
         self.log('test_total_loss', total_loss, prog_bar=True)
 
-        # csv = {
-        #     "wandb_project": self.hparams.wandb_project,
-        #     "wandb_group": self.hparams.wandb_group,
-        #     "wandb_name": self.hparams.wandb_name,
-        #     "seed": self.hparams.seed,
-        #     "weights": self.hparams.weights,
-        #     "embed_dim": self.hparams.embed_dim,
-        #     "lamda": self.hparams.lamda,
-        #     "filtered": self.hparams.filtered,
-        #     "test_clf_acc": clf_acc.cpu().detach().numpy(),
-        #     "test_triplet_acc": triplet_acc.cpu().detach().numpy(),
-        #     }
-        # csv.update(results)
-        # csv = {k:[v] for k,v in csv.items()}
-        # if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
-        # else: out_csv = "out.csv"
-        # out_csv = f"results/{out_csv}"
-        # if not os.path.isfile(out_csv): df = pd.DataFrame()
-        # else: df = pd.read_csv(out_csv)
-        # df = pd.concat([df,pd.DataFrame(csv)])
-        # df.to_csv(out_csv,index=False)
-        
-        # df = pd.read_csv("results/out.csv")
-        # df = pd.concat([df,pd.DataFrame(csv)])
-        # df.to_csv("results/out.csv",index=False)
-
-        # if self.hparams.embeds_output_dir is not None:
-        #     self.save_embeds()
-
     def embed_dataset(self, dataset):
         self.eval()
         dataset = torch.utils.data.TensorDataset(*dataset) if self.in_memeory_dataset else dataset
@@ -276,41 +247,41 @@ class MTL(pl.LightningModule):
         y_train, y_test = y_train.numpy(), y_test.numpy()
 
         ## predicted labels
-        y_pred = np.array([not y if not m else y for y, m in zip(y_test, mask)])
         if self.hparams.model == "TN":
             y_pred = evals.get_knn_score(z_train, y_train, z_test, y_test, metric="preds")
+        else:
+            y_pred = np.array([not y if not m else y for y, m in zip(y_test, mask)])
 
         knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
         results = {"test_1nn_acc":knn_acc}
-        if self.hparams.syn:
-            to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
-            RESN_d512_dir = "../embeds/" + self.hparams.resn_embed_dir
 
+        if self.hparams.syn:
+            ### decision support evals
+            to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
             syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
             self.hparams.weights, self.hparams.powers, k=1)
-
-            if self.hparams.model != "RESN":
-                NI_h2h = []
-                NO_h2h = []
-                for seed in range(3):
-                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_d512_seed{seed}.pkl","rb"))
-                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_d512_seed{seed}.pkl","rb"))
-                    if self.hparams.predicted_labels:
-                        RESN_pred_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_preds_d512_seed{seed}.pkl","rb"))
-                    else:
-                        RESN_pred_512 = y_test
-                    euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
-                    RESN_NINOs = evals.get_NINO(euc_dist_M, y_train, RESN_pred_512, k=1)
-                    RESN_NIs = RESN_NINOs[:,0]
-                    RESN_NOs = RESN_NINOs[:,1]
-                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,0], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                    NI_h2h.append((wins + ties*0.5)/len(y_test))
-                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,1], RESN_NOs, self.hparams.weights, self.hparams.powers)
-                    NO_h2h.append((wins + ties*0.5)/len(y_test))
-                results["NI_h2h"] = np.array(NI_h2h).mean()
-                results["NO_h2h"] = np.array(NO_h2h).mean()
-
             for eval in to_log: results[eval] = syn_evals[eval]
+
+            #### h2h evals
+            if self.hparams.model != "RESN":
+                RESN_dir = "../embeds/" + self.hparams.resn_embed_dir
+                for dim in [50,512]:
+                    NI_h2h, NO_h2h = [], []
+                    for seed in range(3):
+                        RESN_train = pickle.load(open(f"{RESN_dir}/RESN_train_d{dim}_seed{seed}.pkl","rb"))
+                        RESN_test = pickle.load(open(f"{RESN_dir}/RESN_test_d{dim}_seed{seed}.pkl","rb"))
+                        if self.hparams.predicted_labels: RESN_pred = pickle.load(open(f"{RESN_dir}/RESN_preds_d{dim}_seed{seed}.pkl","rb"))
+                        else: RESN_pred = y_test
+                        euc_dist_M = euclidean_distances(RESN_test,RESN_train)
+                        RESN_NINOs = evals.get_NINO(euc_dist_M, y_train, RESN_pred, k=1)
+                        RESN_NIs, RESN_NOs = RESN_NINOs[:,0], RESN_NINOs[:,1]
+                        wins, _, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,0], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                        NI_h2h.append((wins + ties*0.5)/len(y_test))
+                        wins, _, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,1], RESN_NOs, self.hparams.weights, self.hparams.powers)
+                        NO_h2h.append((wins + ties*0.5)/len(y_test))
+                    results[f"NI_h2h_d{dim}"] = np.array(NI_h2h).mean()
+                    results[f"NO_h2h_d{dim}"] = np.array(NO_h2h).mean()
+
         return results
 
     def trips_corr(self, a, p, n):
@@ -365,3 +336,33 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+        # csv = {
+        #     "wandb_project": self.hparams.wandb_project,
+        #     "wandb_group": self.hparams.wandb_group,
+        #     "wandb_name": self.hparams.wandb_name,
+        #     "seed": self.hparams.seed,
+        #     "weights": self.hparams.weights,
+        #     "embed_dim": self.hparams.embed_dim,
+        #     "lamda": self.hparams.lamda,
+        #     "filtered": self.hparams.filtered,
+        #     "test_clf_acc": clf_acc.cpu().detach().numpy(),
+        #     "test_triplet_acc": triplet_acc.cpu().detach().numpy(),
+        #     }
+        # csv.update(results)
+        # csv = {k:[v] for k,v in csv.items()}
+        # if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
+        # else: out_csv = "out.csv"
+        # out_csv = f"results/{out_csv}"
+        # if not os.path.isfile(out_csv): df = pd.DataFrame()
+        # else: df = pd.read_csv(out_csv)
+        # df = pd.concat([df,pd.DataFrame(csv)])
+        # df.to_csv(out_csv,index=False)
+        
+        # df = pd.read_csv("results/out.csv")
+        # df = pd.concat([df,pd.DataFrame(csv)])
+        # df.to_csv("results/out.csv",index=False)
+
+        # if self.hparams.embeds_output_dir is not None:
+        #     self.save_embeds()

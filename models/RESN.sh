@@ -17,7 +17,7 @@ DATA=wv_3d_linear0
 python RESN.py \
                 --dataset_config=configs/$DATA/dataset.yaml \
                 --model_config=configs/models/RESN.yaml \
-                --triplet_config=configs/$DATA/triplets/filtered/aligns/align=0.5_filtered.yaml \
+                --triplet_config=configs/$DATA/triplets/filtered/aligns/align=1_filtered.yaml \
                 --overwrite_config=configs/$DATA/overwrite.yaml \
                 --seed=$2 \
                 --wandb_project=$DATA"_RESN" \

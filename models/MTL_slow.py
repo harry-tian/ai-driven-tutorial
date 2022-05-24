@@ -189,31 +189,8 @@ class MTL(pl.LightningModule):
         return torch.cat(zs)
 
     def test_epoch_end(self, outputs):
-        results = self.eval_knn_ds(
-            self.test_dataset, self.train_dataset, self.syn_x_train, self.syn_x_test)
+        results = self.eval_knn_ds(self.test_dataset, self.train_dataset, self.syn_x_train, self.syn_x_test)
         for k,v in results.items(): self.log(k,v)
-        # csv = {
-        #     "wandb_project": self.hparams.wandb_project,
-        #     "wandb_group": self.hparams.wandb_group,
-        #     "wandb_name": self.hparams.wandb_name,
-        #     "seed": self.hparams.seed,
-        #     "weights": self.hparams.weights,
-        #     "embed_dim": self.hparams.embed_dim,
-        #     "lamda": self.hparams.lamda,
-        #     }
-        # csv.update(results)
-        # csv = {k:[v] for k,v in csv.items()}
-        # if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
-        # else: out_csv = "out.csv"
-        # out_csv = f"results/{out_csv}"
-        # if not os.path.isfile(out_csv): df = pd.DataFrame()
-        # else: df = pd.read_csv(out_csv)
-        # df = pd.concat([df,pd.DataFrame(csv)])
-        # df.to_csv(out_csv,index=False)
-
-        # df = pd.read_csv("results/out.csv")
-        # df = pd.concat([df,pd.DataFrame(csv)])
-        # df.to_csv("results/out.csv",index=False)
 
 
     def eval_knn_ds(self, test_ds, train_ds, syn_x_train=None, syn_x_test=None):
@@ -222,39 +199,41 @@ class MTL(pl.LightningModule):
         y_train, y_test = self.train_label.numpy(), self.test_label.numpy()
 
         ## predicted labels
-        y_pred = np.array([not y if not m else y for y, m in zip(y_test, self.test_corrects)])
         if self.hparams.model == "TN":
             y_pred = evals.get_knn_score(z_train, y_train, z_test, y_test, metric="preds")
-
+        else:
+            y_pred = np.array([not y if not m else y for y, m in zip(y_test, self.test_corrects)])
 
         knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
         results = {"test_1nn_acc":knn_acc}
-        if self.hparams.syn:
-            to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
-            RESN_d512_dir = "../embeds/wv_3d_linear_RESN"
 
+        if self.hparams.syn:
+            ### decision support evals
+            to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
             syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
             self.hparams.weights, self.hparams.powers, k=1)
-
-            if self.hparams.model != "RESN":
-                NI_h2h = []
-                NO_h2h = []
-                for seed in range(3):
-                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_d512_seed{seed}.pkl","rb"))
-                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_d512_seed{seed}.pkl","rb"))
-                    RESN_pred_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_preds_d512_seed{seed}.pkl","rb"))
-                    euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)
-                    RESN_NINOs = evals.get_NINO(euc_dist_M, y_train, RESN_pred_512, k=1)
-                    RESN_NIs = RESN_NINOs[:,0]
-                    RESN_NOs = RESN_NINOs[:,1]
-                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,0], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                    NI_h2h.append((wins + ties*0.5)/len(y_test))
-                    wins, errs, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,1], RESN_NOs, self.hparams.weights, self.hparams.powers)
-                    NO_h2h.append((wins + ties*0.5)/len(y_test))
-                results["NI_h2h"] = np.array(NI_h2h).mean()
-                results["NO_h2h"] = np.array(NO_h2h).mean()
-
             for eval in to_log: results[eval] = syn_evals[eval]
+
+            #### h2h evals
+            if self.hparams.model != "RESN":
+                RESN_dir = "../embeds/" + self.hparams.resn_embed_dir
+                for dim in [50,512]:
+                    NI_h2h, NO_h2h = [], []
+                    for seed in range(3):
+                        RESN_train = pickle.load(open(f"{RESN_dir}/RESN_train_d{dim}_seed{seed}.pkl","rb"))
+                        RESN_test = pickle.load(open(f"{RESN_dir}/RESN_test_d{dim}_seed{seed}.pkl","rb"))
+                        if self.hparams.predicted_labels: RESN_pred = pickle.load(open(f"{RESN_dir}/RESN_preds_d{dim}_seed{seed}.pkl","rb"))
+                        else: RESN_pred = y_test
+                        euc_dist_M = euclidean_distances(RESN_test,RESN_train)
+                        RESN_NINOs = evals.get_NINO(euc_dist_M, y_train, RESN_pred, k=1)
+                        RESN_NIs, RESN_NOs = RESN_NINOs[:,0], RESN_NINOs[:,1]
+                        wins, _, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,0], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                        NI_h2h.append((wins + ties*0.5)/len(y_test))
+                        wins, _, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,1], RESN_NOs, self.hparams.weights, self.hparams.powers)
+                        NO_h2h.append((wins + ties*0.5)/len(y_test))
+                    results[f"NI_h2h_d{dim}"] = np.array(NI_h2h).mean()
+                    results[f"NO_h2h_d{dim}"] = np.array(NO_h2h).mean()
+
         return results
 
     def configure_optimizers(self):

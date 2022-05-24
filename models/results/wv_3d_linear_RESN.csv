@@ -1,4 +1,0 @@
-wandb_project,wandb_group,wandb_name,seed,weights,embed_dim,lamda,test_clf_acc,test_triplet_acc,test_1nn_acc,NINO_ds_acc,rNINO_ds_acc,NIFO_ds_acc
-wv_3d_linear_filtered,wv_3d_linear_RESN,RESN,0,"[0, 0, 1, 1]",512,1,0.9849246,0.6657807,0.984924623115578,0.5050251256281407,0.5050251256281407,0.6055276381909548
-wv_3d_linear_filtered,wv_3d_linear_RESN,RESN,1,"[0, 0, 1, 1]",512,1,0.99246234,0.6655593,0.992462311557789,0.5804020100502513,0.5804020100502513,0.6834170854271356
-wv_3d_linear_filtered,wv_3d_linear_RESN,RESN,2,"[0, 0, 1, 1]",512,1,0.98994976,0.66312295,0.9849246231155779,0.6331658291457286,0.6306532663316583,0.7110552763819096

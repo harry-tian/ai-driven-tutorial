@@ -12,3 +12,4 @@ weights:
 powers:
 - 2
 - 2
+model: MTL_slow

@@ -1,4 +1,4 @@
-wandb_project: wv_3d_linear0_aligns
+wandb_project: wv_3d_linear0_aligns_filtered
 wandb_group: align=0.96
 train_triplets: ../datasets/wv_3d_linear0_triplets/align=0.96/train_triplets_filtered.pkl
 valid_triplets: ../datasets/wv_3d_linear0_triplets/align=0.96/valid_triplets_filtered.pkl
