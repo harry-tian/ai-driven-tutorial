@@ -293,10 +293,10 @@ class MTL(pl.LightningModule):
                 NI_h2h = []
                 NO_h2h = []
                 for seed in range(3):
-                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_seed{seed}.pkl","rb"))
-                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_seed{seed}.pkl","rb"))
+                    RESN_train_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_train_d512_seed{seed}.pkl","rb"))
+                    RESN_test_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_test_d512_seed{seed}.pkl","rb"))
                     if self.hparams.predicted_labels:
-                        RESN_pred_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_preds_seed{seed}.pkl","rb"))
+                        RESN_pred_512 = pickle.load(open(f"{RESN_d512_dir}/RESN_preds_d512_seed{seed}.pkl","rb"))
                     else:
                         RESN_pred_512 = y_test
                     euc_dist_M = euclidean_distances(RESN_test_512,RESN_train_512)

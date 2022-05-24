@@ -12,4 +12,4 @@ weights:
 powers:
 - 2
 - 2
-max_epochs: 3
+filtered: False

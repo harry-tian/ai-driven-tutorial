@@ -1,7 +1,0 @@
-wandb_project,wandb_group,wandb_name,seed,weights,embed_dim,lamda,test_clf_acc,test_triplet_acc,test_1nn_acc,h2h_50,h2h_512,NINO_ds_acc_k=1,rNINO_ds_acc_k=1,NIFO_ds_acc_k=1,NINO_ds_acc_k=3,rNINO_ds_acc_k=3,NIFO_ds_acc_k=3,NINO_ds_acc_k=5,rNINO_ds_acc_k=5,NIFO_ds_acc_k=5
-wv_3d_square_predicted_filtered,align=0.925,TN,0,"[256, 1, 256, 256]",512,0.0,0.46,0.97683334,1.0,0.91975,0.91975,0.91,0.91,1.0,0.905,0.905,1.0,0.925,0.925,1.0
-wv_3d_square_predicted_filtered,align=0.83,TN,0,"[0, 1, 1, 1]",512,0.0,0.375,0.9701667,1.0,0.92875,0.92875,0.835,0.835,1.0,0.845,0.845,1.0,0.87,0.87,1.0
-wv_3d_square_predicted_filtered,align=0.8,TN,0,"[1, 0, 1, 1]",512,0.0,0.545,0.9705,1.0,0.9395,0.9395,0.7825,0.7825,1.0,0.795,0.795,1.0,0.81,0.81,1.0
-wv_3d_square_predicted_filtered,align=0.5,TN,0,"[0, 0, 1, 1]",512,0.0,0.46,0.9683333,1.0,0.9175,0.9175,0.5625,0.5625,1.0,0.56,0.56,1.0,0.54,0.54,1.0
-wv_3d_square_predicted_filtered,align=0.92,TN,0,"[1, 256, 256, 256]",512,0.0,0.3525,0.9701667,1.0,0.893,0.893,0.87,0.87,1.0,0.8925,0.8925,1.0,0.895,0.895,1.0
-wv_3d_square_predicted_filtered,align=1,TN,0,"[1, 1, 1, 1]",512,0.0,0.3575,0.9618333,1.0,0.8115,0.8115,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0

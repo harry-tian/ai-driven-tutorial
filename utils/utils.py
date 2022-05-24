@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold
-import shutil, pathlib, os, wandb
+import shutil, pathlib, os, wandb, re
+
+def find_float(S):
+    floats = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", S)
+    return [float(x) for x in floats]
 
 def get_wandb_runs(project, entity="harry-tian"):
     api = wandb.Api()
@@ -30,6 +34,11 @@ def get_wandb_runs(project, entity="harry-tian"):
     return runs_df
 
 def strip_df(df, eval_cols, config_cols):
+    for i in range(len(df)):
+        if not df["config"][i] or not df["summary"][i]: 
+            print("\n ???:")
+            print(df.iloc[i])
+            df = df.drop(i)
     for col in config_cols: df[col] = [d[col] for d in df["config"]]
     for col in eval_cols:  df[col] = [d[col] for d in df["summary"]]
     df = df.drop("config",axis=1)

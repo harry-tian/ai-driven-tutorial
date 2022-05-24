@@ -1,9 +1,9 @@
 wandb_mode: online
-wandb_project: wv_3d_linear_num
+wandb_project: wv_3d_blob_num
 wandb_group: align=0.97_p=0.25
-train_triplets: ../datasets/wv_3d_linear_triplets/align=0.97_num/0.25/train_triplets_filtered.pkl
-valid_triplets: ../datasets/wv_3d_linear_triplets/align=0.97_num/0.25/valid_triplets_filtered.pkl
-test_triplets: ../datasets/wv_3d_linear_triplets/align=0.97_num/0.25/test_triplets_filtered.pkl
+train_triplets: ../datasets/wv_3d_blob_triplets/align=0.97_num/0.25/train_triplets_filtered.pkl
+valid_triplets: ../datasets/wv_3d_blob_triplets/align=0.97_num/0.25/valid_triplets_filtered.pkl
+test_triplets: ../datasets/wv_3d_blob_triplets/align=0.97_num/0.25/test_triplets_filtered.pkl
 weights:
 - 128
 - 1
