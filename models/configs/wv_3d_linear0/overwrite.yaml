@@ -18,7 +18,7 @@ enable_progress_bar: False
 max_epochs : 3
 checkpoint_callback: True
 embeds_output_dir: ../embeds
-wandb_entity : harry-tian
+wandb_entity : ai-driven-tutorial
 
 
 

@@ -14,16 +14,14 @@
 
 DATA=wv_3d_linear0
 
-DIMS=(50 512)
-for i in {0..1}
-    do      python main.py \
-            --dataset_config=configs/$DATA/dataset.yaml \
-            --model_config=$2 \
-            --triplet_config=$1 \
-            --overwrite_config=configs/$DATA/overwrite.yaml \
-            --seed=$3 \
-            --embed_dim="${DIMS[i]}"
-done
+python main.py \
+    --dataset_config=configs/$DATA/dataset.yaml \
+    --model_config=$2 \
+    --triplet_config=$1 \
+    --overwrite_config=configs/$DATA/overwrite.yaml \
+    --seed=$3 \
+    --embed_dim=$4
+
 # python main.py \
 #                 --dataset_config=configs/$DATA/dataset.yaml \
 #                 --model_config=configs/models/MTL0.5.yaml \
@@ -45,9 +43,9 @@ done
 #     done
 # done
 
-# DATA=wv_3d_linear0; for triplet in configs/$DATA/triplets/unfiltered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# DATA=wv_3d_linear0; for seed in {0..1} ;do for triplet in configs/$DATA/triplets/unfiltered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model $seed; fi; done; done; done
 
-# DATA=wv_3d_linear0; for triplet in configs/$DATA/triplets/filtered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# DATA=wv_3d_linear0; DIMS=(50 512); for i in {0..1}; do for seed in {0..1} ;do for triplet in configs/$DATA/triplets/filtered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model $seed "${DIMS[i]}"; fi; done; done; done; done
 
 
 # DATA=wv_3d_linear0; for triplet in configs/$DATA/triplets/unfiltered/noisy_0.9/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
