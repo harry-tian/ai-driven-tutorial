@@ -262,8 +262,7 @@ class MTL(pl.LightningModule):
         z_train, z_valid, z_test = [self.embed_dataset(ds) for ds in datasets]
         for fold, emb in zip(['train', 'valid', 'test'], [z_train, z_valid, z_test]):
             name = f"RESN_{fold}_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl"
-            path = self.hparams.embeds_output_dir
-            pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+            path = os.path.join("../embeds", self.hparams.embeds_output_dir)
             f_name = path + '/' + name
             print("Saving embeds at:", f_name)
             pickle.dump(emb, open(f_name, 'wb'))
@@ -277,18 +276,12 @@ class MTL(pl.LightningModule):
 
         ## predicted labels
         y_pred = np.array([not y if not m else y for y, m in zip(y_test, mask)])
-        pickle.dump(y_pred,open(f"results/RESN_preds_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl","wb"))
+        path = os.path.join("../embeds", self.hparams.embeds_output_dir)
+        pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+        pickle.dump(y_pred,open(f"{path}/RESN_preds_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl","wb"))
 
         knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
         results = {"test_1nn_acc":knn_acc}
-        # if self.hparams.syn:
-        #     to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
-        #     to_print = ["NINO_ds_err", "rNINO_ds_err", "NIFO_ds_err", "NIs"]
-
-        #     syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
-        #     self.hparams.weights, self.hparams.powers, k=1)
-
-        #     for eval in to_log: results[eval] = syn_evals[eval]
         return results
 
     def trips_corr(self, a, p, n):

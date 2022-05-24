@@ -84,7 +84,7 @@ def load_configs(args):
             args_override[hp] = args[hp]
             print("Args overwriting", hp, "with", args[hp])
     args_override = oc.create(args_override)
-    configs = oc.merge(configs, args_override, overwrite_config)
+    configs = oc.merge(configs, overwrite_config, args_override)
     return configs
 
 def load_configs_sweep(args):

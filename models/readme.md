@@ -1,4 +1,27 @@
+# experiment procedures
+
+### hyperparameters
+
+lamda={0.2,0.5,0.8}
+* filtered, d=50
+* filtered, d=512
+* unfiltered, d=50
+* unfiltered, d=512
+### settings
+1. aligns
+2. noise
+3. number of triplets
+
+
+
+
+
+
+
+
+
 # how to use
+
 
 ### configs
 configurate hyperparamters using `.yaml` in `configs/`. Read more about this in `trainer.py`.

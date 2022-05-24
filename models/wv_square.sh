@@ -13,25 +13,25 @@
 #SBATCH --exclude=aa[001-002]
 
 # python main.py \
-#                 --dataset_config=configs/wv_3d/dataset.yaml \
+#                 --dataset_config=configs/wv_3d_square/dataset.yaml \
 #                 --model_config=configs/models/MTL0.5.yaml \
-#                 --triplet_config=configs/wv_3d/triplets/unfiltered/noisy_0.925/p=0.1.yaml \
-#                 --overwrite_config=configs/wv_3d/overwrite.yaml \
+#                 --triplet_config=configs/wv_3d_square/triplets/unfiltered/noisy_0.925/p=0.1.yaml \
+#                 --overwrite_config=configs/wv_3d_square/overwrite.yaml \
 #                 --seed=0
 
 for seed in {0..2}
         do      python main.py \
-                --dataset_config=configs/wv_3d/dataset.yaml \
+                --dataset_config=configs/wv_3d_square/dataset.yaml \
                 --model_config=$2 \
                 --triplet_config=$1 \
-                --overwrite_config=configs/wv_3d/overwrite.yaml \
+                --overwrite_config=configs/wv_3d_square/overwrite.yaml \
                 --seed=$seed
 done
 
-# for triplet in configs/wv_3d/triplets/unfiltered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv_square.sh $triplet $model ; fi; done; done
+# for triplet in configs/wv_3d_square/triplets/unfiltered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv_square.sh $triplet $model ; fi; done; done
 
-# for triplet in configs/wv_3d/triplets/filtered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv_square.sh $triplet $model ; fi; done; done
+# for triplet in configs/wv_3d_square/triplets/filtered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv_square.sh $triplet $model ; fi; done; done
 
-# for triplet in configs/wv_3d/triplets/unfiltered/noisy_0.925/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv_square.sh $triplet $model ; fi; done; done
+# for triplet in configs/wv_3d_square/triplets/unfiltered/noisy_0.925/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv_square.sh $triplet $model ; fi; done; done
 
-# for triplet in configs/wv_3d/triplets/filtered/noisy_0.925/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv_square.sh $triplet $model ; fi; done; done
+# for triplet in configs/wv_3d_square/triplets/filtered/noisy_0.925/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv_square.sh $triplet $model ; fi; done; done
