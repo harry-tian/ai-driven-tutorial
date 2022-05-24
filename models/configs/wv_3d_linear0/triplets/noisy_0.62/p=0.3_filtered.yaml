@@ -1,0 +1,16 @@
+wandb_mode: online
+wandb_project: wv_3d_linear0_noisy
+wandb_group: align=0.62_p=0.3
+train_triplets: ../datasets/wv_3d_linear0_triplets/align=0.62_noisy/0.3/train_triplets_filtered.pkl
+valid_triplets: ../datasets/wv_3d_linear0_triplets/align=0.62_noisy/0.3/valid_triplets_filtered.pkl
+test_triplets: ../datasets/wv_3d_linear0_triplets/align=0.62_noisy/0.3/test_triplets_filtered.pkl
+weights:
+- 0
+- 1
+- 0
+- 0
+powers:
+- 2
+- 2
+filtered: true
+out_csv: wv_3d_linear0_noisy.csv

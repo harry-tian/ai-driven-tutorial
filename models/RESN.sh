@@ -12,7 +12,7 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
-DATA=wv_3d_square
+DATA=wv_3d_linear0
 
 python RESN.py \
                 --dataset_config=configs/$DATA/dataset.yaml \
