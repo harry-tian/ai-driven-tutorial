@@ -12,13 +12,13 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
-DATA=wv_3d_linear0
+DATA=wv_linear_sm
 
 python RESN.py \
                 --dataset_config=configs/$DATA/dataset.yaml \
                 --model_config=configs/models/RESN.yaml \
-                --triplet_config=configs/$DATA/triplets/filtered/aligns/align=1_filtered.yaml \
-                --overwrite_config=configs/$DATA/overwrite.yaml \
+                --triplet_config=configs/$DATA/triplets/filtered/aligns/align=0.9.yaml \
+                --overwrite_config=configs/overwrite.yaml \
                 --seed=$2 \
                 --wandb_project=$DATA"_RESN" \
                 --embeds_output_dir=$DATA"_RESN" \
@@ -32,8 +32,8 @@ python RESN.py \
 #                 do python RESN.py \
 #                 --dataset_config=configs/$DATA/dataset.yaml \
 #                 --model_config=configs/models/RESN.yaml \
-#                 --triplet_config=configs/$DATA/triplets/filtered/aligns/align=0.5_filtered.yaml \
-#                 --overwrite_config=configs/$DATA/overwrite.yaml \
+#                 --triplet_config=configs/$DATA/triplets/filtered/aligns/align=0.9_filtered.yaml \
+#                 --overwrite_config=configs/overwrite.yaml \
 #                 --seed=$seed \
 #                 --wandb_project=$DATA"_RESN" \
 #                 --embeds_output_dir=$DATA"_RESN" \

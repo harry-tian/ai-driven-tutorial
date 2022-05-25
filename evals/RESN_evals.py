@@ -7,15 +7,18 @@ from omegaconf import OmegaConf as oc
 from tqdm import tqdm
 
 
+data = "wv_linear_sm"
+align_dir = f"../models/configs/{data}/triplets/unfiltered/aligns"
 
-RESN_embed_dir = "wv_3d_linear0_RESN"
-align_dir = "../models/configs/wv_3d_linear0/triplets/unfiltered/aligns"
+
+
+
 seeds = 3
-
-syn_x_train = pickle.load(open("../datasets/wv_3d_linear0/train_features.pkl","rb"))
-syn_x_test = pickle.load(open("../datasets/wv_3d_linear0/test_features.pkl","rb"))
-y_train = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d_linear0/train")])
-y_test = np.array([x[1] for x in torchvision.datasets.ImageFolder("../datasets/wv_3d_linear0/test")])
+RESN_embed_dir = data + "_RESN"
+syn_x_train = pickle.load(open(f"../datasets/{data}/train_features.pkl","rb"))
+syn_x_test = pickle.load(open(f"../datasets/{data}/test_features.pkl","rb"))
+y_train = np.array([x[1] for x in torchvision.datasets.ImageFolder(f"../datasets/{data}/train")])
+y_test = np.array([x[1] for x in torchvision.datasets.ImageFolder(f"../datasets/{data}/test")])
 
 
 
