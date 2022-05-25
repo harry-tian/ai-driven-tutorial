@@ -1,0 +1,15 @@
+wandb_project: wv_linear_sm_num
+wandb_group: align=0.82_p=0.03125
+train_triplets: ../datasets/wv_linear_sm_triplets/align=0.82_num/0.03125/train_triplets.pkl
+valid_triplets: ../datasets/wv_linear_sm_triplets/align=0.82_num/0.03125/valid_triplets.pkl
+test_triplets: ../datasets/wv_linear_sm_triplets/align=0.82_num/0.03125/test_triplets.pkl
+weights:
+- 0
+- 1
+- 1
+- 1
+powers:
+- 2
+- 2
+filtered: false
+model: MTL_slow

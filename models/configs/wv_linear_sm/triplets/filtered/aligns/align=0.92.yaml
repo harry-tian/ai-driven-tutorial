@@ -6,8 +6,8 @@ test_triplets: ../datasets/wv_linear_sm_triplets/align=0.92/test_triplets_filter
 weights:
 - 1
 - 1
-- 0
-- 0
+- 1
+- 1
 powers:
 - 2
 - 2

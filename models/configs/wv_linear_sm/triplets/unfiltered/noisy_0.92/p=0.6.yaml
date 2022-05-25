@@ -1,0 +1,14 @@
+wandb_project: wv_linear_sm_noisy
+wandb_group: align=0.92_p=0.6
+train_triplets: ../datasets/wv_linear_sm_triplets/align=0.92_noisy/0.6/train_triplets.pkl
+valid_triplets: ../datasets/wv_linear_sm_triplets/align=0.92_noisy/0.6/valid_triplets.pkl
+test_triplets: ../datasets/wv_linear_sm_triplets/align=0.92_noisy/0.6/test_triplets.pkl
+weights:
+- 1
+- 1
+- 1
+- 1
+powers:
+- 2
+- 2
+filtered: false
