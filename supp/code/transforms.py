@@ -11,7 +11,6 @@ def get_transform(transform, aug=True):
         return bird_transform_aug() if aug else bird_transform()
     elif transform == "resn":
         return resn_normalize()
-        return resn_normalize_aug() if aug else resn_normalize()
     elif transform == "wv_3d":
         return bird_transform()
 

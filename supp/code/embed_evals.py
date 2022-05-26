@@ -53,23 +53,6 @@ def nn_comparison(x_train, x_test, NI1, NI2, weights, powers=[2,2]):
 
     return ni1_score, ni2_score, ties
     
-def temp(x_train, MTL_NINOs, RESN_NINOs, weights):
-    MTL_score, RESN_score, ties = 0,0,0
-    for MTL_NINO, RESN_NINO in zip(MTL_NINOs,RESN_NINOs):
-        MTL_NI, MTL_NO = MTL_NINO
-        RESN_NI, RESN_NO = RESN_NINO
-        MTL_dist = weightedPdist(x_train[MTL_NI[0]], x_train[MTL_NO[0]], weights, 1)
-        RESN_dist = weightedPdist(x_train[RESN_NI[0]], x_train[RESN_NO[0]], weights, 1)
-        if MTL_dist > RESN_dist: MTL_score += 1
-        elif MTL_dist < RESN_dist: RESN_score += 1
-        else: 
-            # print("\n")
-            # print(MTL_NINO)
-            # print(RESN_NINO)
-            ties += 1
-
-    return MTL_score, RESN_score, ties
-
 def get_NI(dist_M, y_train, y_test, k=1):
     ''' Neareast In-class '''
     classes = np.unique(y_train)
