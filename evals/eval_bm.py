@@ -15,7 +15,7 @@ parser.add_argument("-p", "--wandb_project", default=None, type=str)
 parser.add_argument("-g", "--wandb_group", default=None, type=str)
 parser.add_argument("-o", "--output_path", default=None, type=str)
 parser.add_argument("-s", "--syn_embs_path", default=None, type=str)
-parser.add_argument("-n", "--ni_train_embs_path", default=None, type=str)
+parser.add_argument("-n", "--h2h_train_embs_path", default=None, type=str)
 parser.add_argument("-u", "--update", default=None, type=str)
 args = parser.parse_args()
 print(args)
@@ -112,32 +112,37 @@ else:
 # b_syns = {s: syns[s] for s in [agent, 'lpips.alex', 'lpips.vgg']}
 print("syn agents:", syns.keys(), len(syns))
 
-if args.ni_train_embs_path:
-    train_path = pathlib.Path(args.ni_train_embs_path)
+if args.h2h_train_embs_path:
+    train_path = pathlib.Path(args.h2h_train_embs_path)
     test_path = train_path.with_name(train_path.name.replace('train', 'test'))
     z_train = pickle.load(open(train_path, 'rb'))
     z_test = pickle.load(open(test_path, 'rb'))
+    r_dst = euc_dist(z_test, z_train)
+    resn_nis = get_NI(r_dst, y_train, y_test)
+    resn_nos = get_NI(r_dst, 1-y_train, y_test)
+    resn_fos = get_NI(-r_dst, 1-y_train, y_test)
 else:
     model, seed = 'MTL1', best[model]
     z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
     r_dst = euc_dist(z_test, z_train)
     resn_nis = get_NI(r_dst, y_train, y_test)
     resn_nos = get_NI(r_dst, 1-y_train, y_test)
+    resn_fos = get_NI(-r_dst, 1-y_train, y_test)
 
 id_columns = ['agent', 'name', 'model', 'seed']
 ts_columns = ['test_clf_acc', 'test_1nn_acc', 'test_triplet_acc']
-ds_columns = ['NINO_ds_acc', 'NIFO_ds_acc', 'rNINO_ds_acc']
-kd = [2, 3]
+ds_columns = ['NINO_ds_acc', 'NIFO_ds_acc'] # rNINO_ds_acc
+kd = [] # [2, 3]
 kd_columns = ['_'.join([str(k), ds]) for ds in ds_columns for k in kd]
-er_columns = ['NINO_ds_err', 'NIFO_ds_err', 'rNINO_ds_err']
-ni_columns = ['NIs', 'NI_acc', 'NO_acc']
+# er_columns = ['NINO_ds_err', 'NIFO_ds_err', 'rNINO_ds_err']
+ni_columns = ['NI_acc', 'NO_acc', 'FO_acc']
 
-if args.update:
-    all_columns = ['customized_NI_acc']
-    results = pd.read_csv(results_csv)[all_columns]
-else:
-    all_columns = id_columns + ts_columns + ds_columns + kd_columns + ni_columns
-    results = pd.DataFrame(columns=all_columns)
+# if args.update:
+#     all_columns = ['customized_NI_acc']
+#     results = pd.read_csv(results_csv)[all_columns]
+# else:
+all_columns = id_columns + ts_columns + ds_columns + kd_columns + ni_columns
+results = pd.DataFrame(columns=all_columns)
 for syn in syns:
     print(f"Evaluating models with agent: {syn}")
     for model in models:
@@ -168,14 +173,14 @@ for syn in syns:
                 corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
                 corr[sames] = 0.5
                 evals['NO_acc'] = corr.mean()
-            if 'customized_NI_acc' in all_columns:
-                z_train, z_test = embs[model][seed]['train'], embs[model][seed]['test']
-                nis = get_NI(euc_dist(z_test, z_train), y_train, y_test)
-                nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), nis, resn_nis])
+                # FO
+                fos = get_NI(-euc_dist(z_test, z_train), 1-y_train, y_test)
+                nn_mat = np.hstack([np.arange(len(y_test)).reshape(-1, 1), fos, resn_fos])
                 sames = np.where(nn_mat[:, 1] == nn_mat[:, 2])[0]
                 corr = (get_ds_choice(syns[syn], nn_mat) == 0).astype(float)
                 corr[sames] = 0.5
-                evals['NI_acc'] = corr.mean()
+                evals['FO_acc'] = corr.mean()
+
             results.loc[len(results)] = [evals[k] for k in all_columns]
 
 results.to_csv(results_csv, index=False)
