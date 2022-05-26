@@ -5,19 +5,19 @@
 #SBATCH --output=/home/tianh/slurm/out/%j.%N.stdout
 #SBATCH --error=/home/tianh/slurm/stderr/%j.%N.stderr
 #SBATCH --job-name=triplets
-#SBATCH --partition=cdac-contrib
+#SBATCH --partition=dev
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
-DATA=wv_linear_sm
+DATA=wv_squarelin
 
 python RESN.py \
                 --dataset_config=configs/$DATA/dataset.yaml \
                 --model_config=configs/models/RESN.yaml \
-                --triplet_config=configs/$DATA/triplets/filtered/aligns/align=0.9.yaml \
+                --triplet_config=configs/$DATA/triplets/unfiltered/aligns/align=0.99.yaml \
                 --overwrite_config=configs/overwrite.yaml \
                 --seed=$2 \
                 --wandb_project=$DATA"_RESN" \
