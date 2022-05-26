@@ -7,7 +7,7 @@ from omegaconf import OmegaConf as oc
 from tqdm import tqdm
 
 
-data = "wv_squarelin"
+data = "wv_syn_bm"
 align_dir = f"../models/configs/{data}/triplets/unfiltered/aligns"
 
 

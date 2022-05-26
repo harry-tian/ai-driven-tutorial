@@ -1,0 +1,15 @@
+wandb_project: wv_squarelin_num
+wandb_group: align=0.95_p=0.25
+train_triplets: ../datasets/wv_squarelin_triplets/align=0.95_num/0.25/train_triplets.pkl
+valid_triplets: ../datasets/wv_squarelin_triplets/align=0.95_num/0.25/valid_triplets.pkl
+test_triplets: ../datasets/wv_squarelin_triplets/align=0.95_num/0.25/test_triplets.pkl
+weights:
+- 1
+- 1
+- 1
+- 1
+powers:
+- 2
+- 2
+filtered: false
+model: MTL_slow

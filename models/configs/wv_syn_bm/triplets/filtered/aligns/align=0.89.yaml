@@ -1,0 +1,14 @@
+wandb_project: wv_syn_bm_aligns
+wandb_group: align=0.89_filtered
+train_triplets: ../datasets/wv_syn_bm_triplets/align=0.89/train_triplets_filtered.pkl
+valid_triplets: ../datasets/wv_syn_bm_triplets/align=0.89/valid_triplets_filtered.pkl
+test_triplets: ../datasets/wv_syn_bm_triplets/align=0.89/test_triplets_filtered.pkl
+weights:
+- 256
+- 0
+- 1
+- 1
+powers:
+- 2
+- 2
+filtered: true

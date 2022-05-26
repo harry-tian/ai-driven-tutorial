@@ -35,7 +35,7 @@ def get_wandb_runs(project, entity="harry-tian"):
 
 def strip_df(df, eval_cols, config_cols):
     for i in range(len(df)):
-        if not df["config"][i] or not df["summary"][i]: 
+        if (not df["config"].iloc[i]) or (not df["summary"].iloc[i]): 
             print("\n ???:")
             print(df.iloc[i])
             df = df.drop(i)
