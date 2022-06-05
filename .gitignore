@@ -7,7 +7,6 @@
 models/wandb
 models/checkpoints
 models/lightning_logs
-
 model/results
 
 .vscode/
