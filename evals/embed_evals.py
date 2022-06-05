@@ -380,8 +380,8 @@ def bm_eval_human(x_train, y_train, x_valid, y_valid):
 
 # bm_triplets_train = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
 # bm_triplets_valid = np.array(pickle.load(open("../data/bm_triplets/3c2_unique=182/test_triplets.pkl", "rb")))
-# bm_train_embs = np.array(pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb")))
-# bm_valid_embs = np.array(pickle.load(open("embeds/bm/human/TN_valid_emb10.pkl","rb")))
+# bm_train_embs = np.array(pickle.load(open("data/embeds/bm/human/TN_train_emb10.pkl","rb")))
+# bm_valid_embs = np.array(pickle.load(open("data/embeds/bm/human/TN_valid_emb10.pkl","rb")))
 
 
 def wv_eval_human(x_train, x_valid, x_test, y_train, y_valid, y_test, wv_triplets_train_path, wv_triplets_valid_path, wv_triplets_test_path):

@@ -15,15 +15,15 @@ align_dir = f"../models/configs/{data}/triplets/unfiltered/aligns"
 
 seeds = 3
 RESN_embed_dir = data + "_RESN"
-syn_x_train = pickle.load(open(f"../datasets/{data}/train_features.pkl","rb"))
-syn_x_test = pickle.load(open(f"../datasets/{data}/test_features.pkl","rb"))
-y_train = np.array([x[1] for x in torchvision.datasets.ImageFolder(f"../datasets/{data}/train")])
-y_test = np.array([x[1] for x in torchvision.datasets.ImageFolder(f"../datasets/{data}/test")])
+syn_x_train = pickle.load(open(f"../data/datasets/{data}/train_features.pkl","rb"))
+syn_x_test = pickle.load(open(f"../data/datasets/{data}/test_features.pkl","rb"))
+y_train = np.array([x[1] for x in torchvision.datasets.ImageFolder(f"../data/datasets/{data}/train")])
+y_test = np.array([x[1] for x in torchvision.datasets.ImageFolder(f"../data/datasets/{data}/test")])
 
 
 
 
-RESN_embed_dir = os.path.join("../embeds/", RESN_embed_dir)
+RESN_embed_dir = os.path.join("../data/embeds/", RESN_embed_dir)
 metric = ["NINO_ds_acc","rNINO_ds_acc","NIFO_ds_acc"]
 align_yamls = [os.path.join(align_dir,f) for f in os.listdir(align_dir)]
 

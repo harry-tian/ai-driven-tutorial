@@ -2,25 +2,25 @@ import pickle
 import numpy as np
 import torch
 
-x_train = pickle.load(open('../datasets/wv_3d/train_features.pkl', 'rb')).astype(np.float32)
-x_test = pickle.load(open('../datasets/wv_3d/test_features.pkl', 'rb')).astype(np.float32)
+x_train = pickle.load(open('../data/datasets/wv_3d/train_features.pkl', 'rb')).astype(np.float32)
+x_test = pickle.load(open('../data/datasets/wv_3d/test_features.pkl', 'rb')).astype(np.float32)
 x_train = torch.from_numpy(x_train)
 x_test = torch.from_numpy(x_test)
 # print(x_train.shape, x_test.shape)
 
 # from torchvision.datasets import ImageFolder
-# train_ds = ImageFolder('../datasets/wv_3d/train')
-# test_ds = ImageFolder('../datasets/wv_3d/test')
+# train_ds = ImageFolder('../data/datasets/wv_3d/train')
+# test_ds = ImageFolder('../data/datasets/wv_3d/test')
 # y_train = torch.tensor([b[1] for b in train_ds])
 # y_test = torch.tensor([b[1] for b in test_ds])
 # y_train = np.array([b[1] for b in train_ds])
 # y_test = np.array([b[1] for b in test_ds])
-# pickle.dump(y_train, (open('../datasets/wv_3d/train_labels.pkl', 'wb')))
-# pickle.dump(y_test, (open('../datasets/wv_3d/test_labels.pkl', 'wb')))
+# pickle.dump(y_train, (open('../data/datasets/wv_3d/train_labels.pkl', 'wb')))
+# pickle.dump(y_test, (open('../data/datasets/wv_3d/test_labels.pkl', 'wb')))
 # print(np.all(a.numpy() == y_train), np.all(b.numpy() == y_test))
 
-y_train = pickle.load(open('../datasets/wv_3d/train_labels.pkl', 'rb'))
-y_test = pickle.load(open('../datasets/wv_3d/test_labels.pkl', 'rb'))
+y_train = pickle.load(open('../data/datasets/wv_3d/train_labels.pkl', 'rb'))
+y_test = pickle.load(open('../data/datasets/wv_3d/test_labels.pkl', 'rb'))
 y_train = torch.from_numpy(y_train)
 y_test = torch.from_numpy(y_test)
 # print(y_train.dtype, y_test.shape)

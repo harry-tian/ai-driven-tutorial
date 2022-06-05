@@ -1,8 +1,8 @@
 wandb_project: wv_squarelin_num
 wandb_group: align=0.95_p=0.25
-train_triplets: ../datasets/wv_squarelin_triplets/align=0.95_num/0.25/train_triplets.pkl
-valid_triplets: ../datasets/wv_squarelin_triplets/align=0.95_num/0.25/valid_triplets.pkl
-test_triplets: ../datasets/wv_squarelin_triplets/align=0.95_num/0.25/test_triplets.pkl
+train_triplets: ../data/datasets/wv_squarelin_triplets/align=0.95_num/0.25/train_triplets.pkl
+valid_triplets: ../data/datasets/wv_squarelin_triplets/align=0.95_num/0.25/valid_triplets.pkl
+test_triplets: ../data/datasets/wv_squarelin_triplets/align=0.95_num/0.25/test_triplets.pkl
 weights:
 - 1
 - 1

@@ -1,0 +1,29 @@
+
+entity : ai-driven-tutorial
+project : RESN_sweep
+name : RESN_sweep
+
+program: RESN.py
+method: grid
+metric:
+  name: test_clf_acc
+  goal: maximize
+  
+parameters:
+  learning_rate:
+    values: 
+      - 0.000001
+      - 0.00001
+      - 0.0001
+      - 0.001
+      - 0.01
+  model_config:
+    value:
+      configs/bm/RESN.yaml 
+  dataset_config:
+    value:
+      configs/bm/dataset.yaml 
+  triplet_config:
+    value:
+      configs/bm/triplets.yaml 
+

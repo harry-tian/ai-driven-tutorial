@@ -2,12 +2,12 @@ wandb_mode: online
 wandb_project: wv_2d_filtered
 wandb_group: align=0.975_filtered
 syn: true
-train_synthetic: ../embeds/wv_2d/train.pkl
-valid_synthetic: ../embeds/wv_2d/valid.pkl
-test_synthetic: ../embeds/wv_2d/test.pkl
-train_triplets: ../datasets/wv_2d_triplets/align=0.975/train_triplets_filtered.pkl
-valid_triplets: ../datasets/wv_2d_triplets/align=0.975/valid_triplets_filtered.pkl
-test_triplets: ../datasets/wv_2d_triplets/align=0.975/test_triplets_filtered.pkl
+train_synthetic: ../data/embeds/wv_2d/train.pkl
+valid_synthetic: ../data/embeds/wv_2d/valid.pkl
+test_synthetic: ../data/embeds/wv_2d/test.pkl
+train_triplets: ../data/datasets/wv_2d_triplets/align=0.975/train_triplets_filtered.pkl
+valid_triplets: ../data/datasets/wv_2d_triplets/align=0.975/valid_triplets_filtered.pkl
+test_triplets: ../data/datasets/wv_2d_triplets/align=0.975/test_triplets_filtered.pkl
 weights:
 - 1
 - 0.5

@@ -8,7 +8,7 @@ import transforms
 
 DATASETS = {}
 
-DATASETS["bm"] = {"data_dir":"../datasets/bm",
+DATASETS["bm"] = {"data_dir":"../data/datasets/bm",
             "transform": "resn"}
 
 DATASETS["bird"] = {"data_dir":"/net/scratch/tianh-shared/bird",
@@ -20,10 +20,10 @@ DATASETS["chest_xray"] = {"data_dir":"/net/scratch/tianh-shared/PC/3classes",
 DATASETS["prostatex"] = {"data_dir":"/net/scratch/tianh-shared/bird",
             "transform": "xray"}
 
-DATASETS["wv_2d"] = {"data_dir":"../datasets/weevil_vespula",
+DATASETS["wv_2d"] = {"data_dir":"../data/datasets/weevil_vespula",
             "transform": "wv"}
 
-DATASETS["wv_3d"] = {"data_dir":"../datasets/wv_3d",
+DATASETS["wv_3d"] = {"data_dir":"../data/datasets/wv_3d",
             "transform": "wv_3d"}
 
 model_path_dict ={
@@ -95,11 +95,11 @@ def main():
     ckpt = f"checkpoints/{ckpt_infix}/checkpoints/best_model.ckpt"
     dataset = DATASETS[args.dataset]
     subdir = "/".join([args.subdir, args.wandb_group, args.wandb_name])
-    pathlib.Path("../embeds/" + subdir).mkdir(parents=True, exist_ok=True)
+    pathlib.Path("../data/embeds/" + subdir).mkdir(parents=True, exist_ok=True)
     print(args)
     for split in splits:
         name = f"{model_name}_{split}_{suffix}"
-        embed_path = f"../embeds/{subdir}/{name}.pkl"
+        embed_path = f"../data/embeds/{subdir}/{name}.pkl"
         get_embeds(model_path, ckpt, split, dataset["data_dir"], dataset["transform"], embed_path)
 
 if __name__ == "__main__":

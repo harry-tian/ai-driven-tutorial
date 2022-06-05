@@ -10,4 +10,4 @@ max_epochs: 1
 # pretrained: True
 # aug: False
 # deterministic: True
-# embeds_output_dir: ../embeds/bm/prolific
+# embeds_output_dir: ../data/embeds/bm/prolific

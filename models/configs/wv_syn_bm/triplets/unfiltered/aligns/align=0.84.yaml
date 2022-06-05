@@ -1,8 +1,8 @@
 wandb_project: wv_syn_bm_aligns
 wandb_group: align=0.84
-train_triplets: ../datasets/wv_syn_bm_triplets/align=0.84/train_triplets.pkl
-valid_triplets: ../datasets/wv_syn_bm_triplets/align=0.84/valid_triplets.pkl
-test_triplets: ../datasets/wv_syn_bm_triplets/align=0.84/test_triplets.pkl
+train_triplets: ../data/datasets/wv_syn_bm_triplets/align=0.84/train_triplets.pkl
+valid_triplets: ../data/datasets/wv_syn_bm_triplets/align=0.84/valid_triplets.pkl
+test_triplets: ../data/datasets/wv_syn_bm_triplets/align=0.84/test_triplets.pkl
 weights:
 - 1
 - 0

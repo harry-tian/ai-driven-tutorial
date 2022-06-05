@@ -216,7 +216,7 @@ class MTL(pl.LightningModule):
 
             #### h2h evals
             if self.hparams.model != "RESN":
-                RESN_dir = "../embeds/" + self.hparams.resn_embed_dir
+                RESN_dir = "../data/embeds/" + self.hparams.resn_embed_dir
                 for dim in [50,512]:
                     NI_h2h, NO_h2h = [], []
                     for seed in range(3):

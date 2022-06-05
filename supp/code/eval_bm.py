@@ -42,7 +42,7 @@ if args.output_path:
 results_csv = results_path + '.'.join([project, group, 'csv'])
 print(results_path, results_csv)
 
-y_train, y_valid, y_test = pickle.load(open('../datasets/bm/labels.pkl', 'rb'))
+y_train, y_valid, y_test = pickle.load(open('../data/datasets/bm/labels.pkl', 'rb'))
 
 
 def load_all_embs(path, models, dim, arch=None, seeds=None):
@@ -82,7 +82,7 @@ best = {k:int(v) for k, v in df.Name.str.split('s')}
 agent = 's'.join(['MTL0', str(best['MTL0'])])
 print("best seeds:", best)
 
-embeds_path = '../embeds/bm/prolific/' + '/'.join([project, group])
+embeds_path = '../data/embeds/bm/prolific/' + '/'.join([project, group])
 models = [f'MTL{l}' for l in [0, 0.2, 0.5, 0.8, 1]]
 dim = df_wandb.loc[0]['_content.embed_dim']
 seeds = sorted(df_wandb['_content.seed'].unique())
@@ -107,8 +107,8 @@ if args.syn_embs_path:
     syns = {k: v for k, v in syn_dsts.items() if 'MTL0s' in k}
 else:
     syns = {k: v for k, v in dsts.items() if 'MTL0s' in k}
-# syns['lpips.alex'] = pickle.load(open('../embeds/lpips/bm/lpips.alex.dstt.pkl', 'rb'))
-# syns['lpips.vgg'] = pickle.load(open('../embeds/lpips/bm/lpips.vgg.dstt.pkl', 'rb'))
+# syns['lpips.alex'] = pickle.load(open('../data/embeds/lpips/bm/lpips.alex.dstt.pkl', 'rb'))
+# syns['lpips.vgg'] = pickle.load(open('../data/embeds/lpips/bm/lpips.vgg.dstt.pkl', 'rb'))
 # b_syns = {s: syns[s] for s in [agent, 'lpips.alex', 'lpips.vgg']}
 print("syn agents:", syns.keys(), len(syns))
 

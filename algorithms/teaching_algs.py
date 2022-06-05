@@ -23,7 +23,7 @@ def tripetgreedy(X, m, args=None):
     try:
         triplets = args["triplets"]
     except: 
-        triplets = np.array(pickle.load(open("datasets/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
+        triplets = np.array(pickle.load(open("data/datasets/bm_triplets/3c2_unique=182/train_triplets.pkl", "rb")))
     try:
         y_train = args["y_train"]
     except: 

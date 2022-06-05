@@ -60,7 +60,7 @@ def get_knn_score(x_train, y_train, x_valid, y_valid,
 
 
 def human_1NN_align(embeds, proto_idx):
-    human_embs = pickle.load(open("embeds/bm/human/TN_train_emb10.pkl","rb"))
+    human_embs = pickle.load(open("data/embeds/bm/human/TN_train_emb10.pkl","rb"))
     assert(len(embeds) == len(human_embs))
 
     correct = 0
@@ -79,7 +79,7 @@ def get_1nn(data, index):
     return np.argsort(dist[index])[1]
 
 # def get_lpips_knn_score(prototype_idx=full_idx, k=1):
-#     lpips = pickle.load(open("embeds/lpips/lpips.bm.trxvl.pkl","rb"))
+#     lpips = pickle.load(open("data/embeds/lpips/lpips.bm.trxvl.pkl","rb"))
         
 #     dists = lpips[prototype_idx].T
 #     total = len(y_valid)

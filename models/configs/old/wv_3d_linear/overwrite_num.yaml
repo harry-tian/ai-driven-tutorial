@@ -1,0 +1,25 @@
+### Training args
+do_train : True
+do_test: True
+
+### Hyperparameters
+learning_rate : 1e-4
+train_batch_size : 30
+triplet_batch_size : 40
+pretrained: true
+deterministic: True
+check_val_every_n_epoch: 1
+enable_progress_bar: False
+
+
+
+
+
+max_epochs : 3
+checkpoint_callback: False
+embeds_output_dir: ../embeds
+wandb_entity : harry-tian
+
+
+model: MTL_slow
+embed_dim : 512

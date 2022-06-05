@@ -1,14 +1,14 @@
 ### classification data
-train_dir : ../datasets/wv_linear_sm/train
-valid_dir : ../datasets/wv_linear_sm/valid
-test_dir : ../datasets/wv_linear_sm/test
+train_dir : ../data/datasets/wv_linear_sm/train
+valid_dir : ../data/datasets/wv_linear_sm/valid
+test_dir : ../data/datasets/wv_linear_sm/test
 num_class : 2
 transform : wv_3d
 
 syn: true
-train_synthetic: ../datasets/wv_linear_sm/train_features.pkl
-valid_synthetic: ../datasets/wv_linear_sm/valid_features.pkl
-test_synthetic: ../datasets/wv_linear_sm/test_features.pkl
+train_synthetic: ../data/datasets/wv_linear_sm/train_features.pkl
+valid_synthetic: ../data/datasets/wv_linear_sm/valid_features.pkl
+test_synthetic: ../data/datasets/wv_linear_sm/test_features.pkl
 
 deterministic: true
 aug: false

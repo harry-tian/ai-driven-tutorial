@@ -1,7 +1,7 @@
 ### classification data
-train_dir : ../datasets/bm/train
-valid_dir : ../datasets/bm/valid
-test_dir : ../datasets/bm/test
+train_dir : ../data/datasets/bm/train
+valid_dir : ../data/datasets/bm/valid
+test_dir : ../data/datasets/bm/test
 num_class : 2
 transform : bm
 aug: False
