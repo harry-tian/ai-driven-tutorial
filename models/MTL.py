@@ -321,8 +321,9 @@ class MTL(pl.LightningModule):
         triplets = torch.Tensor(self.valid_triplets).long()
         if self.hparams.filter:
             # y_valid = np.array([d[1] for d in self.valid_dataset])
+            _, y_train = self.sample_xs_ys(self.train_dataset)
             _, y_valid = self.sample_xs_ys(self.valid_dataset)
-            triplets = utils.filter_mixed_triplets(triplets, y_valid)
+            triplets = utils.filter_mixed_triplets(triplets, y_train, y_valid)
 
         print(f"\n len_valid: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
@@ -335,8 +336,9 @@ class MTL(pl.LightningModule):
         triplets = torch.Tensor(self.test_triplets).long()
         if self.hparams.filter:
             # y_test = np.array([d[1] for d in self.test_dataset])
+            _, y_train = self.sample_xs_ys(self.train_dataset)
             _, y_test = self.sample_xs_ys(self.test_dataset)
-            triplets = utils.filter_mixed_triplets(triplets, y_test)
+            triplets = utils.filter_mixed_triplets(triplets, y_train, y_test)
 
         print(f"\n len_test: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
