@@ -10,6 +10,7 @@ from torchvision import  models
 import pytorch_lightning as pl
 import trainer, transforms
 import pandas as pd
+import utils
 
 from sklearn.metrics.pairwise import euclidean_distances
 sys.path.insert(0, '..')
@@ -49,17 +50,7 @@ class MTL(pl.LightningModule):
             self.valid_dataset = self.load_dataset_to_memory(self.valid_dataset)
             self.test_dataset = self.load_dataset_to_memory(self.test_dataset)
             self.ref_dataset = self.train_dataset
-        if self.hparams.transform == 'bm':
-            affine = {}
-            degree, translate, scale = 10, 0.1, 0.1
-            affine["degrees"] = degree
-            affine["translate"] = (translate, translate)
-            affine["scale"] = (1 - scale, 1 + scale)
-            self.augmentation = torchvision.transforms.Compose([
-                torchvision.transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
-                torchvision.transforms.RandomHorizontalFlip(0.5),
-                torchvision.transforms.RandomAffine(**affine),
-            ])
+            
         self.train_triplets = np.array(pickle.load(open(self.hparams.train_triplets, "rb")))
         self.valid_triplets = np.array(pickle.load(open(self.hparams.valid_triplets, "rb")))
         self.test_triplets = np.array(pickle.load(open(self.hparams.test_triplets, "rb")))
@@ -86,9 +77,6 @@ class MTL(pl.LightningModule):
             loader = torch.utils.data.DataLoader(
                 subset, len(subset), num_workers=1)
             data = next(iter(loader))
-        if aug:
-            x = self.augmentation(data[0])
-            data = (x, data[1])
         return data
     
     def forward(self, inputs):
@@ -291,6 +279,10 @@ class MTL(pl.LightningModule):
 
     def train_dataloader(self):
         triplets = torch.Tensor(self.train_triplets).long()
+        y_train = np.array([d[1] for d in self.train_dataset])
+        if self.hparams.filter:
+            triplets = utils.filter_train_triplets(triplets, y_train)
+
         print(f"\n len_train: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
             triplets, 
@@ -301,6 +293,10 @@ class MTL(pl.LightningModule):
         
     def val_dataloader(self):
         triplets = torch.Tensor(self.valid_triplets).long()
+        y_valid = np.array([d[1] for d in self.valid_dataset])
+        if self.hparams.filter:
+            triplets = utils.filter_mixed_triplets(triplets, y_valid)
+
         print(f"\n len_valid: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
             triplets, 
@@ -310,6 +306,10 @@ class MTL(pl.LightningModule):
 
     def test_dataloader(self):
         triplets = torch.Tensor(self.test_triplets).long()
+        y_test = np.array([d[1] for d in self.test_dataset])
+        if self.hparams.filter:
+            triplets = utils.filter_mixed_triplets(triplets, y_test)
+
         print(f"\n len_test: {len(triplets)}")
         triplet_loader = torch.utils.data.DataLoader(
             triplets, 
