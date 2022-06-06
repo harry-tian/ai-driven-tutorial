@@ -158,8 +158,10 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
         trainer.test(model, ckpt_path=test_ckpt_path)
     
     if not args["checkpoint_callback"]:
+        print(f"removing checkpoints in {ckpt_path}")
         for ckpt in [f for f in os.listdir(ckpt_path)]:  
             os.remove(os.path.join(ckpt_path, ckpt))
+        os.removedirs(ckpt_path)
 
     return trainer
 

@@ -1,5 +1,5 @@
+model_path: MTL
 model: MTL
-
 ### Wandb args
 wandb_group : MTL0.2
 wandb_name :  MTL0.2

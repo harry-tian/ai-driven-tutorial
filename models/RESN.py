@@ -221,31 +221,6 @@ class MTL(pl.LightningModule):
         self.log('test_triplet_acc', triplet_acc, prog_bar=True)
         self.log('test_total_loss', total_loss, prog_bar=True)
 
-        # csv = {
-        #     "wandb_project": self.hparams.wandb_project,
-        #     "wandb_group": self.hparams.wandb_group,
-        #     "wandb_name": self.hparams.wandb_name,
-        #     "seed": self.hparams.seed,
-        #     "weights": self.hparams.weights,
-        #     "embed_dim": self.hparams.embed_dim,
-        #     "lamda": self.hparams.lamda,
-        #     "test_clf_acc": clf_acc.cpu().detach().numpy(),
-        #     "test_triplet_acc": triplet_acc.cpu().detach().numpy(),
-        #     }
-        # csv.update(results)
-        # csv = {k:[v] for k,v in csv.items()}
-        # if self.hparams.out_csv is not None: out_csv = self.hparams.out_csv 
-        # else: out_csv = "out.csv"
-        # out_csv = f"results/{out_csv}"
-        # if not os.path.isfile(out_csv): df = pd.DataFrame()
-        # else: df = pd.read_csv(out_csv)
-        # df = pd.concat([df,pd.DataFrame(csv)])
-        # df.to_csv(out_csv,index=False)
-        
-        # df = pd.read_csv("results/out.csv")
-        # df = pd.concat([df,pd.DataFrame(csv)])
-        # df.to_csv("results/out.csv",index=False)
-
         self.save_embeds()
 
     def embed_dataset(self, dataset):
@@ -262,7 +237,7 @@ class MTL(pl.LightningModule):
         z_train, z_valid, z_test = [self.embed_dataset(ds) for ds in datasets]
         for fold, emb in zip(['train', 'valid', 'test'], [z_train, z_valid, z_test]):
             name = f"RESN_{fold}_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl"
-            path = os.path.join("../embeds", self.hparams.embeds_output_dir)
+            path = os.path.join("../data/embeds", self.hparams.embeds_output_dir)
             f_name = path + '/' + name
             print("Saving embeds at:", f_name)
             pickle.dump(emb, open(f_name, 'wb'))

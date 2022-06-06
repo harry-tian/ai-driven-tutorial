@@ -1,4 +1,5 @@
-model: MTL
+model_path: MTL
+model: TN
 
 ### Wandb args
 wandb_group : TN

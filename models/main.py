@@ -4,17 +4,17 @@ import pytorch_lightning as pl
 from pydoc import locate
 
 model_path_dict ={
-    'TN': "TN.TN",
+    # 'TN': "TN.TN",
     'MTL': "MTL.MTL",
-    'RESN': "RESN.MTL",
+    # 'RESN': "RESN.MTL",
     'MTL_slow': 'MTL_slow.MTL'
 }
 
-model_monitor_dict ={
-    'TN': "valid_triplet_loss",
-    'MTL': "valid_total_loss",
-    'RESN': "valid_clf_loss"
-}
+# model_monitor_dict ={
+#     'TN': "valid_triplet_loss",
+#     'MTL': "valid_total_loss",
+#     'RESN': "valid_clf_loss"
+# }
 
 def main():
     parser = trainer.config_parser()
@@ -24,7 +24,7 @@ def main():
     print(configs)
 
     pl.seed_everything(configs["seed"], workers=True)
-    model_path = model_path_dict[configs["model"]]
+    model_path = model_path_dict[configs["model_path"]]
     
     model = locate(model_path)
     model = model(**configs)

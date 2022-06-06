@@ -12,50 +12,59 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
-DATA=wv_syn_bm
+DATA=wv_linear_sm
+
+# python main.py \
+#     --dataset_config=configs/$DATA/dataset.yaml \
+#     --model_config=configs/models/MTL0.5.yaml \
+#     --triplet_config=configs/$DATA/triplets/aligns/align=0.94.yaml \
+#     --overwrite_config=configs/unfiltered.yaml \
+#     --seed=0 \
+#     --embed_dim=512 
 
 ###### for DEV ###########
 
-python main.py \
-    --dataset_config=configs/$DATA/dataset.yaml \
-    --model_config=$2 \
-    --triplet_config=$1 \
-    --overwrite_config=configs/overwrite.yaml \
-    --seed=$3 \
-    --embed_dim=$4 \
-    --max_epochs=10
+# python main.py \
+#     --dataset_config=configs/$DATA/dataset.yaml \
+#     --model_config=$2 \
+#     --triplet_config=$1 \
+#     --overwrite_config=configs/overwrite.yaml \
+#     --seed=$3 \
+#     --embed_dim=$4 \
+#     --max_epochs=10
 
-# DATA=wv_syn_bm; DIMS=(50 512); for seed in {0..2} ; do for i in {0..1}; do for triplet in configs/$DATA/triplets/filtered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model $seed "${DIMS[i]}"; fi; done; done; done; done
+# DATA=wv_linear_sm; DIMS=(50 512); for seed in {0..2} ; do for i in {0..1}; do for triplet in configs/$DATA/triplets/filtered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model $seed "${DIMS[i]}"; fi; done; done; done; done
 
 ###### for CDAC-CONTRIB ###########
 
-# DIMS=(50 512)
-# for i in {0..1}
-#     do for seed in {0..2}
-#             do      python main.py \
-#                     --dataset_config=configs/$DATA/dataset.yaml \
-#                     --model_config=$2 \
-#                     --triplet_config=$1 \
-#                     --overwrite_config=configs/overwrite.yaml \
-#                     --seed=$seed \
-#                     --embed_dim="${DIMS[i]}"
-#     done
-# done
+DIMS=(50 512)
+overwrite=("filtered" "unfiltered")
+for i in {0..1}
+    do for j in {0..1}
+        do  python main.py \
+            --dataset_config=configs/$DATA/dataset.yaml \
+            --model_config=$2 \
+            --triplet_config=$1 \
+            --overwrite_config=configs/"${overwrite[j]}".yaml \
+            --seed=$3 \
+            --embed_dim="${DIMS[i]}"
+    done
+done
 
 
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/filtered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model; fi; done; done
-
-
-
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/unfiltered/noisy_0.84/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/filtered/noisy_0.84/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/unfiltered/num_0.84/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/filtered/num_0.84/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# DATA=wv_linear_sm; for seed in {0..2}; do for triplet in configs/$DATA/triplets/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] && [ $model != configs/models/TN.yaml ] ; then sbatch wv.sh $triplet $model $seed; fi; done; done; done
 
 
 
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/filtered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model; fi; done; done
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/unfiltered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model; fi; done; done
+# DATA=wv_linear_sm; for triplet in configs/$DATA/triplets/unfiltered/noisy_0.84/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# DATA=wv_linear_sm; for triplet in configs/$DATA/triplets/filtered/noisy_0.84/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# DATA=wv_linear_sm; for triplet in configs/$DATA/triplets/unfiltered/num_0.84/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# DATA=wv_linear_sm; for triplet in configs/$DATA/triplets/filtered/num_0.84/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+
+
+
+# DATA=wv_linear_sm; for triplet in configs/$DATA/triplets/filtered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model; fi; done; done
+# DATA=wv_linear_sm; for triplet in configs/$DATA/triplets/unfiltered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model; fi; done; done
 
 
 
@@ -82,13 +91,13 @@ python main.py \
 
 
 
-# DATA=wv_syn_bm; for seed in {0..1} ;do for triplet in configs/$DATA/triplets/unfiltered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model $seed; fi; done; done; done
+# DATA=wv_linear_sm; for seed in {0..1} ;do for triplet in configs/$DATA/triplets/unfiltered/aligns/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model $seed; fi; done; done; done
 
 
 
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/unfiltered/noisy_0.9/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/filtered/noisy_0.9/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
-# DATA=wv_syn_bm; for triplet in configs/$DATA/triplets/unfiltered/num_0.9/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# DATA=wv_linear_sm; for triplet in configs/$DATA/triplets/unfiltered/noisy_0.9/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# DATA=wv_linear_sm; for triplet in configs/$DATA/triplets/filtered/noisy_0.9/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
+# DATA=wv_linear_sm; for triplet in configs/$DATA/triplets/unfiltered/num_0.9/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model ; fi; done; done
 
 
-# DATA=wv_syn_bm; for seed in {0..1} ; do for triplet in configs/$DATA/triplets/filtered/num_0.9/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model $seed; fi; done; done; done
+# DATA=wv_linear_sm; for seed in {0..1} ; do for triplet in configs/$DATA/triplets/filtered/num_0.9/* ; do for model in configs/models/* ; do if [ $model != configs/models/RESN.yaml ] ; then sbatch wv.sh $triplet $model $seed; fi; done; done; done

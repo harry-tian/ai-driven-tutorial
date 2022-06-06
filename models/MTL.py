@@ -204,6 +204,9 @@ class MTL(pl.LightningModule):
         self.log('test_triplet_acc', triplet_acc, prog_bar=True)
         self.log('test_total_loss', total_loss, prog_bar=True)
 
+        if self.hparams.model == "RESN": 
+            self.save_resn_embeds()
+
     def embed_dataset(self, dataset):
         self.eval()
         dataset = torch.utils.data.TensorDataset(*dataset) if self.in_memeory_dataset else dataset
@@ -227,6 +230,17 @@ class MTL(pl.LightningModule):
             print("Saving embeds at:", f_name)
             pickle.dump(emb, open(f_name, 'wb'))
 
+    def save_resn_embeds(self):
+        self.eval()
+        datasets = [self.ref_dataset, self.valid_dataset, self.test_dataset]
+        z_train, z_valid, z_test = [self.embed_dataset(ds) for ds in datasets]
+        for fold, emb in zip(['train', 'valid', 'test'], [z_train, z_valid, z_test]):
+            name = f"RESN_{fold}_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl"
+            path = os.path.join("../data/embeds", self.hparams.embeds_output_dir)
+            f_name = path + '/' + name
+            print("Saving embeds at:", f_name)
+            pickle.dump(emb, open(f_name, 'wb'))
+
     def eval_knn_ds(self, test_ds, train_ds, syn_x_train=None, syn_x_test=None, mask=None):
         _, y_train = self.sample_xs_ys(train_ds)
         _, y_test = self.sample_xs_ys(test_ds)
@@ -243,32 +257,43 @@ class MTL(pl.LightningModule):
         knn_acc = evals.get_knn_score(z_train, y_train, z_test, y_test)
         results = {"test_1nn_acc":knn_acc}
 
-        if self.hparams.syn:
-            ### decision support evals
-            to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
-            syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
-            self.hparams.weights, self.hparams.powers, k=1)
-            for eval in to_log: results[eval] = syn_evals[eval]
+        if self.hparams.model == "RESN": # save preds
+            path = os.path.join("../data/embeds", self.hparams.embeds_output_dir)
+            pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+            pickle.dump(y_pred,open(f"{path}/RESN_preds_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl","wb"))
+        else:
+            if self.hparams.syn:
+                results.update(self.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test))
 
-            #### h2h evals
-            if self.hparams.model != "RESN":
-                RESN_dir = "../data/embeds/" + self.hparams.resn_embed_dir
-                for dim in [50,512]:
-                    NI_h2h, NO_h2h = [], []
-                    for seed in range(3):
-                        RESN_train = pickle.load(open(f"{RESN_dir}/RESN_train_d{dim}_seed{seed}.pkl","rb"))
-                        RESN_test = pickle.load(open(f"{RESN_dir}/RESN_test_d{dim}_seed{seed}.pkl","rb"))
-                        if self.hparams.predicted_labels: RESN_pred = pickle.load(open(f"{RESN_dir}/RESN_preds_d{dim}_seed{seed}.pkl","rb"))
-                        else: RESN_pred = y_test
-                        euc_dist_M = euclidean_distances(RESN_test,RESN_train)
-                        RESN_NINOs = evals.get_NINO(euc_dist_M, y_train, RESN_pred, k=1)
-                        RESN_NIs, RESN_NOs = RESN_NINOs[:,0], RESN_NINOs[:,1]
-                        wins, _, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,0], RESN_NIs, self.hparams.weights, self.hparams.powers)
-                        NI_h2h.append((wins + ties*0.5)/len(y_test))
-                        wins, _, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,1], RESN_NOs, self.hparams.weights, self.hparams.powers)
-                        NO_h2h.append((wins + ties*0.5)/len(y_test))
-                    results[f"NI_h2h_d{dim}"] = np.array(NI_h2h).mean()
-                    results[f"NO_h2h_d{dim}"] = np.array(NO_h2h).mean()
+        return results
+
+    def syn_evals(self, z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test):
+        results = {}
+
+        ### decision support evals
+        to_log = ["NINO_ds_acc", "rNINO_ds_acc", "NIFO_ds_acc"]
+        syn_evals = evals.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test, 
+        self.hparams.weights, self.hparams.powers, k=1)
+        for eval in to_log: results[eval] = syn_evals[eval]
+
+        #### h2h evals
+        RESN_dir = "../data/embeds/" + self.hparams.resn_embed_dir
+        for dim in [50,512]:
+            NI_h2h, NO_h2h = [], []
+            for seed in range(3):
+                RESN_train = pickle.load(open(f"{RESN_dir}/RESN_train_d{dim}_seed{seed}.pkl","rb"))
+                RESN_test = pickle.load(open(f"{RESN_dir}/RESN_test_d{dim}_seed{seed}.pkl","rb"))
+                if self.hparams.predicted_labels: RESN_pred = pickle.load(open(f"{RESN_dir}/RESN_preds_d{dim}_seed{seed}.pkl","rb"))
+                else: RESN_pred = y_test
+                euc_dist_M = euclidean_distances(RESN_test,RESN_train)
+                RESN_NINOs = evals.get_NINO(euc_dist_M, y_train, RESN_pred, k=1)
+                RESN_NIs, RESN_NOs = RESN_NINOs[:,0], RESN_NINOs[:,1]
+                wins, _, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,0], RESN_NIs, self.hparams.weights, self.hparams.powers)
+                NI_h2h.append((wins + ties*0.5)/len(y_test))
+                wins, _, ties = evals.nn_comparison(syn_x_train, syn_x_test, syn_evals["NINOs"][:,1], RESN_NOs, self.hparams.weights, self.hparams.powers)
+                NO_h2h.append((wins + ties*0.5)/len(y_test))
+            results[f"NI_h2h_d{dim}"] = np.array(NI_h2h).mean()
+            results[f"NO_h2h_d{dim}"] = np.array(NO_h2h).mean()
 
         return results
 
@@ -279,8 +304,9 @@ class MTL(pl.LightningModule):
 
     def train_dataloader(self):
         triplets = torch.Tensor(self.train_triplets).long()
-        y_train = np.array([d[1] for d in self.train_dataset])
         if self.hparams.filter:
+            # y_train = np.array([d[1] for d in self.train_dataset])
+            _, y_train = self.sample_xs_ys(self.train_dataset)
             triplets = utils.filter_train_triplets(triplets, y_train)
 
         print(f"\n len_train: {len(triplets)}")
@@ -293,8 +319,9 @@ class MTL(pl.LightningModule):
         
     def val_dataloader(self):
         triplets = torch.Tensor(self.valid_triplets).long()
-        y_valid = np.array([d[1] for d in self.valid_dataset])
         if self.hparams.filter:
+            # y_valid = np.array([d[1] for d in self.valid_dataset])
+            _, y_valid = self.sample_xs_ys(self.valid_dataset)
             triplets = utils.filter_mixed_triplets(triplets, y_valid)
 
         print(f"\n len_valid: {len(triplets)}")
@@ -306,8 +333,9 @@ class MTL(pl.LightningModule):
 
     def test_dataloader(self):
         triplets = torch.Tensor(self.test_triplets).long()
-        y_test = np.array([d[1] for d in self.test_dataset])
         if self.hparams.filter:
+            # y_test = np.array([d[1] for d in self.test_dataset])
+            _, y_test = self.sample_xs_ys(self.test_dataset)
             triplets = utils.filter_mixed_triplets(triplets, y_test)
 
         print(f"\n len_test: {len(triplets)}")
@@ -326,8 +354,6 @@ def main():
 
     pl.seed_everything(configs["seed"])
     profiler = configs['profiler'] if 'profiler' in configs else None
-    # from pytorch_lightning.profiler import SimpleProfiler
-    # profiler = SimpleProfiler()
 
     model = MTL(profiler=profiler, **configs)
     monitor = "valid_total_loss"
