@@ -45,7 +45,7 @@ def test_configs(configs):
     training_args = ["max_epochs", "learning_rate","check_val_every_n_epoch",
         "train_batch_size", "triplet_batch_size"]
     dataset_args = ["train_dir", "valid_dir", "test_dir", "transform", "aug", "num_class", "syn"]
-    triplet_args = ["train_triplets", "valid_triplets", "test_triplets", "filtered"]
+    triplet_args = ["train_triplets", "valid_triplets", "test_triplets", "filter"]
     model_args = ["model", "embed_dim","pretrained", "lamda"]
     file_args = ["embeds_output_dir", "test_ckpt_path","out_csv"]
     ds_args = ["predicted_labels"]
@@ -132,10 +132,9 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
         train_params["distributed_backend"] = "ddp"
 
     ckpt_path = os.path.join(output_dir, logger.version, "checkpoints")
-    if args["checkpoint_callback"]:
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_path, filename="{epoch}-{valid_total_loss:.2f}", monitor=monitor, mode="min", save_last=True, save_top_k=3, verbose=True)
-        train_params["callbacks"] = extra_callbacks + [checkpoint_callback]
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(
+        dirpath=ckpt_path, filename="{epoch}-{valid_total_loss:.2f}", monitor=monitor, mode="min", save_last=True, save_top_k=3, verbose=True)
+    train_params["callbacks"] = extra_callbacks + [checkpoint_callback]
 
     trainer = pl.Trainer(
         auto_select_gpus=True,
@@ -149,21 +148,18 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
     if args["do_train"]:
         model.train()
         trainer.fit(model)
-        if args["checkpoint_callback"]:
-            target_path = os.path.join(ckpt_path, 'best_model.ckpt')
-            print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
-            shutil.copy(checkpoint_callback.best_model_path, target_path)
+        target_path = os.path.join(ckpt_path, 'best_model.ckpt')
+        print(f"Copy best model from {checkpoint_callback.best_model_path} to {target_path}.")
+        shutil.copy(checkpoint_callback.best_model_path, target_path)
 
     if args["do_test"]:
         model.eval()
         test_ckpt_path = args.test_ckpt_path if args.test_ckpt_path else 'best'
         trainer.test(model, ckpt_path=test_ckpt_path)
     
-    if args["checkpoint_callback"]:
-        ckpts = [f for f in os.listdir(ckpt_path)]
-        for ckpt in ckpts:
-            if ckpt != "best_model.ckpt":
-                os.remove(os.path.join(ckpt_path, ckpt))
+    if not args["checkpoint_callback"]:
+        for ckpt in [f for f in os.listdir(ckpt_path)]:  
+            os.remove(os.path.join(ckpt_path, ckpt))
 
     return trainer
 

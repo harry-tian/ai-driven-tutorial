@@ -17,3 +17,6 @@ wandb_entity: ai-driven-tutorial
 wandb_group: null
 wandb_project : null
 wandb_name : null
+
+
+predicted_labels: True
