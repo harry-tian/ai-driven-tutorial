@@ -12,7 +12,7 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
-DATA=wv_linear_sm_0
+DATA=wv_linear_mm
 
 python main.py \
     --dataset_config=configs/$DATA/dataset.yaml \
@@ -34,7 +34,7 @@ python main.py \
 #     --embeds_output_dir=$DATA"_RESN" \
 #     --embed_dim=$1
 
-# DIMS=(50 512); for i in {0..1}; do for seed in {0..2}; do sbatch RESN.sh "${DIMS[i]}" $seed; done; done;
+# DIMS=(50 512); for i in {0..1}; do for seed in {0..2}; do sbatch RESN.sh "${DIMS[i]}" $seed; done; done
 
 # DIMS=(50 512)
 # for i in {0..1}

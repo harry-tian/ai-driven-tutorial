@@ -59,6 +59,8 @@ class MTL(pl.LightningModule):
             self.syn_x_train = pickle.load(open(self.hparams.train_synthetic, "rb"))
             self.syn_x_valid = pickle.load(open(self.hparams.valid_synthetic, "rb"))
             self.syn_x_test = pickle.load(open(self.hparams.test_synthetic, "rb"))
+        if self.hparams.resn_embed_dir is not None:
+            self.test_resn_embeds()
         self.valid_embeds = None
         self.test_embeds = None
 
@@ -296,6 +298,14 @@ class MTL(pl.LightningModule):
             results[f"NO_h2h_d{dim}"] = np.array(NO_h2h).mean()
 
         return results
+
+    def test_resn_embeds(self):
+        RESN_dir = "../data/embeds/" + self.hparams.resn_embed_dir
+        for dim in [50,512]:
+            for seed in range(3):
+                RESN_train = pickle.load(open(f"{RESN_dir}/RESN_train_d{dim}_seed{seed}.pkl","rb"))
+                RESN_test = pickle.load(open(f"{RESN_dir}/RESN_test_d{dim}_seed{seed}.pkl","rb"))
+                if self.hparams.predicted_labels: RESN_pred = pickle.load(open(f"{RESN_dir}/RESN_preds_d{dim}_seed{seed}.pkl","rb"))
 
     def trips_corr(self, a, p, n):
         dap = F.pairwise_distance(a, p)

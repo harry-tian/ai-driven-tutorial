@@ -10,7 +10,7 @@ sys.path.insert(0, '/net/scratch/tianh/explain_teach')
 from utils import utils
 
 
-data = "wv_linear_sm"
+data = "wv_linear_mm"
 
 
 out = f"../results/syn_results/{data}"
