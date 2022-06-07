@@ -12,7 +12,7 @@
 #SBATCH --mem=10G
 #SBATCH --exclude=aa[001-002]
 
-DATA=wv_linear_sm
+DATA=wv_linear_sm_0
 
 python main.py \
     --dataset_config=configs/$DATA/dataset.yaml \

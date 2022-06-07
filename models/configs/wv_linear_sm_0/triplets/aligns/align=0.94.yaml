@@ -1,0 +1,13 @@
+wandb_project: wv_linear_sm_0_aligns
+wandb_group: align=0.94
+train_triplets: /net/scratch/tianh/explain_teach/data/datasets/wv_linear_sm_0/triplets/align=0.94/train_triplets.pkl
+valid_triplets: /net/scratch/tianh/explain_teach/data/datasets/wv_linear_sm_0/triplets/align=0.94/valid_triplets.pkl
+test_triplets: /net/scratch/tianh/explain_teach/data/datasets/wv_linear_sm_0/triplets/align=0.94/test_triplets.pkl
+weights:
+- 32
+- 128
+- 1
+- 1
+powers:
+- 2
+- 2
