@@ -19,10 +19,20 @@ python main.py \
     --model_config=configs/models/RESN.yaml \
     --triplet_config=configs/$DATA/triplets/aligns/align=0.94.yaml \
     --overwrite_config=configs/unfiltered.yaml \
-    --seed=$2 \
+    --seed=1 \
     --wandb_project=$DATA"_RESN" \
     --embeds_output_dir=$DATA"_RESN" \
-    --embed_dim=$1
+    --embed_dim=512
+
+# python main.py \
+#     --dataset_config=configs/$DATA/dataset.yaml \
+#     --model_config=configs/models/RESN.yaml \
+#     --triplet_config=configs/$DATA/triplets/aligns/align=0.94.yaml \
+#     --overwrite_config=configs/unfiltered.yaml \
+#     --seed=$2 \
+#     --wandb_project=$DATA"_RESN" \
+#     --embeds_output_dir=$DATA"_RESN" \
+#     --embed_dim=$1
 
 # DIMS=(50 512); for i in {0..1}; do for seed in {0..2}; do sbatch RESN.sh "${DIMS[i]}" $seed; done; done;
 

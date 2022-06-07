@@ -56,7 +56,7 @@ for dim in [50,512]:
     for col in config_cols + eval_cols:
         if col not in align_results.columns: align_results[col] = [None]*len(align_results)
 
-    dir = f"out/d={dim}"
+    dir = f"{out}/d={dim}"
     pathlib.Path(dir).mkdir(parents=True, exist_ok=True)
     align_results.to_csv(f"{dir}/RESN.csv",index=False)
 
