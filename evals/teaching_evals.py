@@ -11,31 +11,49 @@ import matplotlib.pyplot as plt
 # import math, pickle
 np.random.seed(42)
 import sys, pickle
-sys.path.insert(0,'..')
+# sys.path.insert(0,'..')
 from sklearn.metrics.pairwise import euclidean_distances
+from collections import Counter
 
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
-y_train = np.array([0]*80+[1]*80)
-y_valid = np.array([0]*20+[1]*20)
-full_idx = np.arange(160)
 
-def get_full_random(data,m_range):
-    x_train, y_train, x_valid, y_valid = data
-    return get_knn_score(x_train, y_train, x_valid, y_valid), get_random_knn_scores(data, m_range)
+
+def get_knn_score_lpips(lpips_dist, teaching_idx, y_train, y_test, k=1):
+    ''' Takes lpips_dist, a distance matrix in the shape of (len(y_train), len(y_test)) '''
+    assert(lpips_dist.shape == (len(y_train), len(y_test)))
+    assert(len(teaching_idx) > 0 and len(teaching_idx) <= len(y_train))
+    assert(min(teaching_idx) >= 0 and max(teaching_idx) <= max(y_train))
+
+    return get_knn_score_dist(lpips_dist[teaching_idx].T, y_train, y_test, k=k)
+
+def get_knn_score_dist(dist_M, y_train, y_test, k=1):
+    assert(len(y_test)==len(dist_M))
+    correct = 0
+    for y, dists in zip(y_test, dist_M):
+        nn_idx = np.argsort(dists)[:k]
+        nns = y_train[nn_idx] 
+        if Counter(nns).most_common(1)[0][0] == y: 
+            correct += 1
+
+    return correct/len(y_test)
+
+# def get_full_random(data,m_range):
+#     x_train, y_train, x_valid, y_test = data
+#     return get_knn_score(x_train, y_train, x_valid, y_test), get_random_knn_scores(data, m_range)
 
 def get_random_knn_scores(data, m_range, k=1, n_trials=100):
     def get_ci(samples, confidence=0.95):
         return 2 * stats.sem(samples) * stats.t.ppf((1 + confidence) / 2., len(samples)-1)
 
-    x_train, y_train, x_valid, y_valid = data
+    x_train, y_train, x_valid, y_test = data
     random_knn_scores = []
     for m in m_range:
         knn_scores = []
         i = 0
         while i < n_trials:
-            random_idx = np.random.choice(full_idx, m, replace=False)
+            random_idx = np.random.choice(np.arange(len(y_train)), m, replace=False)
             if len(np.unique(y_train[random_idx])) < 2: continue
-            knn_scores.append(get_knn_score(x_train[random_idx], y_train[random_idx],x_valid, y_valid, k=k))
+            knn_scores.append(get_knn_score(x_train[random_idx], y_train[random_idx],x_valid, y_test, k=k))
             i += 1
 
         random_knn_scores.append(np.array(knn_scores))
@@ -46,52 +64,39 @@ def get_random_knn_scores(data, m_range, k=1, n_trials=100):
 
     return random_knn_scores, random_knn_ci
 
-def get_knn_score(x_train, y_train, x_valid, y_valid, 
+def get_knn_score(x_train, y_train, x_valid, y_test, 
                 k=1, metric="acc", weights="uniform"):
     knc = KNeighborsClassifier(n_neighbors=k, weights=weights)
     knc.fit(x_train, y_train)
     if metric == 'auc':
         probs = knc.predict_proba(x_valid)
         probs = probs[:, 1] if probs.shape[1] > 1 else probs
-        score = roc_auc_score(y_valid, probs)
+        score = roc_auc_score(y_test, probs)
     else:
-        score = knc.score(x_valid, y_valid)
+        score = knc.score(x_valid, y_test)
     return score
-
-
-def human_1NN_align(embeds, proto_idx):
-    human_embs = pickle.load(open("data/embeds/bm/human/TN_train_emb10.pkl","rb"))
-    assert(len(embeds) == len(human_embs))
-
-    correct = 0
-    total = 0
-    human_embs = human_embs[proto_idx]
-    embeds = embeds[proto_idx]
-    for idx in range(len(proto_idx)):
-        total += 1
-        if get_1nn(human_embs, idx) == get_1nn(embeds, idx):
-            correct += 1
-    
-    return correct/total
 
 def get_1nn(data, index):
     dist = euclidean_distances(data)
     return np.argsort(dist[index])[1]
 
-# def get_lpips_knn_score(prototype_idx=full_idx, k=1):
-#     lpips = pickle.load(open("data/embeds/lpips/lpips.bm.trxvl.pkl","rb"))
-        
-#     dists = lpips[prototype_idx].T
-#     total = len(y_valid)
-#     assert(total==len(dists))
-#     correct = 0
-#     for y, dist in zip(y_valid, dists):
-#         nn_idx = np.argmin(dist)
-#         if y_train[prototype_idx][nn_idx] == y: correct += 1
 
+# def human_1NN_align(embeds, proto_idx):
+#     human_embs = pickle.load(open("data/embeds/bm/human/TN_train_emb10.pkl","rb"))
+#     assert(len(embeds) == len(human_embs))
+
+#     correct = 0
+#     total = 0
+#     human_embs = human_embs[proto_idx]
+#     embeds = embeds[proto_idx]
+#     for idx in range(len(proto_idx)):
+#         total += 1
+#         if get_1nn(human_embs, idx) == get_1nn(embeds, idx):
+#             correct += 1
+    
 #     return correct/total
 
-# def get_euc_knn_score(x_train, y_train, x_valid, y_valid, prototype_idx,
+# def get_euc_knn_score(x_train, y_train, x_valid, y_test, prototype_idx,
 #                     k=1, metric="acc", weights="uniform"):
 #     x_train, y_train = x_train[prototype_idx], y_train[prototype_idx]
 #     knc = KNeighborsClassifier(n_neighbors=k, weights=weights)
@@ -99,9 +104,9 @@ def get_1nn(data, index):
 #     if metric == 'auc':
 #         probs = knc.predict_proba(x_valid)
 #         probs = probs[:, 1] if probs.shape[1] > 1 else probs
-#         score = roc_auc_score(y_valid, probs)
+#         score = roc_auc_score(y_test, probs)
 #     else:
-#         score = knc.score(x_valid, y_valid)
+#         score = knc.score(x_valid, y_test)
 #     return score
 
 
@@ -112,18 +117,18 @@ def get_1nn(data, index):
 #     elif knn_f == "lpips":
 #         knn_f = get_lpips_knn_score
 
-#     x_train, y_train, x_valid, y_valid = data
+#     x_train, y_train, x_valid, y_test = data
     
-#     full_knn_score = knn_f(x_train, y_train, x_valid, y_valid, np.arange(len(x_train)), k, metric=knn_metric)
-#     random_knn_scores, random_knn_ci = get_random_knn_scores(x_train, y_train, x_valid, y_valid, knn_f,
+#     full_knn_score = knn_f(x_train, y_train, x_valid, y_test, np.arange(len(x_train)), k, metric=knn_metric)
+#     random_knn_scores, random_knn_ci = get_random_knn_scores(x_train, y_train, x_valid, y_test, knn_f,
 #                                                                 k=k, metric=knn_metric, m_range=m_range)
-#     global_prototype_knn_scores_LK = get_global_prototype_knn_scores(x_train, y_train, x_valid, y_valid, knn_f,
+#     global_prototype_knn_scores_LK = get_global_prototype_knn_scores(x_train, y_train, x_valid, y_test, knn_f,
 #                                                                 k=k, metric=knn_metric, m_range=m_range, 
 #                                                                 selection_alg=selection_alg, kernel="Linear")
-#     # global_prototype_knn_scores_RBFK = get_global_prototype_knn_scores(x_train, y_train, x_valid, y_valid, knn_f,
+#     # global_prototype_knn_scores_RBFK = get_global_prototype_knn_scores(x_train, y_train, x_valid, y_test, knn_f,
 #     #                                                             k=k, metric=knn_metric, m_range=m_range, 
 #     #                                                             selection_alg=selection_alg, kernel="Gaussian")
-#     # local_prototype_knn_scores = get_local_prototype_knn_scores(x_train, y_train, x_valid, y_valid, k, m_range, selection_alg)
+#     # local_prototype_knn_scores = get_local_prototype_knn_scores(x_train, y_train, x_valid, y_test, k, m_range, selection_alg)
 
 #     print(f"full_knn_score: {full_knn_score}")
 #     print(f"random_knn_scores: {random_knn_scores}")
@@ -133,24 +138,24 @@ def get_1nn(data, index):
 #     return full_knn_score, (random_knn_scores, random_knn_ci), global_prototype_knn_scores_LK #, global_prototype_knn_scores_RBFK , local_prototype_knn_scores
 
 
-# def get_lpips_1nn_score(x_train, y_train, x_valid, y_valid, lpips_distM):
-#     if lpips_distM.shape != (len(y_valid), len(y_train)):
+# def get_lpips_1nn_score(x_train, y_train, x_valid, y_test, lpips_distM):
+#     if lpips_distM.shape != (len(y_test), len(y_train)):
 #         lpips_distM = lpips_distM.T
-#     assert(lpips_distM.shape==(len(y_valid), len(y_train)))
+#     assert(lpips_distM.shape==(len(y_test), len(y_train)))
 
-#     total = len(y_valid)
+#     total = len(y_test)
 #     correct = 0
-#     for x, y, dists in zip(x_valid, y_valid, lpips_distM):
+#     for x, y, dists in zip(x_valid, y_test, lpips_distM):
 #         nn_idx = np.argmin(lpips_distM)
 #         if y_train[nn_idx] == y: correct += 1
 
 #     return correct/total
 
-# def get_knn_scores_krange(x_train, y_train, x_valid, y_valid, k_range):
-#     f_scores_knn = [get_knn_score(x_train, y_train, x_valid, y_valid, k=k) for k in k_range]
+# def get_knn_scores_krange(x_train, y_train, x_valid, y_test, k_range):
+#     f_scores_knn = [get_knn_score(x_train, y_train, x_valid, y_test, k=k) for k in k_range]
 #     return np.array(f_scores_knn) 
 
-# def get_local_prototype_knn_scores(x_train, y_train, x_valid, y_valid, k, m_range, selection_alg):
+# def get_local_prototype_knn_scores(x_train, y_train, x_valid, y_test, k, m_range, selection_alg):
 #     if selection_alg == "protodash":
 #         selection_alg = protodash
 
@@ -165,7 +170,7 @@ def get_1nn(data, index):
 #         # print(global_prototypes_byclass)
 #         correct = 0
 #         for i, x in enumerate(x_valid):
-#             x, y = x_valid[i], y_valid[i]
+#             x, y = x_valid[i], y_test[i]
 #             local_prototype_idx = []
 #             for prototypes_idx in global_prototypes_byclass:
 #                 local_prototype_idx.append(get_nearest_prototype(x_train, prototypes_idx, x))
@@ -183,10 +188,10 @@ def get_1nn(data, index):
 #     # print(nearest_prototype_idx)
 #     return nearest_prototype_idx
 
-# def get_1nn_score(x_train, y_train, x_valid, y_valid, dist_f=euc_dist):
-#     total = len(y_valid)
+# def get_1nn_score(x_train, y_train, x_valid, y_test, dist_f=euc_dist):
+#     total = len(y_test)
 #     correct = 0
-#     for x, y in zip(x_valid, y_valid):
+#     for x, y in zip(x_valid, y_test):
 #         nn_idx = get_1nn(x_train, x, dist_f)
 #         if y_train[nn_idx] == y: correct += 1
 
