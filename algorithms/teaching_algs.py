@@ -2,14 +2,16 @@
 import sys, pickle
 sys.path.insert(0,'..')
 from aix360.algorithms.protodash import ProtodashExplainer
+from algorithms.pdash import pdash
 from algorithms.pdash import proto_g
 import numpy as np
 from algorithms.selection import tripet_greedy, nn_greedy
 
 def protodash(X, m, args=None):
-    kernel = args["kernel"] if args else "Gaussian"
-    protodash = ProtodashExplainer()
-    _, prototype_idx, _ = protodash.explain(X, X, m=m, kernelType=kernel)
+    # kernel = args["kernel"] if args else "Gaussian"
+    # protodash = ProtodashExplainer()
+    # _, prototype_idx, _ = protodash.explain(X, X, m=m, kernelType=kernel)
+    _, prototype_idx, _ = pdash(X, X, m=m, kernelType="Gaussian")
     return prototype_idx
 
 def protogreedy(X, m, args=None):
