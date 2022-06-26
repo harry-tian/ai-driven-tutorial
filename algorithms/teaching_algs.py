@@ -17,6 +17,14 @@ def protodash(X, m, args=None):
 def protogreedy(X, m, args=None):
     return proto_g(X, np.arange(len(X)), m)
 
+def random(X, m, args=None):
+    return np.random.choice(np.arange(len(X)), m, replace=False)
+
+
+
+
+
+
 def tripetgreedy(X, m, args=None):
     try:
         topk = args["topk"]
@@ -31,9 +39,6 @@ def tripetgreedy(X, m, args=None):
     except: 
         y_train = np.array([0]*80+[1]*80)
     return list(tripet_greedy(X, m, triplets, labels=y_train, topk=topk, verbose=False)[0])
-
-def random(X, m, args=None):
-    return np.random.choice(np.arange(len(X)), m, replace=False)
 
 def nngreedy(embeds, m, labels):
     return list(nn_greedy(embeds, m, labels)[0])

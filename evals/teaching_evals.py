@@ -20,11 +20,11 @@ def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y
 
 def get_knn_score_lpips(lpips_dist, teaching_idx, y_train, y_test, k=1):
     ''' Takes lpips_dist, a distance matrix in the shape of (len(y_train), len(y_test)) '''
-    assert(lpips_dist.shape == (len(y_train), len(y_test)))
+    assert(lpips_dist.shape == (len(y_test), len(y_train)))
     assert(len(teaching_idx) > 0 and len(teaching_idx) <= len(y_train))
-    assert(min(teaching_idx) >= 0 and max(teaching_idx) <= max(y_train))
+    assert(min(teaching_idx) >= 0 and max(teaching_idx) <= len(y_train))
 
-    return get_knn_score_dist(lpips_dist[teaching_idx].T, y_train, y_test, k=k)
+    return get_knn_score_dist(lpips_dist[:,teaching_idx], y_train[teaching_idx], y_test, k=k)
 
 def get_knn_score_dist(dist_M, y_train, y_test, k=1):
     assert(len(y_test)==len(dist_M))
@@ -32,7 +32,8 @@ def get_knn_score_dist(dist_M, y_train, y_test, k=1):
     for y, dists in zip(y_test, dist_M):
         nn_idx = np.argsort(dists)[:k]
         nns = y_train[nn_idx] 
-        if Counter(nns).most_common(1)[0][0] == y: 
+        y_hat = Counter(nns).most_common(1)[0][0]
+        if y_hat == y: 
             correct += 1
 
     return correct/len(y_test)
