@@ -21,50 +21,31 @@ nets = ["alex","vgg","squeeze"]
 # nets = ["vgg","squeeze"]
 
 
-lpips_path = "/net/scratch/tianh/ai-driven-tutorial/data/dist/lpips"
-data_path = "/net/scratch/tianh/ai-driven-tutorial/data/datasets"
+lpips_path = f"/net/scratch/tianh/ai-driven-tutorial/data/dist/lpips/{dataset}"
+data_path = f"/net/scratch/tianh/ai-driven-tutorial/data/datasets/{dataset}"
 
 
-train_dataset = torchvision.datasets.ImageFolder(f"{data_path}/{dataset}/train", transform=transform)
-valid_dataset = torchvision.datasets.ImageFolder(f"{data_path}/{dataset}/valid", transform=transform)
-test_dataset = torchvision.datasets.ImageFolder(f"{data_path}/{dataset}/test", transform=transform)
+train_dataset = torchvision.datasets.ImageFolder(f"{data_path}/train", transform=transform)
+valid_dataset = torchvision.datasets.ImageFolder(f"{data_path}/valid", transform=transform)
+test_dataset = torchvision.datasets.ImageFolder(f"{data_path}/test", transform=transform)
 train_batch_size = len(train_dataset) if not batch_size else batch_size 
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=train_batch_size)
 
 for net in nets:
     loss_fn = lpips.LPIPS(net=net).cuda()
 
-    def get_dist(a, bs):
-        if batch_size:
-            dabs = []
-            for i, b in enumerate(train_loader):
-                a, b = a.cuda(), b[0].cuda()
-                dabs.append(loss_fn.forward(a, b, normalize=True).cpu().numpy().ravel())
-            dabs = np.hstack(dabs)
-        else:
-            dl = torch.utils.data.DataLoader(bs, batch_size=len(bs))
-            bs = next(iter(dl))[0]
-            a, bs = a.cuda(), bs.cuda()
-            dabs = loss_fn.forward(a, bs, normalize=True).cpu().numpy().ravel()
-        return dabs
+    def get_dist(dist_fn, target, train_loader):
+        dist = [dist_fn.forward(target.cuda(), train[0].cuda(), normalize=True).cpu().numpy().ravel() for train in train_loader]
+        return np.hstack(dist)
 
-    with torch.no_grad():
-        train, valid, test = [], [], []
-        for i, batch in tqdm(enumerate(train_dataset)):
-            train.append(get_dist(batch[0], train_dataset))
-        print("train finished")
-        for i, batch in tqdm(enumerate(valid_dataset)):
-            valid.append(get_dist(batch[0], train_dataset))
-        print("valid finished")
-        for i, batch in tqdm(enumerate(test_dataset)):
-            test.append(get_dist(batch[0], train_dataset))
-        print("test finished")
+    for split, dataset in [("train", train_dataset), ("valid", valid_dataset)]:
+    # for split, dataset in [("test", test_dataset)]:
+        with torch.no_grad():
+            dists = []
+            for x,y in dataset:
+                dists.append(get_dist(loss_fn, x, train_loader))
+            print(f"{split} finished")
 
-    train = np.vstack(train)
-    valid = np.vstack(valid)
-    test = np.vstack(test)
-    print(train.shape, valid.shape, test.shape)
-    pathlib.Path(lpips_path).mkdir(parents=True, exist_ok=True)
-    pickle.dump(train, open(f"{lpips_path}/{dataset}/lpips.{net}.train.pkl", "wb"))
-    pickle.dump(valid, open(f"{lpips_path}/{dataset}/lpips.{net}.valid.pkl", "wb"))
-    pickle.dump(test, open(f"{lpips_path}/{dataset}/lpips.{net}.test.pkl", "wb"))
+        dists = np.vstack(dists)
+        pathlib.Path(lpips_path).mkdir(parents=True, exist_ok=True)
+        pickle.dump(dists, open(f"{lpips_path}/lpips.{net}.{split}.pkl", "wb"))
