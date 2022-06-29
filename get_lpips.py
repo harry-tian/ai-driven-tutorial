@@ -38,8 +38,8 @@ for net in nets:
         dist = [dist_fn.forward(target.cuda(), train[0].cuda(), normalize=True).cpu().numpy().ravel() for train in train_loader]
         return np.hstack(dist)
 
-    for split, dataset in [("train", train_dataset), ("valid", valid_dataset)]:
-    # for split, dataset in [("test", test_dataset)]:
+    # for split, dataset in [("train", train_dataset), ("valid", valid_dataset)]:
+    for split, dataset in [("test", test_dataset)]:
         with torch.no_grad():
             dists = []
             for x,y in dataset:

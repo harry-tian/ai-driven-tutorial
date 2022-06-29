@@ -2,8 +2,8 @@
 train_dir : ../data/datasets/bird/train
 valid_dir : ../data/datasets/bird/valid
 test_dir : ../data/datasets/bird/test
-num_class : 3
+num_class : 2
 transform : bird
-train_batch_size: 100
+train_batch_size: 30
 
 dataset: bird
