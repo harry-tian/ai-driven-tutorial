@@ -2,8 +2,7 @@
 import sys, pickle
 sys.path.insert(0,'..')
 # from aix360.algorithms.protodash import ProtodashExplainer
-from algorithms.pdash import pdash
-from algorithms.pdash import proto_g
+from algorithms import pdash
 import numpy as np
 from algorithms.selection import tripet_greedy, nn_greedy
 from sklearn_extra.cluster import KMedoids
@@ -15,14 +14,11 @@ def find_idx(X, target):
     return -1
 
 def protodash(X, m, args=None):
-    # kernel = args["kernel"] if args else "Gaussian"
-    # protodash = ProtodashExplainer()
-    # _, prototype_idx, _ = protodash.explain(X, X, m=m, kernelType=kernel)
-    _, prototype_idx, _ = pdash(X, X, m=m, kernelType="Gaussian")
+    _, prototype_idx, _ = pdash.pdash(X, X, m=m, kernelType="Gaussian")
     return prototype_idx
 
 def protogreedy(X, m, args=None):
-    return proto_g(X, np.arange(len(X)), m)
+    return pdash.proto_g(X, np.arange(len(X)), m)
 
 def random(X, m, args=None):
     return np.random.choice(np.arange(len(X)), m, replace=False)

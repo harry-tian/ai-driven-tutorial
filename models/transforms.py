@@ -5,6 +5,7 @@ def shrink(d):
         transforms.Resize(d),
         transforms.ToTensor(),
     ])
+    
 def get_transform(transform, aug=True):
     if transform == "bm":
         return bm_transform_aug() if aug else bm_transform()

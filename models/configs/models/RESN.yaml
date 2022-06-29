@@ -17,3 +17,5 @@ train_batch_size : 30
 triplet_batch_size : 200
 lamda : 1
 pretrained: True
+
+resn_embed_dir: resn

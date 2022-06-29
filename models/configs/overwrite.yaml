@@ -1,0 +1,9 @@
+wandb_mode : online
+wandb_entity: harry-tian
+wandb_project : resn
+wandb_group: null
+wandb_name : null
+
+max_epochs: 10
+train_batch_size: 30
+embed_dim: 512
