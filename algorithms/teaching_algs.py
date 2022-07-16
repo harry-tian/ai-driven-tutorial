@@ -28,6 +28,44 @@ def k_medoids(X, m):
     centers = kmedoids.cluster_centers_
     return np.array([find_idx(X,c) for c in centers])
 
+### contrastive selection
+def protodash_contrastive(X, Y, m):
+    return select_contrastive(X, Y, m, protodash)
+
+def kmedoids_contrastive(X, Y, m):
+    return select_contrastive(X, Y, m, k_medoids)
+    
+def random_contrastive(X, Y, m):
+    return select_contrastive(X, Y, m, random)
+
+def select_contrastive(X, Y, m, alg):
+    assert(m%2==0)
+    classes = np.unique(Y)
+    c0 = np.where(Y==classes[0])[0]
+    c1 = np.where(Y==classes[1])[0]
+    
+    return c0[alg(X[c0], m//2)], c1[alg(X[c1], m//2)]
+
+
+### grouping policies
+def group_min(X, S1, S2):
+    assert(len(S1)==len(S2))
+
+
+def group_max(X, S1, S2):
+    assert(len(S1)==len(S2))
+    cands = []
+    for s1 in S1:
+        for s2 in S2:
+            return
+
+
+def group_random(X, S1, S2):
+    assert(len(S1)==len(S2))
+    S2 = np.random.choice(S2, len(S2), replace=False)
+    pairs = np.array([[s1, s2] for s1,s2 in zip(S1, S2)])
+    return pairs
+
 
 
 def tripetgreedy(X, m, args=None):

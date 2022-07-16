@@ -16,10 +16,15 @@ from sklearn.metrics.pairwise import euclidean_distances
 from collections import Counter
 
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
+def most_common(X, k=1): return Counter(X).most_common(k)[0][0]
+def label_of(x, Y): 
+    classes = np.unique(Y)
+    idx_by_class = {c: np.where(Y==c)[0] for c in classes}
+    return classes[[x in idx for idx in idx_by_class.values()].index(True)]
 
 
 def get_knn_score_lpips(lpips_dist, teaching_idx, y_train, y_test, k=1):
-    ''' Takes lpips_dist, a distance matrix in the shape of (len(y_train), len(y_test)) '''
+    ''' Takes lpips_dist, a distance matrix in the shape of (len(y_test), len(y_train)) '''
     assert(lpips_dist.shape == (len(y_test), len(y_train)))
     assert(len(teaching_idx) > 0 and len(teaching_idx) <= len(y_train))
     assert(min(teaching_idx) >= 0 and max(teaching_idx) <= len(y_train))
@@ -32,11 +37,26 @@ def get_knn_score_dist(dist_M, y_train, y_test, k=1):
     for y, dists in zip(y_test, dist_M):
         nn_idx = np.argsort(dists)[:k]
         nns = y_train[nn_idx] 
-        y_hat = Counter(nns).most_common(1)[0][0]
+        y_hat = most_common(nns)
         if y_hat == y: 
             correct += 1
 
     return correct/len(y_test)
+
+def get_CV_score(dist_M, pairs, y_train, y_test):
+    correct = 0
+    for y, dists in zip(y_test, dist_M):
+        votes = []
+        for pair in pairs:
+            nn = pair[np.argmin(dists[pair])] # nn to y within the pair
+            votes.append(label_of(nn, y_train)) 
+        y_hat = most_common(votes)
+        if y_hat == y: 
+            correct += 1
+
+    return correct/len(y_test)
+
+
 
 # def get_full_random(data,m_range):
 #     x_train, y_train, x_valid, y_test = data
