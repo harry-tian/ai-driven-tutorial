@@ -16,8 +16,50 @@ def sample_mixed_triplets(test_idx, train_idx, num_triplets):
         if triplet not in triplets: triplets.append(triplet)
     return triplets
 
-# sys.path.insert(0, '..')
-# import evals.embed_evals as evals
+def sample_triplets_distM(distM, num):
+    a_indices = np.arange(len(distM))
+    pn_indices = np.arange(len(distM))
+    book_keeper = {x:[] for x in pn_indices}
+
+    triplets = []
+    a = 0
+    count = 0
+    while count < num:
+        p,n = np.random.choice(pn_indices, 2, replace=False)
+        while p == n or set([p,n]) in book_keeper[a]:
+            p,n = np.random.choice(pn_indices, 2, replace=False)
+
+        book_keeper[a].append(set([p,n]))
+
+        triplets.append([a,p,n])
+        count += 1
+        a += 1
+        if a >= len(a_indices):
+            a = 0
+    return np.array(triplets)
+
+def sample_mixed_triplets_distM(distM, num):
+    a_indices = np.arange(min(distM.shape))
+    pn_indices = np.arange(max(distM.shape))
+    book_keeper = {x:[] for x in a_indices}
+
+    triplets = []
+    a = 0
+    count = 0
+    while count < num:
+        p,n = np.random.choice(pn_indices, 2, replace=False)
+        while p == n or set([p,n]) in book_keeper[a]:
+            p,n = np.random.choice(pn_indices, 2, replace=False)
+
+        book_keeper[a].append(set([p,n]))
+
+        triplets.append([a,p,n])
+        count += 1
+        a += 1
+        if a >= len(a_indices):
+            a = 0
+
+    return np.array(triplets)
 
 def weightedPdist(a, b, w, power=2):
     """ Han's faster version"""

@@ -1,4 +1,5 @@
 
+from math import factorial
 import sys, pickle
 sys.path.insert(0,'..')
 # from aix360.algorithms.protodash import ProtodashExplainer
@@ -6,6 +7,7 @@ from algorithms import pdash
 import numpy as np
 from algorithms.selection import tripet_greedy, nn_greedy
 from sklearn_extra.cluster import KMedoids
+def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
 def find_idx(X, target):
     for i, x in enumerate(X):
@@ -51,13 +53,28 @@ def select_contrastive(X, Y, m, alg):
 def group_min(X, S1, S2):
     assert(len(S1)==len(S2))
 
+    # random search
+    total = factorial(len(S1)) * len(S1)
+    min_dist = np.inf
+    for _ in range(total):
+        pairs = group_random(X, S1, S2)
+        dist = pair_dist_sum(X, pairs)
+        if dist < min_dist:
+            min_dist_pair = pairs
+    return min_dist_pair
 
 def group_max(X, S1, S2):
     assert(len(S1)==len(S2))
-    cands = []
-    for s1 in S1:
-        for s2 in S2:
-            return
+
+    # random search
+    total = factorial(len(S1)) * len(S1)
+    max_dist = -np.inf
+    for _ in range(total):
+        pairs = group_random(X, S1, S2)
+        dist = pair_dist_sum(X, pairs)
+        if dist > max_dist:
+            max_dist_pair = pairs
+    return max_dist_pair
 
 
 def group_random(X, S1, S2):
@@ -65,6 +82,9 @@ def group_random(X, S1, S2):
     S2 = np.random.choice(S2, len(S2), replace=False)
     pairs = np.array([[s1, s2] for s1,s2 in zip(S1, S2)])
     return pairs
+
+def pair_dist_sum(X, pairs):
+        return np.array([euc_dist(X[pair[0]], X[pair[1]]) for pair in pairs]).sum()
 
 
 

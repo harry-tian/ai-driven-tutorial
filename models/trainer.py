@@ -144,7 +144,7 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
         profiler=profiler,
         num_sanity_val_steps=num_sanity_val_steps,
         **train_params)
-
+    # if True:
     try: 
         if args["do_train"]:
             model.train()
@@ -157,7 +157,8 @@ def generic_train(model, args, monitor, profiler=None, num_sanity_val_steps=2,
             model.eval()
             test_ckpt_path = args.test_ckpt_path if args.test_ckpt_path else 'best'
             trainer.test(model, ckpt_path=test_ckpt_path)
-            
+    except Exception as e:
+        print(e)
     finally:
         if not args["checkpoint_callback"]:
             print(f"removing checkpoints in {ckpt_path}")
