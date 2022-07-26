@@ -11,13 +11,5 @@ model/results
 
 .vscode/
 
-data/datasets/bm
-data/datasets/weevil_vespula
-data/datasets/wv_3d
-data/datasets/wv_3d_linear
-
-data/embeds/wv_3d_alignments/
-data/embeds/wv_3d_alignments_filtered/
-data/embeds/wv_3d_noisy/
-data/embeds/
+data/datasets
 

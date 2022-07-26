@@ -29,7 +29,7 @@ def proto_g(X, candidate_indices, m, is_K_sparse=False, gamma=0.125, K=None):
 
     selected = np.array([], dtype=int)
     value = np.array([])
-    for i in range(m):
+    for _ in range(m):
         maxx = -sys.float_info.max
         argmax = -1
         candidates = np.setdiff1d(range(n), selected)
@@ -293,7 +293,7 @@ def pdash(X, Y, m, kernelType="other", sigma=2):
 
     while sizeS < m:
 
-        remainingElements = np.setdiff1d(allY, S[0:sizeS])
+        remainingElements = np.setdiff1d(allY, S[:sizeS])
 
         newCurrSetValue = currSetValue
         maxGradient = 0
