@@ -8,7 +8,7 @@ from models import transforms
 
 
 
-dataset = "bm"
+dataset = "bird"
 transform = transforms.bird_transform()
 batch_size = 10
 

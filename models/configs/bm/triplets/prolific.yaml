@@ -1,0 +1,16 @@
+### Wandb args
+wandb_mode: online
+wandb_project : prolific
+wandb_group : bm 
+
+### triplet data
+train_triplets : ../data/triplets/bm/prolific/train_triplets.pkl
+valid_triplets : ../data/triplets/bm/prolific/valid_triplets.pkl
+test_triplets : ../data/triplets/bm/prolific/test_triplets.pkl
+
+### overwrite args
+dataloader_num_workers: 4
+embed_dim: 50
+max_epochs: 50
+pretrained: True
+embeds_output_dir: ../data/embeds/prolific/bm

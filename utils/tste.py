@@ -133,6 +133,9 @@ def tste(triplets, no_dims=2, lamb=0, alpha=None, use_log=True,verbose=False, ma
 
     if save_each_iteration:
         return iteration_Xs
+
+    print(get_triplet_acc(best_X, triplets))
+
     return best_X
 
 def tste_grad_python(X, N, no_dims, triplets, lamb, alpha, use_log):
@@ -247,3 +250,16 @@ if USING_THEANO:
 
     tste_grad_theano_log = make_theano_evaluator(use_log=True)
     tste_grad_theano = make_theano_evaluator(use_log=False)
+
+def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
+
+def get_triplet_acc(embeds, triplets, dist_f=euc_dist):
+    ''' Return triplet accuracy given ground-truth triplets.''' 
+    align = []
+    for triplet in triplets:
+        a, p, n = triplet
+        ap = dist_f(embeds[a], embeds[p]) 
+        an = dist_f(embeds[a], embeds[n])
+        align.append(ap < an)
+    acc = np.mean(align)
+    return acc

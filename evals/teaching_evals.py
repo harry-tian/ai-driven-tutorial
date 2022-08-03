@@ -26,20 +26,42 @@ def max_dict(d):
             max_k = k
             max_v = v
     return max_k
-
+def min_dict(d):
+    min_v = np.inf
+    for k,v in d.items(): 
+        if v <= min_v:
+            min_k = k
+            min_v = v
+    return min_k
 def label_of(x, Y): 
     classes = np.unique(Y)
     idx_by_class = {c: np.where(Y==c)[0] for c in classes}
     return classes[[x in idx for idx in idx_by_class.values()].index(True)]
 
+def concat_embeds(embeds, labels):
+    """ concats an embedding by class into len (n/2)^2
+        returns the concated embed and the paired indices
+    """
+    classes = np.unique(labels)
+    idx_by_class = {c: np.where(labels==c)[0] for c in classes}
+    concat_embeds = []
+    idx = []
+    for i in idx_by_class[0]:
+        for j in idx_by_class[1]:
+            concat_embeds.append(np.hstack([embeds[i],embeds[j]]))
+            idx.append([i,j])
+    idx = np.array(idx)
+    concat_embeds = np.array(concat_embeds)
+    return concat_embeds, idx
 
-def get_knn_score_lpips(lpips_dist, teaching_idx, y_train, y_test, k=1):
-    ''' Takes lpips_dist, a distance matrix in the shape of (len(y_test), len(y_train)) '''
-    assert(lpips_dist.shape == (len(y_test), len(y_train)))
+def eval_KNN(dist_M, teaching_idx, y_train, y_test, k=1):
+    """ Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) 
+    """
+    assert(dist_M.shape == (len(y_test), len(y_train)))
     assert(len(teaching_idx) > 0 and len(teaching_idx) <= len(y_train))
     assert(min(teaching_idx) >= 0 and max(teaching_idx) <= len(y_train))
 
-    return get_knn_score_dist(lpips_dist[:,teaching_idx], y_train[teaching_idx], y_test, k=k)
+    return get_knn_score_dist(dist_M[:,teaching_idx], y_train[teaching_idx], y_test, k=k)
 
 def get_knn_score_dist(dist_M, y_train, y_test, k=1):
     assert(len(y_test)==len(dist_M))
@@ -53,15 +75,15 @@ def get_knn_score_dist(dist_M, y_train, y_test, k=1):
 
     return correct/len(y_test)
 
-def get_CV_score(dist_M, pairs, y_train, y_test, sim=False):
-    ''' Takes lpips_dist, a distance matrix in the shape of (len(y_test), len(y_train)) '''
+def eval_CV(dist_M, pairs, y_train, y_test, sim=False):
+    ''' Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) '''
+    correct = 0
     if sim:
         sim_M = dist2sim(dist_M)
-        correct = 0
         for y, sims in zip(y_test, sim_M):
             votes = []
             for pair in pairs:
-                nn = pair[np.argmin(sims[pair])] # nn to y within the pair
+                nn = pair[np.argmax(sims[pair])] # nn to y within the pair
                 votes.append(label_of(nn, y_train)) 
             y_hat = most_common(votes)
             if y_hat == y: 
@@ -70,7 +92,7 @@ def get_CV_score(dist_M, pairs, y_train, y_test, sim=False):
         for y, dists in zip(y_test, dist_M):
             votes = []
             for pair in pairs:
-                nn = pair[np.argmax(dists[pair])] # nn to y within the pair
+                nn = pair[np.argmin(dists[pair])] # nn to y within the pair
                 votes.append(label_of(nn, y_train)) 
             y_hat = most_common(votes)
             if y_hat == y: 
@@ -78,8 +100,8 @@ def get_CV_score(dist_M, pairs, y_train, y_test, sim=False):
 
     return correct/len(y_test)
 
-def get_EBM(dist_M, exemplar_idx, y_train, y_test, sim=False):
-    ''' Takes lpips_dist, a distance matrix in the shape of (len(y_test), len(y_train)) '''
+def eval_EL(dist_M, exemplar_idx, y_train, y_test, sim=False):
+    ''' Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) '''
     dist_M = dist_M[:, exemplar_idx]
     y_train = y_train[exemplar_idx]
     classes = np.unique(y_train)
@@ -100,8 +122,8 @@ def get_EBM(dist_M, exemplar_idx, y_train, y_test, sim=False):
         for y, dists in zip(y_test, dist_M):
             min_dist = np.inf
             for c in classes:
-                sim = dists[idx_by_class[c]].sum()
-                if sim < min_dist:
+                dist = dists[idx_by_class[c]].sum()
+                if dist < min_dist:
                     y_hat = c
             if y_hat == y: 
                 correct += 1
@@ -109,8 +131,8 @@ def get_EBM(dist_M, exemplar_idx, y_train, y_test, sim=False):
     return correct/len(y_test)
 
 
-def get_CV_EMB(dist_M, pairs, y_train, y_test, sim=False):
-    ''' Takes lpips_dist, a distance matrix in the shape of (len(y_test), len(y_train)) '''
+def eval_CVEL(dist_M, pairs, y_train, y_test, sim=False):
+    ''' Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) '''
     classes = np.unique(y_train)
     scores = {c:0 for c in classes}
     correct = 0
@@ -130,16 +152,19 @@ def get_CV_EMB(dist_M, pairs, y_train, y_test, sim=False):
             for pair in pairs:
                 nn = pair[np.argmin(dists[pair])] # nn to y within the pair
                 c = label_of(nn, y_train)
-                scores[c] += np.max(dists[pair])
-            y_hat = max_dict(scores)
-            if y_hat != y: 
+                scores[c] += np.min(dists[pair])
+            y_hat = min_dict(scores)
+            if y_hat == y: 
                 correct += 1
 
-    return correct/len(y_test)
+    return 1-(correct/len(y_test))
 
-# def get_full_random(data,m_range):
-#     x_train, y_train, x_valid, y_test = data
-#     return get_knn_score(x_train, y_train, x_valid, y_test), get_random_knn_scores(data, m_range)
+
+
+
+
+
+
 
 def get_random_knn_scores(data, m_range, k=1, n_trials=100):
     def get_ci(samples, confidence=0.95):
@@ -163,6 +188,7 @@ def get_random_knn_scores(data, m_range, k=1, n_trials=100):
     random_knn_scores = random_knn_scores.mean(axis=-1)
 
     return random_knn_scores, random_knn_ci
+
 
 def get_knn_score(x_train, y_train, x_valid, y_test, 
                 k=1, metric="acc", weights="uniform"):
@@ -238,15 +264,15 @@ def get_1nn(data, index):
 #     return full_knn_score, (random_knn_scores, random_knn_ci), global_prototype_knn_scores_LK #, global_prototype_knn_scores_RBFK , local_prototype_knn_scores
 
 
-# def get_lpips_1nn_score(x_train, y_train, x_valid, y_test, lpips_distM):
-#     if lpips_distM.shape != (len(y_test), len(y_train)):
-#         lpips_distM = lpips_distM.T
-#     assert(lpips_distM.shape==(len(y_test), len(y_train)))
+# def get_lpips_1nn_score(x_train, y_train, x_valid, y_test, dist_MM):
+#     if dist_MM.shape != (len(y_test), len(y_train)):
+#         dist_MM = dist_MM.T
+#     assert(dist_MM.shape==(len(y_test), len(y_train)))
 
 #     total = len(y_test)
 #     correct = 0
-#     for x, y, dists in zip(x_valid, y_test, lpips_distM):
-#         nn_idx = np.argmin(lpips_distM)
+#     for x, y, dists in zip(x_valid, y_test, dist_MM):
+#         nn_idx = np.argmin(dist_MM)
 #         if y_train[nn_idx] == y: correct += 1
 
 #     return correct/total

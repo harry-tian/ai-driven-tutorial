@@ -4,9 +4,9 @@ wandb_project : lpips
 wandb_group : bm 
 
 ### triplet data
-train_triplets : ../data/triplets/bm/lpips/bm_lpips.train
-valid_triplets : ../data/triplets/bm/lpips/bm_lpips.train_valid
-test_triplets : ../data/triplets/bm/lpips/bm_lpips.train_test
+train_triplets : ../data/triplets/bm/lpips/train_triplets.pkl
+valid_triplets : ../data/triplets/bm/lpips/valid_triplets.pkl
+test_triplets : ../data/triplets/bm/lpips/test_triplets.pkl
 
 ### overwrite args
 dataloader_num_workers: 4

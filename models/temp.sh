@@ -14,6 +14,6 @@
 python TN.py \
         --dataset_config=configs/bm.yaml \
         --model_config=configs/models/TN.yaml \
-        --triplet_config=configs/bm/triplets/lpips.yaml \
+        --triplet_config=configs/bm/triplets/prolific.yaml \
         --overwrite_config=configs/overwrite.yaml \
         --embed_dim=512 \

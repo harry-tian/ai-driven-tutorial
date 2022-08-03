@@ -1,4 +1,4 @@
 wandb_mode : online
 wandb_entity: harry-tian
 
-max_epochs: 100
+max_epochs: 10
