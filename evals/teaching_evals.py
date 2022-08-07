@@ -1,4 +1,5 @@
 # import pandas as pd
+from tkinter import W
 import numpy as np
 from scipy import stats
 # from sklearn import neighbors
@@ -10,15 +11,22 @@ from sklearn.metrics import roc_auc_score, accuracy_score
 import matplotlib.pyplot as plt
 # import math, pickle
 np.random.seed(42)
-import sys, pickle
+import sys, pickle, random
 # sys.path.insert(0,'..')
 from sklearn.metrics.pairwise import euclidean_distances
 from collections import Counter
 
 def normalize(data): return (data-np.min(data)) / (np.max(data)-np.min(data))
 def euc_dist(x, y): return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
-def most_common(X, k=1): return Counter(X).most_common(k)[0][0]
-def dist2sim(M): return np.e**(-2*M)
+def most_common(S, k=2): 
+    """ ASSUMES 2 CLASSES
+        takes the most common element in a list, breaks ties randomly
+    """
+    if len(S) == 1 or len(np.unique(S)) == 1: return S[0]
+    counts = Counter(S).most_common(k)
+    majority = 0 if counts[0][1] > counts[1][1] else random.choice([0,1])
+    return counts[majority][0]
+def dist2sim(M): return np.e**(-20*M)
 def max_dict(d):
     max_v = -np.inf
     for k,v in d.items(): 
@@ -26,17 +34,29 @@ def max_dict(d):
             max_k = k
             max_v = v
     return max_k
-def min_dict(d):
-    min_v = np.inf
-    for k,v in d.items(): 
-        if v <= min_v:
-            min_k = k
-            min_v = v
-    return min_k
-def label_of(x, Y): 
-    classes = np.unique(Y)
-    idx_by_class = {c: np.where(Y==c)[0] for c in classes}
-    return classes[[x in idx for idx in idx_by_class.values()].index(True)]
+# def min_dict(d):
+
+def contrastive_vote(pairs, row, y_train, num_class, weighted, sim=False):
+    """ assuming labels are 0,1,2,... """
+
+    votes = [0] * num_class
+    for pair in pairs:
+        cand = pair[np.argmax(row[pair])] if sim else pair[np.argmin(row[pair])]
+        vote = y_train[cand]
+        if weighted:
+            w = row[cand] 
+            w = w if sim else dist2sim(w)
+        else:
+            w = 1
+        votes[vote] += w
+
+    if votes.count(max(votes)) > 1: # if there's a tie, use weighted CV
+        if weighted: print("??? this is weitd")
+        y_hat = contrastive_vote(pairs, row, y_train, num_class, True, sim=sim)
+    else:
+        y_hat = np.argmax(votes)
+    
+    return y_hat
 
 def concat_embeds(embeds, labels):
     """ concats an embedding by class into len (n/2)^2
@@ -75,30 +95,18 @@ def get_knn_score_dist(dist_M, y_train, y_test, k=1):
 
     return correct/len(y_test)
 
-def eval_CV(dist_M, pairs, y_train, y_test, sim=False):
-    ''' Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) '''
-    correct = 0
-    if sim:
-        sim_M = dist2sim(dist_M)
-        for y, sims in zip(y_test, sim_M):
-            votes = []
-            for pair in pairs:
-                nn = pair[np.argmax(sims[pair])] # nn to y within the pair
-                votes.append(label_of(nn, y_train)) 
-            y_hat = most_common(votes)
-            if y_hat == y: 
-                correct += 1
-    else:
-        for y, dists in zip(y_test, dist_M):
-            votes = []
-            for pair in pairs:
-                nn = pair[np.argmin(dists[pair])] # nn to y within the pair
-                votes.append(label_of(nn, y_train)) 
-            y_hat = most_common(votes)
-            if y_hat == y: 
-                correct += 1
+def eval_CV(M, pairs, y_train, y_test, weighted, sim=False):
+    ''' contrastive voter: takes in pairs as teaching examples, 
+        votes within each pair and takes majorit vote
+        M is either a similarity matrix or a distance matrix
+     '''
+    num_classes = len(np.unique(y_train))
+    y_pred = [contrastive_vote(pairs, row, y_train, num_classes, weighted, sim) for row in M]
+          
+    assert(len(y_pred)==len(y_test))
 
-    return correct/len(y_test)
+    return (np.array(y_pred)==np.array(y_test)).sum()/len(y_test)#, y_pred
+
 
 def eval_EL(dist_M, exemplar_idx, y_train, y_test, sim=False):
     ''' Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) '''
@@ -131,35 +139,7 @@ def eval_EL(dist_M, exemplar_idx, y_train, y_test, sim=False):
     return correct/len(y_test)
 
 
-def eval_CVEL(dist_M, pairs, y_train, y_test, sim=False):
-    ''' Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) '''
-    classes = np.unique(y_train)
-    scores = {c:0 for c in classes}
-    correct = 0
-    
-    if sim:
-        sim_M = dist2sim(dist_M)
-        for y, sims in zip(y_test, sim_M):
-            for pair in pairs:
-                nn = pair[np.argmax(sims[pair])] # nn to y within the pair
-                c = label_of(nn, y_train)
-                scores[c] += np.max(sims[pair])
-            y_hat = max_dict(scores)
-            if y_hat == y: 
-                correct += 1
-    else:
-        for y, dists in zip(y_test, dist_M):
-            for pair in pairs:
-                nn = pair[np.argmin(dists[pair])] # nn to y within the pair
-                c = label_of(nn, y_train)
-                scores[c] += np.min(dists[pair])
-            y_hat = min_dict(scores)
-            if y_hat == y: 
-                correct += 1
-
-    return 1-(correct/len(y_test))
-
-
+def embed2dist_M(z_train, z_test): return euclidean_distances(z_test, z_train)
 
 
 

@@ -196,9 +196,9 @@ class MTL(pl.LightningModule):
         clf_loss = self.test_losses.mean()
         clf_acc = self.test_corres.mean()
         total_loss += self.hparams.lamda * clf_loss
-        results = self.eval_knn_ds(
-            self.test_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_test, mask=self.test_corres)
-        for k,v in results.items(): self.log(k,v)
+        # results = self.eval_knn_ds(
+        #     self.test_dataset, self.ref_dataset, self.syn_x_train, self.syn_x_test, mask=self.test_corres)
+        # for k,v in results.items(): self.log(k,v)
         self.log('test_clf_loss', clf_loss)
         self.log('test_clf_acc', clf_acc, prog_bar=True)
         self.log('test_triplet_loss', triplet_loss)
