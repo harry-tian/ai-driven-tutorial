@@ -59,8 +59,8 @@ class MTL(pl.LightningModule):
             self.syn_x_train = pickle.load(open(self.hparams.train_synthetic, "rb"))
             self.syn_x_valid = pickle.load(open(self.hparams.valid_synthetic, "rb"))
             self.syn_x_test = pickle.load(open(self.hparams.test_synthetic, "rb"))
-        if self.hparams.resn_embed_dir is not None:
-            self.test_resn_embeds()
+        # if self.hparams.resn_embed_dir is not None:
+        #     self.test_resn_embeds()
         self.valid_embeds = None
         self.test_embeds = None
 
@@ -266,6 +266,19 @@ class MTL(pl.LightningModule):
         else:
             if self.hparams.syn:
                 results.update(self.syn_evals(z_train, y_train, z_test, y_test, y_pred, syn_x_train, syn_x_test))
+
+        ## save embeds
+        name = f"{self.hparams.model}_train_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl"
+        path = "../data/embeds"
+        f_name = os.path.join(path, name)
+        print("Saving embeds at:", f_name)
+        pickle.dump(z_train, open(f_name, 'wb'))
+
+        name = f"{self.hparams.model}_test_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl"
+        path = "../data/embeds"
+        f_name = os.path.join(path, name)
+        print("Saving embeds at:", f_name)
+        pickle.dump(z_test, open(f_name, 'wb'))
 
         return results
 

@@ -154,6 +154,7 @@ def get_NIFO(dist_M, y_train, y_test, k=1):
     return np.array(NINOs)
 
 def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers):
+    """ decision support acc given examples and weights to human distance """
     correct = 0
     err = []
     for test_idx, examples_idx in enumerate(examples):
@@ -171,6 +172,17 @@ def decision_support(x_train, y_train, x_test, y_test, examples, weights, powers
         if y_pred == y_test[test_idx]: correct += 1
         else: err.append([test_idx, examples_idx[0], examples_idx[1]])
     return correct/len(y_test), err
+
+def metrics(ref, e1, e2, dists, dist_fn):
+    """ return metric to calculate correlation """
+    d1, d2 = dists
+    metric_1 = d1/(d1+d2)
+    metric_2 = d2/(d1+d2)
+    metric_3 = abs(d1-d2)
+    metric_4 = dist_fn(e1, e2)
+    m = [metric_1, metric_2, metric_3, metric_4]
+
+    return m
 
 def decision_support_with_dist(dist, examples, y_train, y_test):
     correct = 0

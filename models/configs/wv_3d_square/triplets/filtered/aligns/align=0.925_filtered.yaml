@@ -1,0 +1,15 @@
+wandb_mode: online
+wandb_project: wv_3d_square_aligns
+wandb_group: align=0.925_filtered
+train_triplets: ../data/datasets/wv_3d_square_triplets/align=0.925/train_triplets_filtered.pkl
+valid_triplets: ../data/datasets/wv_3d_square_triplets/align=0.925/valid_triplets_filtered.pkl
+test_triplets: ../data/datasets/wv_3d_square_triplets/align=0.925/test_triplets_filtered.pkl
+weights:
+- 256
+- 1
+- 256
+- 256
+powers:
+- 2
+- 2
+filtered: True
