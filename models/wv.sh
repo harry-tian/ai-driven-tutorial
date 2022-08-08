@@ -19,4 +19,4 @@ python MTL.py \
             --model_config=configs/models/MTL0.5.yaml \
             --triplet_config=configs/wv_3d_square/triplets/filtered/aligns/align=0.5_filtered.yaml \
             --overwrite_config=configs/filtered.yaml \
-            --embed_dim=50
+            --embed_dim=512
