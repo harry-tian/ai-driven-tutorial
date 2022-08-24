@@ -10,9 +10,8 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --mem=10G
-#SBATCH --exclude=aa[001-002]
 
-for i in {0..0}
+for i in {5..9}
         do python TN.py \
                 --dataset_config=configs/bird.yaml \
                 --model_config=configs/models/TN.yaml \

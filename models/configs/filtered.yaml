@@ -15,7 +15,7 @@ enable_progress_bar: False
 
 
 
-max_epochs : 5
+max_epochs : 10
 checkpoint_callback: False
 wandb_entity : harry-tian
 
