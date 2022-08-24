@@ -1,9 +1,7 @@
 
-from math import factorial
 import sys, pickle
-sys.path.insert(0,'..')
 # from aix360.algorithms.protodash import ProtodashExplainer
-from algorithms import pdash
+from algorithms import pdash, mmd
 import numpy as np
 from algorithms.selection import tripet_greedy, nn_greedy
 from sklearn_extra.cluster import KMedoids
@@ -19,8 +17,8 @@ def protodash(X, m, args=None):
     _, prototype_idx, _ = pdash.pdash(X, X, m=m, kernelType="Gaussian")
     return prototype_idx
 
-def protogreedy(X, m, args=None):
-    return pdash.proto_g(X, np.arange(len(X)), m)
+def mmd_greedy(X, m, args=None):
+    return mmd.mmd_greedy(X, np.arange(len(X)), m)
 
 def random(X, m, args=None):
     return np.random.choice(np.arange(len(X)), m, replace=False)

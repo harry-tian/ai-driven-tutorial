@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import numpy as np
 # import xport
 from sklearn.preprocessing import OneHotEncoder
@@ -12,7 +10,7 @@ from sklearn.metrics.pairwise import rbf_kernel
 import sys
 
 def proto_g(X, candidate_indices, m, is_K_sparse=False, gamma=0.125, K=None):
-
+    """ code taken from https://github.com/BeenKim/MMD-critic/blob/master/mmd.py#L91 """
     if K is None:
         K = rbf_kernel(X, gamma=gamma)
 

@@ -13,4 +13,4 @@ dataloader_num_workers: 4
 embed_dim: 50
 max_epochs: 50
 pretrained: True
-embeds_output_dir: ../data/embeds/prolific/bm
+embeds_output_dir: bm_prolific

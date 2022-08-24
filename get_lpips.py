@@ -6,7 +6,7 @@ import lpips
 from tqdm import tqdm
 from models import transforms
 
-dataset = "pneumonia"
+dataset = "bird"
 transform = transforms.bird_transform()
 batch_size = 10
 

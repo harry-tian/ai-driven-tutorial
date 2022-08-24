@@ -18,6 +18,9 @@ checkpoint_callback: False
 wandb_entity : harry-tian
 
 
-filter: False
+filter: True
+embeds_output_dir : bm_lpips
+
 
 max_epochs: 10
+

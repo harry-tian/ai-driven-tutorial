@@ -219,14 +219,11 @@ class MTL(pl.LightningModule):
         self.eval()
         datasets = [self.ref_dataset, self.valid_dataset, self.test_dataset]
         z_train, z_valid, z_test = [self.embed_dataset(ds) for ds in datasets]
-        for fold, emb in zip(['train', 'valid', 'test'], [z_train, z_valid, z_test]):
+        for fold, emb in zip(['train', 'test'], [z_train, z_valid, z_test]):
             name = f"{self.hparams.wandb_name}_{fold}_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl"
-            path = '/'.join([
-                self.hparams.embeds_output_dir, 
-                self.hparams.wandb_project,
-                self.hparams.wandb_group])
+            path = os.path.join("../data/embeds", self.hparams.embeds_output_dir) 
             pathlib.Path(path).mkdir(parents=True, exist_ok=True)
-            f_name = path + '/' + name
+            f_name = os.path.join(path,name)
             print("Saving embeds at:", f_name)
             pickle.dump(emb, open(f_name, 'wb'))
 
@@ -291,7 +288,8 @@ def main():
     profiler = configs['profiler'] if 'profiler' in configs else None
 
     model = MTL(profiler=profiler, **configs)
-    monitor = "valid_total_loss"
+    monitor = "train_triplet_loss"
+    # monitor = "valid_total_loss"
     trainer.generic_train(model, configs, monitor, profiler=profiler)
 
 

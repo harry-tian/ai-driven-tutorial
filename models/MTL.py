@@ -269,13 +269,15 @@ class MTL(pl.LightningModule):
 
         ## save embeds
         name = f"{self.hparams.model}_train_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl"
-        path = "../data/embeds"
+        if self.embeds_output_dir is not None:
+            path = os.path.join("../data/embeds", self.embeds_output_dir) 
+        else:
+            path = "../data/embeds"
         f_name = os.path.join(path, name)
         print("Saving embeds at:", f_name)
         pickle.dump(z_train, open(f_name, 'wb'))
 
         name = f"{self.hparams.model}_test_d{self.hparams.embed_dim}_seed{self.hparams.seed}.pkl"
-        path = "../data/embeds"
         f_name = os.path.join(path, name)
         print("Saving embeds at:", f_name)
         pickle.dump(z_test, open(f_name, 'wb'))
