@@ -1,5 +1,4 @@
 # import pandas as pd
-from tkinter import W
 import numpy as np
 from scipy import stats
 # from sklearn import neighbors
@@ -36,58 +35,124 @@ def max_dict(d):
     return max_k
 # def min_dict(d):
 
-def eval_CV_abs(M, pairs, y_train, y_test, weighted, sim=False):
+### learners: 1NN, exemplar, contrastive voter
+
+def eval_KNN(dist_M, teaching_idx, y_train, y_test, sim=False, k=1):
+    """ Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) 
+    """
+    assert(dist_M.shape == (len(y_test), len(y_train)))
+    assert(len(teaching_idx) > 0 and len(teaching_idx) <= len(y_train))
+    assert(min(teaching_idx) >= 0 and max(teaching_idx) <= len(y_train))
+    fn = get_knn_score_sim if sim else get_knn_score_dist
+    return fn(dist_M[:,teaching_idx], y_train[teaching_idx], y_test, k=k)
+
+def get_knn_score_dist(dist_M, y_train, y_test, k=1):
+    assert(len(y_test)==len(dist_M))
+    correct = 0
+    for y, dists in zip(y_test, dist_M):
+        nn_idx = np.argsort(dists)[:k]
+        nns = y_train[nn_idx] 
+        y_hat = most_common(nns)
+        if y_hat == y: 
+            correct += 1
+
+    return correct/len(y_test)
+
+def get_knn_score_sim(sim_M, y_train, y_test, k=1):
+    assert(len(y_test)==len(sim_M))
+    correct = 0
+    for y, dists in zip(y_test, sim_M):
+        nn_idx = np.argsort(dists)[-k:]
+        nns = y_train[nn_idx] 
+        y_hat = most_common(nns)
+        if y_hat == y: 
+            correct += 1
+
+    return correct/len(y_test)
+
+def eval_exemplar(dist_M, exemplar_idx, y_train, y_test, sim=False):
+    ''' Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) '''
+    dist_M = dist_M[:, exemplar_idx]
+    y_train = y_train[exemplar_idx]
+    classes = np.unique(y_train)
+    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
+    correct = 0
+
+    sim_M = dist2sim(dist_M) if not sim else dist_M
+    for y, sims in zip(y_test, sim_M):
+        max_sim = -np.inf
+        for c in classes:
+            sim = sims[idx_by_class[c]].sum()
+            if sim > max_sim:
+                max_sim = sim
+                y_hat = c
+        if y_hat == y: 
+            correct += 1
+
+    return correct/len(y_test)
+
+def eval_CV(M, pairs, y_train, y_test, weight, sim=False):
     ''' contrastive voter: takes in pairs as teaching examples, 
         votes within each pair and takes majorit vote
         M is either a similarity matrix or a distance matrix
      '''
-    def CV_abs(pairs, row, y_train, num_class, sim=False):
-        """ weight using differnce between pairs """
-        votes = [0] * num_class
-        for pair in pairs:
-            cand = pair[np.argmax(row[pair])] if sim else pair[np.argmin(row[pair])]
-            vote = y_train[cand]
-            w = abs(row[pair[0]] -  row[pair[1]])
-            votes[vote] += w
-        return np.argmax(votes)
-
     num_classes = len(np.unique(y_train))
-    y_pred = [CV_abs(pairs, row, y_train, num_classes, sim) for row in M]
+    y_pred = [contrastive_vote(pairs, row, y_train, num_classes, weight, sim) for row in M]
           
     assert(len(y_pred)==len(y_test))
 
     return (np.array(y_pred)==np.array(y_test)).sum()/len(y_test)#, y_pred
 
-# def CV_dist(pairs, row, y_train, num_class, sim=False):
-#     """ weight using dist between pairs """
-#     votes = [0] * num_class
-#     for pair in pairs:
-#         cand = pair[np.argmax(row[pair])] if sim else pair[np.argmin(row[pair])]
-#         vote = y_train[cand]
-#         w = euc_dist(row[pair[0]], row[pair[1]])
-#         votes[vote] += w
-#     return np.argmax(votes)
-
-def contrastive_vote(pairs, row, y_train, num_class, weighted, sim=False):
+def contrastive_vote(pairs, row, y_train, num_class, weight, sim=False):
     """ assuming labels are 0,1,2,... """
 
     votes = [0] * num_class
     for pair in pairs:
         cand = pair[np.argmax(row[pair])] if sim else pair[np.argmin(row[pair])]
         vote = y_train[cand]
-        if weighted:
+        if weight == 'sim':
             w = row[cand] 
             w = w if sim else dist2sim(w)
-        else:
+        elif weight == 'abs':
+            w = abs(row[pair[0]] -  row[pair[1]])
+        elif weight == None:
             w = 1
         votes[vote] += w
 
-    if votes.count(max(votes)) > 1 and not weighted: # if there's a tie, use weighted CV
-        y_hat = contrastive_vote(pairs, row, y_train, num_class, True, sim=sim)
+    if votes.count(max(votes)) > 1 and not weight: # break ties randomly
+        y_hat = random.choice([0,1])
     else:
         y_hat = np.argmax(votes)
     
     return y_hat
+
+### experiment functions
+def rand_idx(X, m):
+    return np.random.choice(np.arange(len(X)), m, replace=False)
+
+def random_1NN(m_range, dist_M, y_train, y_test, sim=True, n_trials=1000):
+    return [np.array([eval_KNN(dist_M, rand_idx(y_train, m), y_train, y_test, sim=sim) for _ in range(n_trials)]).mean() for m in m_range]
+
+def random_exemplar(m_range, dist_M, y_train, y_test, sim=True, n_trials=1000):
+    return [np.array([eval_exemplar(dist_M, rand_idx(y_train, m), y_train, y_test, sim=sim) for _ in range(n_trials)]).mean() for m in m_range]
+
+def random_CV(m_range, dist_M, y_train, y_test, weight='abs', sim=True, n_trials=1000):
+    idx_by_class = {c: np.where(y_train==c)[0] for c in np.unique(y_train)}
+    paired_idx = np.array([[i,j] for i in idx_by_class[0] for j in idx_by_class[1]])
+    return [np.array([eval_CV(dist_M, paired_idx[rand_idx(paired_idx, m)], y_train, y_test, weight, sim=sim) for _ in range(n_trials)]).mean() for m in m_range]
+
+def full_1NN(m_range, dist_M, y_train, y_test, sim=True):
+    return [eval_KNN(dist_M, np.arange(len(y_train)), y_train, y_test, sim=sim)] * len(m_range)
+
+def full_exemplar(m_range, dist_M, y_train, y_test, sim=True):
+    return [eval_exemplar(dist_M, np.arange(len(y_train)), y_train, y_test, sim=sim)] * len(m_range)
+
+def full_CV(m_range, dist_M, y_train, y_test, weight='abs', sim=True):
+    idx_by_class = {c: np.where(y_train==c)[0] for c in np.unique(y_train)}
+    paired_idx = [[i,j] for i in idx_by_class[0] for j in idx_by_class[1]]
+    return [eval_CV(dist_M, np.array(paired_idx), y_train, y_test, weight, sim=sim)] * len(m_range)
+
+
 
 def concat_embeds(embeds, labels):
     """ concats an embedding by class into len (n/2)^2
@@ -130,83 +195,6 @@ def diff_embeds(embeds, labels, dir=0):
     idx = np.array(idx)
     diff_embeds = np.array(diff_embeds).squeeze()
     return diff_embeds, idx
-
-def eval_KNN(dist_M, teaching_idx, y_train, y_test, sim=False, k=1):
-    """ Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) 
-    """
-    assert(dist_M.shape == (len(y_test), len(y_train)))
-    assert(len(teaching_idx) > 0 and len(teaching_idx) <= len(y_train))
-    assert(min(teaching_idx) >= 0 and max(teaching_idx) <= len(y_train))
-    fn = get_knn_score_sim if sim else get_knn_score_dist
-    return fn(dist_M[:,teaching_idx], y_train[teaching_idx], y_test, k=k)
-
-def get_knn_score_dist(dist_M, y_train, y_test, k=1):
-    assert(len(y_test)==len(dist_M))
-    correct = 0
-    for y, dists in zip(y_test, dist_M):
-        nn_idx = np.argsort(dists)[:k]
-        nns = y_train[nn_idx] 
-        y_hat = most_common(nns)
-        if y_hat == y: 
-            correct += 1
-
-    return correct/len(y_test)
-
-def get_knn_score_sim(sim_M, y_train, y_test, k=1):
-    assert(len(y_test)==len(sim_M))
-    correct = 0
-    for y, dists in zip(y_test, sim_M):
-        nn_idx = np.argsort(dists)[-k:]
-        nns = y_train[nn_idx] 
-        y_hat = most_common(nns)
-        if y_hat == y: 
-            correct += 1
-
-    return correct/len(y_test)
-
-def eval_CV(M, pairs, y_train, y_test, weighted, sim=False):
-    ''' contrastive voter: takes in pairs as teaching examples, 
-        votes within each pair and takes majorit vote
-        M is either a similarity matrix or a distance matrix
-     '''
-    num_classes = len(np.unique(y_train))
-    y_pred = [contrastive_vote(pairs, row, y_train, num_classes, weighted, sim) for row in M]
-          
-    assert(len(y_pred)==len(y_test))
-
-    return (np.array(y_pred)==np.array(y_test)).sum()/len(y_test)#, y_pred
-
-
-def eval_EL(dist_M, exemplar_idx, y_train, y_test, sim=False):
-    ''' Takes dist_M, a distance matrix in the shape of (len(y_test), len(y_train)) '''
-    dist_M = dist_M[:, exemplar_idx]
-    y_train = y_train[exemplar_idx]
-    classes = np.unique(y_train)
-    idx_by_class = {c: np.where(y_train==c)[0] for c in classes}
-    correct = 0
-
-    if sim:
-        sim_M = dist2sim(dist_M)
-        for y, sims in zip(y_test, sim_M):
-            max_sim = -np.inf
-            for c in classes:
-                sim = sims[idx_by_class[c]].sum()
-                if sim > max_sim:
-                    y_hat = c
-            if y_hat == y: 
-                correct += 1
-    else:
-        for y, dists in zip(y_test, dist_M):
-            min_dist = np.inf
-            for c in classes:
-                dist = dists[idx_by_class[c]].sum()
-                if dist < min_dist:
-                    y_hat = c
-            if y_hat == y: 
-                correct += 1
-
-    return correct/len(y_test)
-
 
 def embed2dist_M(z_train, z_test): return euclidean_distances(z_test, z_train)
 
