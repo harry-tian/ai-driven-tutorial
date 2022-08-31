@@ -108,28 +108,29 @@ def plot_full_rand_teach(full, random, teach, m_range, alg_name, title, plot_con
 def get_ci(samples, confidence=0.95):  return stats.sem(samples) * stats.t.ppf((1 + confidence) / 2., len(samples)-1)
 
 ## getting data
+DATA_DIR = '/net/scratch/tianh/ai-driven-tutorial/data'
 def get_lpips_data(dataset, seeds, sim=True):    
     transform = transforms.bird_transform()
-    train = torchvision.datasets.ImageFolder(f"../data/datasets/{dataset}/train", transform=transform)
-    test = torchvision.datasets.ImageFolder(f"../data/datasets/{dataset}/test", transform=transform)
+    train = torchvision.datasets.ImageFolder(os.path.join(DATA_DIR, f"datasets/{dataset}/train"), transform=transform)
+    test = torchvision.datasets.ImageFolder(os.path.join(DATA_DIR, f"datasets/{dataset}/test"), transform=transform)
     y_train = np.array([x[1] for x in train])
     y_test = np.array([x[1] for x in test])
 
-    dist_M = pickle.load(open(f"../data/dist/lpips/{dataset}/train_test.pkl","rb"))
+    dist_M = pickle.load(open(os.path.join(DATA_DIR, f"dist/lpips/{dataset}/train_test.pkl"),"rb"))
     dist_M = dist2sim(dist_M) if sim else dist_M
-    zs = [pickle.load(open(f"../data/embeds/bm_lpips/TN_train_d50_seed{seed}.pkl","rb")) for seed in seeds]
+    zs = [pickle.load(open(os.path.join(DATA_DIR, f"embeds/bm_lpips/TN_train_d50_seed{seed}.pkl"),"rb")) for seed in seeds]
 
     return [dist_M]*len(seeds), zs, y_train, y_test
 
 def get_prolific_data(dataset, seeds, sim=True):    
     transform = transforms.bird_transform()
-    train = torchvision.datasets.ImageFolder(f"../data/datasets/{dataset}/train", transform=transform)
-    test = torchvision.datasets.ImageFolder(f"../data/datasets/{dataset}/test", transform=transform)
+    train = torchvision.datasets.ImageFolder(os.path.join(DATA_DIR, f"datasets/{dataset}/train"), transform=transform)
+    test = torchvision.datasets.ImageFolder(os.path.join(DATA_DIR, f"datasets/{dataset}/test"), transform=transform)
     y_train = np.array([x[1] for x in train])
     y_test = np.array([x[1] for x in test])
 
-    dist_Ms = [pickle.load(open(f"../data/dist/prolific/{dataset}/train_test_seed{seed}.pkl","rb")) for seed in seeds]
+    dist_Ms = [pickle.load(open(os.path.join(DATA_DIR, f"dist/prolific/{dataset}/train_test_seed{seed}.pkl"),"rb")) for seed in seeds]
     dist_Ms = [dist2sim(m) if sim else m for m in dist_Ms]
-    zs = [pickle.load(open(f"../data/embeds/{dataset}_prolific/TN_train_d50_seed{seed}.pkl","rb")) for seed in seeds]
+    zs = [pickle.load(open(os.path.join(DATA_DIR, f"embeds/{dataset}_prolific/TN_train_d50_seed{seed}.pkl"),"rb")) for seed in seeds]
 
     return dist_Ms, zs, y_train, y_test

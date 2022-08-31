@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import seaborn as sns
 
+sns.set_theme()
+sns.set_color_codes("bright")
 SMALL_SIZE = 10
 MEDIUM_SIZE = 20
 BIGGER_SIZE = 30
