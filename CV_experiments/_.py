@@ -23,7 +23,7 @@ def get_lpips_data(dataset, seeds, sim=True):
     dist_M = dist2sim(dist_M) if sim else dist_M
     zs = [pickle.load(open(f"data/embeds/bm_lpips/TN_train_d50_seed{seed}.pkl","rb")) for seed in seeds]
 
-    return dist_M, zs, y_train, y_test
+    return [dist_M]*len(seeds), zs, y_train, y_test
 
 def get_prolific_data(dataset, seeds, sim=True):    
     transform = transforms.bird_transform()
@@ -38,19 +38,23 @@ def get_prolific_data(dataset, seeds, sim=True):
 
     return dist_Ms, zs, y_train, y_test
 
-def random_experiments(m_range, dist_M, y_train, y_test, sim=True):
-    results = {
-        '1NN': random_1NN(m_range, dist_M, y_train, y_test, sim=sim),
-        '1NN_double': random_1NN(m_range*2, dist_M, y_train, y_test, sim=sim),
-        'exemplar': random_exemplar(m_range, dist_M, y_train, y_test, sim=sim),
-        'CV': random_CV(m_range, dist_M, y_train, y_test, weight=None, sim=sim),
-        'CV_w=dist': random_CV(m_range, dist_M, y_train, y_test, weight='sim', sim=sim),
-        'CV_w=ddiff': random_CV(m_range, dist_M, y_train, y_test, weight='abs', sim=sim),
-    }
-    return results
+def random_experiments(m_range, dist_Ms, y_train, y_test, sim=True):
+    def experiment(dist_M):
+        return {
+            '1NN': random_1NN(m_range, dist_M, y_train, y_test, sim=sim),
+            '1NN_double': random_1NN(m_range*2, dist_M, y_train, y_test, sim=sim),
+            'exemplar': random_exemplar(m_range, dist_M, y_train, y_test, sim=sim),
+            'CV': random_CV(m_range, dist_M, y_train, y_test, weight=None, sim=sim),
+            'CV_w=dist': random_CV(m_range, dist_M, y_train, y_test, weight='sim', sim=sim),
+            'CV_w=ddiff': random_CV(m_range, dist_M, y_train, y_test, weight='abs', sim=sim),
+        }
+    results = [experiment(dist_M) for dist_M in dist_Ms]
+    acc = {key: np.mean(np.array([result[key] for result in results]), axis=0) for key in results[0].keys()}
+    return acc
 
-def full_experiments(m_range, dist_M, y_train, y_test, sim=True):
-    results = {
+def full_experiments(m_range, dist_Ms, y_train, y_test, sim=True):
+    def experiment(dist_M): 
+        return {
         '1NN': full_1NN(m_range, dist_M, y_train, y_test, sim=sim),
         '1NN_double': full_1NN(m_range*2, dist_M, y_train, y_test, sim=sim),
         'exemplar': full_exemplar(m_range, dist_M, y_train, y_test, sim=sim),
@@ -58,37 +62,52 @@ def full_experiments(m_range, dist_M, y_train, y_test, sim=True):
         'CV_w=dist': full_CV(m_range, dist_M, y_train, y_test, weight='sim', sim=sim),
         'CV_w=ddiff': full_CV(m_range, dist_M, y_train, y_test, weight='abs', sim=sim),
     }
-    return results
+    results = [experiment(dist_M) for dist_M in dist_Ms]
+    acc = {key: np.mean(np.array([result[key] for result in results]), axis=0) for key in results[0].keys()}
+    return acc
 
-def teaching_experiments(m_range, dist_M, alg, paired_z, z, y_train, y_test, sim=True):
-    nn, nn_double, exemplar, CV, CV_w, CV_abs = np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range))
-
-    paired_z, idx = paired_z
-    for j, m in enumerate(m_range):
-        S_concat = alg(paired_z, m)
-        S_pairs = idx[S_concat]
-        S_single = alg(z, m)
-        S_double = alg(z, m*2)
-        nn[j] = eval_KNN(dist_M, S_single, y_train, y_test, sim=sim)
-        nn_double[j] = eval_KNN(dist_M, S_double, y_train, y_test, sim=sim)
-        exemplar[j] = eval_exemplar(dist_M, S_single, y_train, y_test, sim=sim)
-        CV[j] = eval_CV(dist_M, S_pairs, y_train, y_test, weight=None, sim=sim)
-        CV_w[j] = eval_CV(dist_M, S_pairs, y_train, y_test, weight='sim', sim=sim)
-        CV_abs[j] = eval_CV(dist_M, S_pairs, y_train, y_test, weight='abs', sim=sim)
-    
-    results = {
-        '1NN': nn,
-        '1NN_double': nn_double,
-        'exemplar': exemplar,
-        'CV': CV,
-        'CV_w=dist': CV_w,
-        'CV_w=ddiff': CV_abs,
-    }
-    return results
+def teaching_experiments(m_range, dist_Ms, alg, paired_zs, zs, y_train, y_test, sim=True):
+    def experiment(dist_M, paired_z, z):
+        nn, nn_double, exemplar, CV, CV_w, CV_abs = np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range))
+        paired_z, idx = paired_z
+        for j, m in enumerate(m_range):
+            S_concat = alg(paired_z, m)
+            S_pairs = idx[S_concat]
+            S_single = alg(z, m)
+            S_double = alg(z, m*2)
+            nn[j] = eval_KNN(dist_M, S_single, y_train, y_test, sim=sim)
+            nn_double[j] = eval_KNN(dist_M, S_double, y_train, y_test, sim=sim)
+            exemplar[j] = eval_exemplar(dist_M, S_single, y_train, y_test, sim=sim)
+            CV[j] = eval_CV(dist_M, S_pairs, y_train, y_test, weight=None, sim=sim)
+            CV_w[j] = eval_CV(dist_M, S_pairs, y_train, y_test, weight='sim', sim=sim)
+            CV_abs[j] = eval_CV(dist_M, S_pairs, y_train, y_test, weight='abs', sim=sim)
+        
+        return {
+            '1NN': nn,
+            '1NN_double': nn_double,
+            'exemplar': exemplar,
+            'CV': CV,
+            'CV_w=dist': CV_w,
+            'CV_w=ddiff': CV_abs,
+        }
+    results = [experiment(dist_M, paired_z, z) for paired_z, z, dist_M in zip(paired_zs, zs, dist_Ms)]
+    acc = {key: np.mean(np.array([result[key] for result in results]), axis=0) for key in results[0].keys()}
+    ste = {key: get_ci(np.array([result[key] for result in results])) for key in results[0].keys()}
+    return acc, ste
 
 if True:
     sns.set_theme()
     sns.set_color_codes("bright")
+    SMALL_SIZE = 10
+    MEDIUM_SIZE = 20
+    BIGGER_SIZE = 30
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=15)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
     LINE_WIDTH = 2.5
     MARKER_SIZE = 8
     plot_configs = {     "1NN":                     {'c':"c", 'lw':LINE_WIDTH, 'ls':"solid", 'marker':"", 'ms':MARKER_SIZE, }, 
@@ -210,19 +229,74 @@ def plot_full_rand_teach(full, random, teach, m_range, alg, title, ste=None):
     else:
         plt.show()
 
+def teaching_experiments(m_range, dist_Ms, alg, paired_zs, zs, y_train, y_test, sim=True):
+    def experiment(dist_M, paired_z, z):
+        nn, exemplar, CV, CV_w, CV_abs = np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range)), np.zeros(len(m_range))
+        paired_z, idx = paired_z
+        for j, m in enumerate(m_range):
+            S_concat = alg(paired_z, m)
+            S_pairs = idx[S_concat]
+            S_flatten = S_pairs.flatten()
+            nn[j] = eval_KNN(dist_M, S_flatten, y_train, y_test, sim=sim)
+            exemplar[j] = eval_exemplar(dist_M, S_flatten, y_train, y_test, sim=sim)
+            CV[j] = eval_CV(dist_M, S_pairs, y_train, y_test, weight=None, sim=sim)
+            CV_w[j] = eval_CV(dist_M, S_pairs, y_train, y_test, weight='sim', sim=sim)
+            CV_abs[j] = eval_CV(dist_M, S_pairs, y_train, y_test, weight='abs', sim=sim)
+
+        return {
+            '1NN': nn,
+            'exemplar': exemplar,
+            'CV': CV,
+            'CV_w=dist': CV_w,
+            'CV_w=ddiff': CV_abs,
+        }
+    results = [experiment(dist_M, paired_z, z) for paired_z, z, dist_M in zip(paired_zs, zs, dist_Ms)]
+    acc = {key: np.mean(np.array([result[key] for result in results]), axis=0) for key in results[0].keys()}
+    ste = {key: get_ci(np.array([result[key] for result in results])) for key in results[0].keys()}
+    return acc, ste
+    
+def random_experiments(m_range, dist_Ms, y_train, y_test, sim=True):
+    def experiment(dist_M):
+        return {
+            '1NN': random_1NN(m_range, dist_M, y_train, y_test, sim=sim, class_balance=True),
+            'exemplar': random_exemplar(m_range, dist_M, y_train, y_test, sim=sim, class_balance=True),
+            'CV': random_CV(m_range, dist_M, y_train, y_test, weight=None, sim=sim),
+            'CV_w=dist': random_CV(m_range, dist_M, y_train, y_test, weight='sim', sim=sim),
+            'CV_w=ddiff': random_CV(m_range, dist_M, y_train, y_test, weight='abs', sim=sim),
+        }
+    results = [experiment(dist_M) for dist_M in dist_Ms]
+    acc = {key: np.mean(np.array([result[key] for result in results]), axis=0) for key in results[0].keys()}
+    return acc
+
 
 SAVE_FIG = True
 
-FIX_LEARNER = True
-FIX_TEACHER = True
-BM_LPIPS = True
-BM_PROLIFIC = True
+FIX_LEARNER = False
+FIX_TEACHER = False
+BM_LPIPS = False
+BM_PROLIFIC = False
 
 
 
 m_range = np.arange(1, 40)
 alg = algs.mmd_greedy
 alg_name = "mmd_greedy"
+
+
+dataset = "bm"
+seeds = np.arange(10)
+SIM = True
+dist_Ms, zs, y_train, y_test = get_lpips_data(dataset, seeds, sim=SIM)
+
+random_acc = random_experiments(m_range, dist_Ms, y_train, y_test, sim=SIM)
+plot_random(random_acc, m_range, "random")
+
+alg = algs.mmd_greedy
+paired_zs = [concat_embeds(z, y_train) for z in zs]
+teaching_acc, teaching_ste = teaching_experiments(m_range, dist_Ms, alg, paired_zs, zs, y_train, y_test, sim=SIM)
+plot_teaching(teaching_acc, m_range, "mmd_greedy", ste=teaching_ste)
+
+
 
 ## fixed teacher
 if FIX_TEACHER:
@@ -231,20 +305,16 @@ if FIX_TEACHER:
         dataset = "bm"
         seeds = np.arange(10)
         SIM = True
-        dist_M, zs, y_train, y_test = get_lpips_data(dataset, seeds, sim=SIM)
+        dist_Ms, zs, y_train, y_test = get_lpips_data(dataset, seeds, sim=SIM)
 
-        full_results = full_experiments(m_range, dist_M, y_train, y_test, sim=SIM)
-        full_acc = full_results
+        full_acc = full_experiments(m_range, dist_Ms, y_train, y_test, sim=SIM)
         plot_full(full_acc, m_range, f"{dataset}.lpips_full")
 
-        random_results = random_experiments(m_range, dist_M, y_train, y_test, sim=SIM)
-        random_acc = random_results
+        random_acc = random_experiments(m_range, dist_Ms, y_train, y_test, sim=SIM)
         plot_random(random_acc, m_range, f"{dataset}.lpips_random")
 
         paired_zs = [concat_embeds(z, y_train) for z in zs]
-        teaching_results = [teaching_experiments(m_range, dist_M, alg, paired_z, z, y_train, y_test, sim=SIM) for paired_z, z in zip(paired_zs, zs)]
-        teaching_acc = {key: np.mean(np.array([result[key] for result in teaching_results]), axis=0) for key in teaching_results[0].keys()}
-        teaching_ste = {key: get_ci(np.array([result[key] for result in teaching_results])) for key in teaching_results[0].keys()}
+        teaching_acc, teaching_ste = [teaching_experiments(m_range, dist_Ms, alg, paired_z, z, y_train, y_test, sim=SIM) for paired_z, z in zip(paired_zs, zs)]
         plot_teaching(teaching_acc, m_range, f"{dataset}.lpips_mmd", ste=teaching_ste)
 
 
@@ -255,18 +325,14 @@ if FIX_TEACHER:
         SIM = True
         dist_Ms, zs, y_train, y_test = get_prolific_data(dataset, seeds, sim=SIM)
 
-        full_results = [full_experiments(m_range, dist_M, y_train, y_test, sim=SIM) for dist_M in dist_Ms]
-        full_acc = {key: np.mean(np.array([result[key] for result in full_results]), axis=0) for key in full_results[0].keys()}
+        full_acc = full_experiments(m_range, dist_Ms, y_train, y_test, sim=SIM)
         plot_full(full_acc, m_range, f"{dataset}.prolific_full")
 
-        random_results = [random_experiments(m_range, dist_M, y_train, y_test, sim=SIM) for dist_M in dist_Ms]
-        random_acc = {key: np.mean(np.array([result[key] for result in random_results]), axis=0) for key in random_results[0].keys()}
+        random_acc = random_experiments(m_range, dist_Ms, y_train, y_test, sim=SIM)
         plot_random(random_acc, m_range, f"{dataset}.prolific_random")
 
         paired_zs = [concat_embeds(z, y_train) for z in zs]
-        teaching_results = [teaching_experiments(m_range, dist_M, alg, paired_z, z, y_train, y_test, sim=SIM) for paired_z, z, dist_M in zip(paired_zs, zs, dist_Ms)]
-        teaching_acc = {key: np.mean(np.array([result[key] for result in teaching_results]), axis=0) for key in teaching_results[0].keys()}
-        teaching_ste = {key: get_ci(np.array([result[key] for result in teaching_results])) for key in teaching_results[0].keys()}
+        teaching_acc, teaching_ste = [teaching_experiments(m_range, dist_Ms, alg, paired_z, z, y_train, y_test, sim=SIM) for paired_z, z in zip(paired_zs, zs)]
         plot_teaching(teaching_acc, m_range, f"{dataset}.prolific_mmd", ste=teaching_ste)
 
 ## fixed learner:
@@ -276,10 +342,10 @@ if FIX_LEARNER:
         dataset = "bm"
         seeds = np.arange(10)
         SIM = True
-        dist_M, zs, y_train, y_test = get_lpips_data(dataset, seeds, sim=SIM)
+        dist_Ms, zs, y_train, y_test = get_lpips_data(dataset, seeds, sim=SIM)
         paired_zs = [concat_embeds(z, y_train) for z in zs]
 
-        fixed_learner_experiments(m_range, dist_M, y_train, y_test, paired_zs, zs, "bm.lpips", sim=SIM)
+        fixed_learner_experiments(m_range, dist_Ms, y_train, y_test, paired_zs, zs, "bm.lpips", sim=SIM)
 
     # if BM_PROLIFIC:
     #     dataset = "bm"

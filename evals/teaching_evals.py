@@ -127,19 +127,25 @@ def contrastive_vote(pairs, row, y_train, num_class, weight, sim=False):
     return y_hat
 
 ### experiment functions
-def rand_idx(X, m):
-    return np.random.choice(np.arange(len(X)), m, replace=False)
+N_TRIALS = 500
+def rand_idx(Y, m, class_balance=False):
+    if class_balance:
+        classes = np.unique(Y)
+        idx_by_class = [np.where(Y==c)[0] for c in classes]
+        return np.hstack([np.random.choice(idx, m ,replace=False) for idx in idx_by_class])
+    else:
+        return np.random.choice(np.arange(len(Y)), m, replace=False)
 
-def random_1NN(m_range, dist_M, y_train, y_test, sim=True, n_trials=1000):
-    return [np.array([eval_KNN(dist_M, rand_idx(y_train, m), y_train, y_test, sim=sim) for _ in range(n_trials)]).mean() for m in m_range]
+def random_1NN(m_range, dist_M, y_train, y_test, sim=True, class_balance=False):
+    return [np.array([eval_KNN(dist_M, rand_idx(y_train, m, class_balance), y_train, y_test, sim=sim) for _ in range(N_TRIALS)]).mean() for m in m_range]
 
-def random_exemplar(m_range, dist_M, y_train, y_test, sim=True, n_trials=1000):
-    return [np.array([eval_exemplar(dist_M, rand_idx(y_train, m), y_train, y_test, sim=sim) for _ in range(n_trials)]).mean() for m in m_range]
+def random_exemplar(m_range, dist_M, y_train, y_test, sim=True, class_balance=False):
+    return [np.array([eval_exemplar(dist_M, rand_idx(y_train, m, class_balance), y_train, y_test, sim=sim) for _ in range(N_TRIALS)]).mean() for m in m_range]
 
-def random_CV(m_range, dist_M, y_train, y_test, weight='abs', sim=True, n_trials=1000):
+def random_CV(m_range, dist_M, y_train, y_test, weight='abs', sim=True):
     idx_by_class = {c: np.where(y_train==c)[0] for c in np.unique(y_train)}
     paired_idx = np.array([[i,j] for i in idx_by_class[0] for j in idx_by_class[1]])
-    return [np.array([eval_CV(dist_M, paired_idx[rand_idx(paired_idx, m)], y_train, y_test, weight, sim=sim) for _ in range(n_trials)]).mean() for m in m_range]
+    return [np.array([eval_CV(dist_M, paired_idx[rand_idx(paired_idx, m)], y_train, y_test, weight, sim=sim) for _ in range(N_TRIALS)]).mean() for m in m_range]
 
 def full_1NN(m_range, dist_M, y_train, y_test, sim=True):
     return [eval_KNN(dist_M, np.arange(len(y_train)), y_train, y_test, sim=sim)] * len(m_range)
