@@ -1,0 +1,11 @@
+### classification data
+train_dir : /net/scratch/tianh-shared/chest_xray/train
+valid_dir : /net/scratch/tianh-shared/chest_xray/valid
+test_dir : /net/scratch/tianh-shared/chest_xray/test
+num_class : 3
+transform : bird
+train_batch_size: 30
+
+dataset: chest_xray
+
+wandb_group : chest_xray

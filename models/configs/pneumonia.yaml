@@ -1,0 +1,11 @@
+### classification data
+train_dir : /net/scratch/tianh-shared/pneumonia/all/train
+valid_dir : /net/scratch/tianh-shared/pneumonia/all/valid
+test_dir : /net/scratch/tianh-shared/pneumonia/all/test
+num_class : 2
+transform : bird
+train_batch_size: 30
+
+dataset: pneumonia
+
+wandb_group : pneumonia
